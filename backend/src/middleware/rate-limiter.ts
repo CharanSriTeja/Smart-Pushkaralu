@@ -15,3 +15,30 @@ export const authLimiter = rateLimit({
   },
 });
 
+export const publicWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // limit public write endpoints
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => env.NODE_ENV === 'test',
+  message: {
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many requests. Please slow down.',
+    },
+  },
+});
+
+export const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // general traffic limiter
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => env.NODE_ENV === 'test',
+  message: {
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Rate limit exceeded. Please try again later.',
+    },
+  },
+});

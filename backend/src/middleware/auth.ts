@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, TokenPayload } from '../services/token.js';
-import { findUserById, isUserAdmin } from '../services/user.js';
+import { findUserById, isUserAdmin, userHasPermission } from '../services/user.js';
 
 export interface AuthenticatedUser extends TokenPayload {
   name: string | null;
@@ -81,8 +81,80 @@ export async function requireAuth(
   }
 }
 
+/**
+ * Optional auth middleware: populates req.user if a valid Bearer token is provided,
+ * but does not reject the request if no token is present.
+ */
+export async function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+
+  const token = authHeader.substring(7).trim();
+  try {
+    const payload = verifyAccessToken(token);
+    const user = await findUserById(payload.userId);
+    if (user && user.status === 'active') {
+      const isAdmin = await isUserAdmin(user.id, user.phone);
+      req.user = {
+        userId: user.id,
+        firebaseUid: user.firebase_uid,
+        phone: user.phone,
+        isAdmin,
+        name: user.name,
+        language: user.language,
+        status: user.status,
+      };
+    }
+  } catch {
+    // Ignore invalid tokens in optional auth
+  }
+  next();
+}
+
+/**
+ * Requires the user to have admin status.
+ */
+export function requireAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  if (!req.user) {
+    res.status(401).json({
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required',
+      },
+    });
+    return;
+  }
+
+  if (!req.user.isAdmin) {
+    res.status(403).json({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Administrative privileges required',
+      },
+    });
+    return;
+  }
+
+  next();
+}
+
+/**
+ * Requires the authenticated admin to hold a specific permission (e.g. 'settings.write', 'audit.read').
+ * Super admins automatically have all permissions.
+ */
 export function can(permission: string) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.user) {
       res.status(401).json({
         error: {
@@ -93,17 +165,27 @@ export function can(permission: string) {
       return;
     }
 
-    if (permission === 'admin' && !req.user.isAdmin) {
-      res.status(403).json({
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Administrative privileges required',
-        },
-      });
-      return;
-    }
+    try {
+      const allowed = await userHasPermission(
+        req.user.userId,
+        req.user.phone,
+        permission
+      );
 
-    next();
+      if (!allowed) {
+        res.status(403).json({
+          error: {
+            code: 'FORBIDDEN',
+            message: `Permission denied: ${permission}`,
+          },
+        });
+        return;
+      }
+
+      next();
+    } catch (err) {
+      next(err);
+    }
   };
 }
 

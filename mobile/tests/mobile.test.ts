@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock native Expo modules before importing i18n
 vi.mock('expo-localization', () => ({
@@ -9,6 +9,26 @@ vi.mock('expo-secure-store', () => ({
   getItemAsync: vi.fn(),
   setItemAsync: vi.fn(),
   deleteItemAsync: vi.fn(),
+}));
+
+vi.mock('expo-sqlite', () => ({
+  openDatabaseAsync: vi.fn().mockRejectedValue(new Error('SQLite mock in test')),
+}));
+
+vi.mock('@react-native-community/netinfo', () => ({
+  default: {
+    fetch: vi.fn().mockResolvedValue({ isConnected: true, isInternetReachable: true, type: 'wifi' }),
+    addEventListener: vi.fn().mockReturnValue(() => {}),
+  },
+}));
+
+vi.mock('expo-notifications', () => ({
+  setNotificationHandler: vi.fn(),
+  getPermissionsAsync: vi.fn().mockResolvedValue({ status: 'granted' }),
+  requestPermissionsAsync: vi.fn().mockResolvedValue({ status: 'granted' }),
+  getDevicePushTokenAsync: vi.fn().mockResolvedValue({ data: 'mock-fcm-token-123' }),
+  setNotificationChannelAsync: vi.fn().mockResolvedValue(undefined),
+  AndroidImportance: { MAX: 5 },
 }));
 
 import {
@@ -24,8 +44,11 @@ import i18n from '../src/i18n';
 import en from '../src/i18n/en.json';
 import te from '../src/i18n/te.json';
 import hi from '../src/i18n/hi.json';
+import { setCached, getCached, clearCache, fetchWithCache } from '../src/storage/cache';
+import { apiRequest, AppApiError } from '../src/api/client';
+import { theme } from '../src/theme';
 
-describe('Mobile App Unit Tests', () => {
+describe('Mobile App Unit Tests (Smart Pushkaralu)', () => {
   describe('1. Phone Number Validation', () => {
     it('accepts valid 10-digit Indian numbers starting with 6, 7, 8, 9', () => {
       const validNumbers = [
@@ -123,14 +146,31 @@ describe('Mobile App Unit Tests', () => {
       expect((hi as any)._comment).toContain('Needs review by a native Hindi speaker');
     });
 
-    it('falls back to English when a translation key is missing in Telugu or Hindi', async () => {
-      // Set to Telugu
-      await i18n.changeLanguage('te');
+    it('all three language files contain required module namespaces', () => {
+      const namespaces = [
+        'common',
+        'auth',
+        'ghats',
+        'sos',
+        'issues',
+        'news',
+        'seva',
+        'planner',
+        'transport',
+        'settings',
+      ];
 
-      // Common existing key in Telugu
+      for (const ns of namespaces) {
+        expect(en).toHaveProperty(ns);
+        expect(te).toHaveProperty(ns);
+        expect(hi).toHaveProperty(ns);
+      }
+    });
+
+    it('falls back to English when a translation key is missing in Telugu or Hindi', async () => {
+      await i18n.changeLanguage('te');
       expect(i18n.t('landing.app_name')).toBe('స్మార్ట్ పుష్కరాలు 2027');
 
-      // Create a test instance with an intentional missing key in te
       const testI18n = i18n.createInstance();
       await testI18n.init({
         lng: 'te',
@@ -142,22 +182,122 @@ describe('Mobile App Unit Tests', () => {
             },
           },
           te: {
-            translation: {}, // key missing here
+            translation: {},
           },
         },
       });
 
       expect(testI18n.t('only_in_english')).toBe('English Fallback Text');
     });
+  });
 
-    it('all three language files contain required core sections', () => {
-      const coreSections = ['landing', 'phone', 'otp', 'register', 'home', 'guest'];
+  describe('4. Offline Storage Caching Layer', () => {
+    beforeEach(async () => {
+      await clearCache();
+    });
 
-      for (const section of coreSections) {
-        expect(en).toHaveProperty(section);
-        expect(te).toHaveProperty(section);
-        expect(hi).toHaveProperty(section);
-      }
+    it('stores and retrieves cached data before TTL expires', async () => {
+      await setCached('test-ghat', { name: 'Kotilingala Ghat', waterLevel: '12m' }, 60);
+      const cached = await getCached<any>('test-ghat');
+      expect(cached).toEqual({ name: 'Kotilingala Ghat', waterLevel: '12m' });
+    });
+
+    it('returns null when cached data has expired', async () => {
+      // Set TTL of -10 seconds (already expired)
+      await setCached('expired-key', { data: 'old' }, -10);
+      const cached = await getCached('expired-key');
+      expect(cached).toBeNull();
+    });
+
+    it('fetchWithCache returns cached data immediately and updates background', async () => {
+      await setCached('corridor-status', { status: 'open' }, 300);
+
+      const fetcher = vi.fn().mockResolvedValue({ status: 'open-crowded' });
+      const onFresh = vi.fn();
+
+      const result = await fetchWithCache('corridor-status', fetcher, {
+        onFreshData: onFresh,
+      });
+
+      // Returns cached data immediately without waiting
+      expect(result).toEqual({ status: 'open' });
+      // Fetcher called for network refresh
+      expect(fetcher).toHaveBeenCalled();
+    });
+  });
+
+  describe('5. Resilient API Client', () => {
+    beforeEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('sends Accept-Language header matching current language', async () => {
+      await i18n.changeLanguage('te');
+
+      let capturedHeaders: any = null;
+      global.fetch = vi.fn().mockImplementation(async (_url, options) => {
+        capturedHeaders = options.headers;
+        return {
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ success: true }),
+        };
+      });
+
+      const res = await apiRequest('/v1/health', 'GET');
+      expect(res.success).toBe(true);
+      expect(capturedHeaders['Accept-Language']).toBe('te');
+    });
+
+    it('retries on 500 error and succeeds on subsequent attempt', async () => {
+      let callCount = 0;
+      global.fetch = vi.fn().mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            ok: false,
+            status: 503,
+            text: async () => JSON.stringify({ error: { code: 'BUSY', message: 'Busy' } }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ recovered: true }),
+        };
+      });
+
+      const res = await apiRequest('/v1/test', 'GET', undefined, { retries: 2 });
+      expect(callCount).toBe(2);
+      expect(res.recovered).toBe(true);
+    });
+
+    it('aborts and returns TIMEOUT_ERROR when request exceeds timeoutMs', async () => {
+      global.fetch = vi.fn().mockImplementation((_url, { signal }) => {
+        return new Promise((_, reject) => {
+          signal.addEventListener('abort', () => {
+            const err = new Error('The user aborted a request.');
+            err.name = 'AbortError';
+            reject(err);
+          });
+        });
+      });
+
+      await expect(
+        apiRequest('/v1/slow', 'GET', undefined, { timeoutMs: 20, retries: 0 })
+      ).rejects.toThrow(AppApiError);
+    });
+  });
+
+  describe('6. Theme and Accessibility Requirements', () => {
+    it('enforces minimum touch targets of at least 48dp', () => {
+      expect(theme.touchTarget.minHeight).toBeGreaterThanOrEqual(48);
+      expect(theme.touchTarget.minWidth).toBeGreaterThanOrEqual(48);
+    });
+
+    it('defines high-contrast danger color for emergency SOS', () => {
+      expect(theme.colors.danger).toBe('#DC2626');
+      expect(theme.colors.primary).toBe('#0F52BA');
     });
   });
 });

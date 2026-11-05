@@ -3,8 +3,13 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { LanguageProvider, useLanguage } from '../context/LanguageContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { GlobalErrorBoundary } from '../components/ErrorBoundary';
+import { initMobileSentry } from '../services/sentry';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Initialize Sentry error reporting early
+initMobileSentry();
 
 function RootContent() {
   const { isLanguageReady } = useLanguage();
@@ -27,10 +32,12 @@ function RootContent() {
 
 export default function RootLayout() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <RootContent />
-      </AuthProvider>
-    </LanguageProvider>
+    <GlobalErrorBoundary>
+      <LanguageProvider>
+        <AuthProvider>
+          <RootContent />
+        </AuthProvider>
+      </LanguageProvider>
+    </GlobalErrorBoundary>
   );
 }

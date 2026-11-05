@@ -1,4 +1,104 @@
 {
+  "_comment": "NOTE: First-draft strings for Smart Pushkaralu 2027. A native speaker must review all strings before production deployment, especially SOS, medical, and safety text.",
+  "common": {
+    "app_name": "Smart Pushkaralu 2027",
+    "save": "Save",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "error": "Error",
+    "loading": "Loading...",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "offline_notice": "You are offline. Showing cached data.",
+    "not_translated": "Not yet translated",
+    "close": "Close",
+    "refresh": "Refresh",
+    "language": "Language",
+    "welcome": "Welcome",
+    "search": "Search"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Log Out",
+    "guest_mode": "Guest Mode",
+    "phone_label": "Mobile Number",
+    "send_otp": "Send OTP",
+    "enter_otp": "Enter OTP",
+    "resend_otp": "Resend OTP",
+    "verify": "Verify & Continue",
+    "delete_account": "Delete Account"
+  },
+  "ghats": {
+    "title": "Ghats & Timings",
+    "search_placeholder": "Search ghats by name or town...",
+    "water_level": "Water Level",
+    "crowd_density": "Crowd Density",
+    "cleanliness": "Cleanliness",
+    "view_details": "View Ghat Details",
+    "navigation": "Get Directions",
+    "facilities": "Facilities & Changing Rooms",
+    "holy_dip": "Pushkara Snanam Ghats"
+  },
+  "sos": {
+    "sos_button": "EMERGENCY SOS",
+    "emergency_assistance": "Pushkaralu Emergency Help",
+    "calling_police": "Police Helpline (100)",
+    "calling_ambulance": "Ambulance (108)",
+    "share_location": "Share Live GPS Location",
+    "safety_warning": "Call for immediate police, medical rescue, or river emergency assistance.",
+    "medical_help": "Medical First Aid Post",
+    "lost_found": "Lost & Found Helpline",
+    "confirm_emergency": "Are you sure you want to trigger emergency alert?"
+  },
+  "issues": {
+    "title": "Report an Issue",
+    "report_issue": "Submit Grievance",
+    "category": "Category",
+    "description": "Describe what needs attention",
+    "location": "Ghat or Location",
+    "status_open": "Under Review",
+    "status_resolved": "Resolved",
+    "submitted": "Issue reported to authorities successfully."
+  },
+  "news": {
+    "title": "Advisories & News",
+    "official_announcements": "District Administration Announcements",
+    "read_more": "Read Full Advisory",
+    "published_at": "Published",
+    "share": "Share Advisory"
+  },
+  "seva": {
+    "title": "Seva & Volunteer",
+    "available_services": "Pilgrim Services & Annadanam",
+    "volunteer_register": "Register as Volunteer",
+    "prasadam_schedule": "Annadanam & Prasadam Timings",
+    "queue_status": "Darshan & Holy Dip Queue Status"
+  },
+  "planner": {
+    "title": "Pushkaralu Planner",
+    "my_schedule": "My Itinerary",
+    "add_visit": "Plan a Ghat Visit",
+    "best_time_to_visit": "Recommended Snanam Timings",
+    "route_summary": "Travel Route & Walking Corridor"
+  },
+  "transport": {
+    "title": "Transport & Parking",
+    "parking_status": "Parking Lots & Real-time Slots",
+    "shuttle_bus": "Free Shuttle Buses",
+    "traffic_updates": "Traffic Restrictions & Corridors",
+    "nearby_parking": "Find Nearby Parking"
+  },
+  "settings": {
+    "title": "App Settings",
+    "language_selection": "Select App Language",
+    "notifications": "Push Notifications & Ghat Alerts",
+    "offline_cache": "Downloaded Offline Data",
+    "clear_cache": "Clear Cached Data",
+    "about": "About Smart Pushkaralu 2027",
+    "privacy_policy": "Privacy Policy",
+    "app_version": "Version"
+  },
   "landing": {
     "app_name": "Smart Pushkaralu 2027",
     "tagline": "One unified access point for pilgrims",
@@ -48,28 +148,27 @@
     "error_consent_required": "Please accept the privacy policy to proceed."
   },
   "home": {
-    "welcome": "Welcome, {{name}}",
-    "pilgrim_id": "Pushkaralu Pilgrim",
-    "phone": "Phone: {{phone}}",
-    "role_admin": "Official Coordinator / Admin",
-    "ghat_overview": "Ghat Overview",
-    "ghat_note": "Rajamahendravaram (Rajahmundry), Bhadrachalam, and surrounding Godavari ghats will publish live capacity ratings here.",
+    "welcome": "Namaskaram, {{name}}",
+    "pilgrim_id": "Pilgrim",
+    "quick_actions": "Quick Services",
+    "view_ghats": "Find Ghats & River Status",
+    "view_ghats_sub": "Water levels, crowds and facilities",
+    "plan_trip": "Yatra Route Planner",
+    "plan_trip_sub": "Parking slots, shuttles & crowd guidance",
+    "seva_booking": "Seva & Volunteer Registration",
+    "seva_booking_sub": "Annadanam timings & queue status",
+    "sos_emergency": "Emergency SOS Helpline",
+    "sos_emergency_sub": "Instant police, medical & water rescue",
     "logout": "Log Out",
+    "confirm_logout": "Are you sure you want to log out of your account?",
     "delete_account": "Delete Account",
-    "confirm_logout": "Log out from this device?",
-    "confirm_delete": "Delete your account and all associated tokens permanently?",
-    "cancel": "Cancel"
+    "confirm_delete": "Are you sure you want to delete your account? This action is permanent.",
+    "cancel": "Cancel",
+    "official_banner": "Official Godavari Pushkaralu Portal - District Administration Verified"
   },
   "guest": {
-    "banner_title": "Browsing as Guest",
-    "banner_desc": "You are browsing public ghat guides. Log in with your mobile number anytime to receive real-time push alerts.",
-    "login_prompt": "Login with Mobile Number"
-  },
-  "common": {
-    "back": "Back",
-    "loading": "Loading...",
-    "error": "Error",
-    "retry": "Retry"
+    "banner_title": "Guest Pilgrim Mode",
+    "banner_desc": "You are browsing without logging in. You can check ghat water levels, routes, and public alerts freely.",
+    "login_button": "Log in with phone for safety alerts"
   }
 }
-

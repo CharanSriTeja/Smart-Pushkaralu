@@ -5,7 +5,7 @@ import { updateUser, deleteUser, findUserById } from '../../services/user.js';
 
 export const userRouter = Router();
 
-userRouter.use(requireAuth);
+userRouter.use('/me', requireAuth);
 
 const updateProfileSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),

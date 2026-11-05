@@ -38,6 +38,49 @@ export async function isUserAdmin(userId: string, phone: string): Promise<boolea
   return rows.length > 0;
 }
 
+export async function getUserPermissions(
+  userId: string,
+  phone?: string
+): Promise<{ isSuperAdmin: boolean; permissions: string[] }> {
+  // Check ADMIN_PHONES env variable first
+  if (phone && getAdminPhoneList().includes(phone)) {
+    return { isSuperAdmin: true, permissions: ['*'] };
+  }
+
+  const { rows } = await query<{ role_name: string; permission_name: string | null }>(
+    `SELECT r.name as role_name, p.name as permission_name
+     FROM admins a
+     JOIN roles r ON a.role_id = r.id
+     LEFT JOIN role_permissions rp ON rp.role_id = r.id
+     LEFT JOIN permissions p ON rp.permission_id = p.id
+     WHERE a.user_id = $1`,
+    [userId]
+  );
+
+  if (rows.length === 0) {
+    return { isSuperAdmin: false, permissions: [] };
+  }
+
+  const isSuperAdmin = rows.some((r) => r.role_name === 'super_admin');
+  const permissions = rows
+    .map((r) => r.permission_name)
+    .filter((p): p is string => Boolean(p));
+
+  return { isSuperAdmin, permissions };
+}
+
+export async function userHasPermission(
+  userId: string,
+  phone: string | undefined,
+  permission: string
+): Promise<boolean> {
+  const { isSuperAdmin, permissions } = await getUserPermissions(userId, phone);
+  if (isSuperAdmin) {
+    return true;
+  }
+  return permissions.includes(permission);
+}
+
 export async function findUserById(userId: string): Promise<UserRecord | null> {
   const { rows } = await query<UserRecord>(
     'SELECT * FROM users WHERE id = $1 LIMIT 1',

@@ -10,6 +10,11 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters long').default('smart-pushkaralu-dev-secret-super-safe-key-32chars'),
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional(),
   ADMIN_PHONES: z.string().default(''),
+  CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:8081,http://localhost:3000'),
+  ICCC_ENABLED: z.coerce.boolean().default(false),
+  MONTHLY_API_FREE_QUOTA: z.coerce.number().default(10000),
+  SENTRY_DSN: z.string().optional(),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -28,3 +33,9 @@ export const getAdminPhoneList = (): string[] => {
     .filter(Boolean);
 };
 
+export const getCorsOrigins = (): string[] => {
+  if (!env.CORS_ORIGINS) return ['*'];
+  return env.CORS_ORIGINS.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+};
