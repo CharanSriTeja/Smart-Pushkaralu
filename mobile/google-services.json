@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "5534741753",
+    "project_id": "gen-lang-client-0031906066",
+    "storage_bucket": "gen-lang-client-0031906066.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:5534741753:android:96a7972c062f1eb8211e28",
+        "android_client_info": {
+          "package_name": "com.smartpushkaralu.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSJTV9dNXgYCXxkTYxkKeRgqgMraLeEVI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

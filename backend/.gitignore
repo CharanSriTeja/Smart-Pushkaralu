@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+backend/secrets/
+*.env
+
 # Build output
 dist/
 build/
@@ -9,6 +12,10 @@ build/
 .env
 .env.*
 !.env.example
+firebase-service-account*.json
+service-account*.json
+*.pem
+*.key
 
 # Logs
 logs/

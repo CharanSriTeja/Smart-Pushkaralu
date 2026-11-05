@@ -1,0 +1,75 @@
+{
+  "landing": {
+    "app_name": "Smart Pushkaralu 2027",
+    "tagline": "One unified access point for pilgrims",
+    "official_badge": "Official Pilgrim Portal",
+    "disclaimer": "Official data is labelled. Ghat conditions, water levels, and crowd movement can change dynamically during Pushkaralu.",
+    "select_language": "Choose your language",
+    "continue_with_phone": "Continue with mobile number",
+    "continue_as_guest": "Continue as guest (browse without login)"
+  },
+  "phone": {
+    "title": "Enter your mobile number",
+    "subtitle": "We will send a 6-digit OTP to verify your mobile number.",
+    "label": "Mobile number",
+    "country_code": "+91",
+    "placeholder": "98765 43210",
+    "send_otp": "Send OTP",
+    "sending": "Sending OTP...",
+    "error_invalid": "Please enter a valid 10-digit Indian mobile number."
+  },
+  "otp": {
+    "title": "Verify mobile number",
+    "subtitle": "Enter the 6-digit code sent to",
+    "change_phone": "Change number",
+    "input_placeholder": "Enter 6-digit OTP",
+    "verify_button": "Verify & Continue",
+    "verifying": "Verifying code...",
+    "resend_timer": "Resend code in {{seconds}}s",
+    "resend_button": "Resend OTP",
+    "error_wrong_code": "Incorrect code. Please double-check and try again.",
+    "error_expired": "This OTP has expired. Please request a new code.",
+    "error_too_many_attempts": "Too many failed attempts. Please wait a while before requesting a new code.",
+    "error_generic": "Verification failed. Please check network connection and try again."
+  },
+  "register": {
+    "title": "Pilgrim Registration",
+    "subtitle": "Set up your profile to receive ghat announcements and priority assistance.",
+    "name_label": "Your Name (Optional)",
+    "name_placeholder": "e.g. Rama Rao",
+    "language_label": "Preferred Language",
+    "consent_text": "I agree to receive official Pushkaralu advisories and agree to the",
+    "privacy_policy": "Privacy Policy",
+    "privacy_policy_title": "Pilgrim Privacy Policy",
+    "privacy_policy_body": "Smart Pushkaralu 2027 collects your phone number strictly for authentication and safety alerts during the festival. Your phone number is never shared with commercial entities or logged in plain text. Official ghat alerts are verified by the district administration.",
+    "close": "Close",
+    "submit": "Complete Registration",
+    "submitting": "Saving...",
+    "error_consent_required": "Please accept the privacy policy to proceed."
+  },
+  "home": {
+    "welcome": "Welcome, {{name}}",
+    "pilgrim_id": "Pushkaralu Pilgrim",
+    "phone": "Phone: {{phone}}",
+    "role_admin": "Official Coordinator / Admin",
+    "ghat_overview": "Ghat Overview",
+    "ghat_note": "Rajamahendravaram (Rajahmundry), Bhadrachalam, and surrounding Godavari ghats will publish live capacity ratings here.",
+    "logout": "Log Out",
+    "delete_account": "Delete Account",
+    "confirm_logout": "Log out from this device?",
+    "confirm_delete": "Delete your account and all associated tokens permanently?",
+    "cancel": "Cancel"
+  },
+  "guest": {
+    "banner_title": "Browsing as Guest",
+    "banner_desc": "You are browsing public ghat guides. Log in with your mobile number anytime to receive real-time push alerts.",
+    "login_prompt": "Login with Mobile Number"
+  },
+  "common": {
+    "back": "Back",
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry"
+  }
+}
+
