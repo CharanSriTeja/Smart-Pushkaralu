@@ -69,7 +69,78 @@
     "back": "Back",
     "loading": "Loading...",
     "error": "Error",
-    "retry": "Retry"
+    "retry": "Retry",
+    "distance_km": "{{distance}} km away",
+    "meters_away": "{{meters}} m away"
+  },
+  "ghats": {
+    "title": "Pushkaralu Ghats",
+    "subtitle": "Godavari Holy Bathing Sites",
+    "search_placeholder": "Search ghat, town, or district...",
+    "find_nearest": "Find Nearest Ghat (GPS)",
+    "requesting_location": "Detecting nearest ghat...",
+    "location_denied": "Location access was denied. You can still search by district or town.",
+    "view_map": "Map View",
+    "view_list": "List View",
+    "filters_title": "Filters",
+    "all_districts": "All Districts",
+    "all_rivers": "Godavari River",
+    "apply_filters": "Apply Filters",
+    "reset_filters": "Reset",
+    "disclaimer_banner": "⚠️ Disclaimer: River currents, bathing safety, and crowd levels can change suddenly during Pushkaralu. Always follow on-duty police and NDRF instructions.",
+    "bathing_status_label": "Bathing Status",
+    "crowd_status_label": "Crowd Density",
+    "bathing": {
+      "allowed": "Safe for Holy Bath",
+      "restricted": "Restricted / High Flow",
+      "closed": "Strictly Closed",
+      "unknown": "Inspection Ongoing"
+    },
+    "crowd": {
+      "low": "Low Crowd (<30%)",
+      "medium": "Moderate Flow (30-60%)",
+      "high": "Heavy Rush (60-85%)",
+      "very_high": "Surge / Peak Density (>85%)",
+      "unknown": "Awaiting Updates",
+      "title": "Live Crowd Status",
+      "source_official": "Official District Admin",
+      "source_aggregate": "Aggregated Pilgrim Reports",
+      "source_sensor": "CCTV & Sensor Feed",
+      "updated_at": "Updated {{time}}",
+      "report_btn": "Report Current Crowd Here",
+      "report_modal_title": "Report Live Crowd Condition",
+      "report_modal_subtitle": "Help fellow pilgrims by sharing live ground conditions. Must be within 1 km.",
+      "select_level": "Select current crowd level at the ghat:",
+      "submit_report": "Verify GPS & Submit Report",
+      "report_success": "Report verified and recorded! Thank you for helping fellow pilgrims."
+    },
+    "trust": {
+      "official_badge": "Official District Approved",
+      "community_badge": "Community Reported",
+      "unverified_badge": "Unverified — Caution Advised",
+      "verified_date": "Last Verified: {{date}}",
+      "view_source": "View Official Government Portal"
+    },
+    "sections": {
+      "about": "About this Ghat",
+      "facilities": "On-Site Facilities",
+      "aarti": "Maha Godavari Aarti Timings",
+      "notices": "Emergency & Safety Advisories",
+      "connectivity": "Transport & Connectivity",
+      "nearest_railway": "Railway Station",
+      "nearest_bus": "Bus Station",
+      "nearest_town": "Nearest Town"
+    },
+    "facilities_list": {
+      "changing_room": "Changing Rooms",
+      "drinking_water": "Purified Water",
+      "medical_camp": "Medical Camp & Ambulance",
+      "police_post": "Police Helpdesk",
+      "parking": "Designated Parking",
+      "cloak_room": "Cloak Room",
+      "prasad_counter": "Prasadam Counter",
+      "toilet": "Sanitation Facilities"
+    }
   }
 }
 
