@@ -478,6 +478,36 @@ export const GhatFormPage: React.FC<Props> = ({ ghat, onCancel, onSaved }) => {
           </div>
         </div>
 
+        {/* Section 5b: Description (Optional) */}
+        <div style={{ borderTop: '1.5px solid #F1F5F9', paddingTop: '16px' }}>
+          <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', marginBottom: '12px' }}>
+            Historical & Pilgrimage Description (Optional)
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+            <textarea
+              rows={2}
+              placeholder="Description (English)"
+              value={descEn}
+              onChange={(e) => setDescEn(e.target.value)}
+              style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+            <textarea
+              rows={2}
+              placeholder="వివరణ (తెలుగు)"
+              value={descTe}
+              onChange={(e) => setDescTe(e.target.value)}
+              style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+            <textarea
+              rows={2}
+              placeholder="विवरण (हिन्दी)"
+              value={descHi}
+              onChange={(e) => setDescHi(e.target.value)}
+              style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+        </div>
+
         {/* Section 6: Mandatory Audit Reason */}
         <div style={{ borderTop: '1.5px solid #F1F5F9', paddingTop: '16px' }}>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#DC2626', marginBottom: '6px' }}>

@@ -141,6 +141,17 @@
       "prasad_counter": "Prasadam Counter",
       "toilet": "Sanitation Facilities"
     }
+  },
+  "news": {
+    "title": "Official News & Advisories",
+    "subtitle": "Godavari Pushkaralu Information Desk",
+    "urgent_alert": "URGENT OFFICIAL ADVISORY",
+    "important_notice": "IMPORTANT NOTICE",
+    "read_full": "Read Full Notice",
+    "official_label": "Official Source",
+    "verified_advisory": "Verified Official Government Advisory",
+    "offline_notice": "Showing cached announcements (Offline Mode)",
+    "no_announcements": "No Announcements Found"
   }
 }
 

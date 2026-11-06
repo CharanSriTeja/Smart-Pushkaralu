@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { GhatsController } from '../../modules/ghats/ghats.controller.js';
 import { CrowdController } from '../../modules/crowd/crowd.controller.js';
 import { NoticesController } from '../../modules/notices/notices.controller.js';
+import { FacilitiesController } from '../../modules/facilities/facilities.controller.js';
 import { publicGhatsLimiter, crowdReportLimiter } from '../../middleware/rate-limiter.js';
 
 export const ghatsRouter = Router();
@@ -17,6 +18,9 @@ ghatsRouter.get('/ghats/:id', GhatsController.getGhatById);
 
 // GET /v1/ghats/:id/notices (active notices)
 ghatsRouter.get('/ghats/:id/notices', NoticesController.getGhatNotices);
+
+// GET /v1/ghats/:id/facilities (ghat facilities list)
+ghatsRouter.get('/ghats/:id/facilities', FacilitiesController.getGhatFacilities);
 
 // GET /v1/ghats/:id/crowd (live crowd status)
 ghatsRouter.get('/ghats/:id/crowd', CrowdController.getGhatCrowdStatus);

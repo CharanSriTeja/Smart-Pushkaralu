@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Ghat, CrowdLevel } from '../types';
+import { Ghat } from '../types';
 import { AdminApi } from '../services/adminApi';
 import { TrustStatusBadge } from '../components/TrustStatusBadge';
 import { CrowdOverrideModal } from '../components/CrowdOverrideModal';

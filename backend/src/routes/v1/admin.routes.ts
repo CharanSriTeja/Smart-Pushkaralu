@@ -5,6 +5,8 @@ import { GhatsController } from '../../modules/ghats/ghats.controller.js';
 import { CrowdController } from '../../modules/crowd/crowd.controller.js';
 import { NoticesController } from '../../modules/notices/notices.controller.js';
 import { AuditController } from '../../modules/audit/audit.controller.js';
+import { NewsController } from '../../modules/news/news.controller.js';
+import { FacilitiesController } from '../../modules/facilities/facilities.controller.js';
 
 export const adminRouter = Router();
 
@@ -41,3 +43,33 @@ adminRouter.post('/notices', checkPermission('notices.publish'), NoticesControll
 // GET /v1/admin/audit-logs
 adminRouter.get('/audit-logs', checkPermission('audit.read'), AuditController.listLogs);
 
+// 5. Official News Management (Module 9)
+// POST /v1/admin/news
+adminRouter.post('/news', checkPermission('news.publish'), NewsController.createNews);
+
+// PATCH /v1/admin/news/:id
+adminRouter.patch('/news/:id', checkPermission('news.publish'), NewsController.updateNews);
+
+// DELETE /v1/admin/news/:id
+adminRouter.delete('/news/:id', checkPermission('news.delete'), NewsController.deleteNews);
+
+// POST /v1/admin/news/draft-translate (Draft translation assistance for admin review)
+adminRouter.post('/news/draft-translate', checkPermission('news.publish'), NewsController.draftTranslate);
+
+// 6. Ghat Facilities Management (Module 9)
+// POST /v1/admin/ghats/:id/facilities
+adminRouter.post('/ghats/:id/facilities', checkPermission('ghats.update'), FacilitiesController.addFacility);
+
+// PATCH /v1/admin/ghats/:ghatId/facilities/:facilityId
+adminRouter.patch(
+  '/ghats/:ghatId/facilities/:facilityId',
+  checkPermission('ghats.update'),
+  FacilitiesController.updateFacility
+);
+
+// DELETE /v1/admin/ghats/:ghatId/facilities/:facilityId
+adminRouter.delete(
+  '/ghats/:ghatId/facilities/:facilityId',
+  checkPermission('ghats.update'),
+  FacilitiesController.deleteFacility
+);

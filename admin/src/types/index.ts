@@ -24,6 +24,8 @@ export interface GhatFacility {
   details: LocalizedString;
   is_operational: boolean;
   count: number;
+  source_url?: string | null;
+  last_verified_at?: string | null;
 }
 
 export interface GhatAartiTiming {
@@ -101,4 +103,63 @@ export interface Ghat {
   active_notices?: GhatNotice[];
   crowd_status?: CrowdStatus | null;
 }
+
+export type NewsCategory = 'urgent' | 'general' | 'advisory' | 'facility' | 'traffic' | 'weather';
+export type NewsPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type NewsPublishStatus = 'draft' | 'published' | 'archived' | 'expired';
+
+export interface NewsPost {
+  id: string;
+  title: LocalizedString;
+  content: LocalizedString;
+  summary: LocalizedString | null;
+  category: NewsCategory;
+  priority: NewsPriority;
+  ghat_ids: string[];
+  source_url: string | null;
+  is_official: boolean;
+  is_pinned: boolean;
+  publish_status: NewsPublishStatus;
+  published_at: string | null;
+  expires_at: string | null;
+  notify_sent: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateNewsPayload {
+  title: LocalizedString;
+  content: LocalizedString;
+  summary?: LocalizedString | null;
+  category: NewsCategory;
+  priority: NewsPriority;
+  ghat_ids: string[];
+  source_url: string | null;
+  is_official: boolean;
+  is_pinned: boolean;
+  publish_status: NewsPublishStatus;
+  published_at?: string | null;
+  expires_at?: string | null;
+  notify?: boolean;
+  audit_reason: string;
+}
+
+export interface UpdateNewsPayload {
+  title?: LocalizedString;
+  content?: LocalizedString;
+  summary?: LocalizedString | null;
+  category?: NewsCategory;
+  priority?: NewsPriority;
+  ghat_ids?: string[];
+  source_url?: string | null;
+  is_official?: boolean;
+  is_pinned?: boolean;
+  publish_status?: NewsPublishStatus;
+  published_at?: string | null;
+  expires_at?: string | null;
+  notify?: boolean;
+  audit_reason: string;
+}
+
 

@@ -40,6 +40,7 @@ export const FacilitiesGrid: React.FC<Props> = ({ facilities = [] }) => {
         const icon = FACILITY_ICONS[fac.facility_type] || '✨';
         const title = t(`ghats.facilities_list.${fac.facility_type}`, fac.facility_type.replace('_', ' '));
         const detail = getLocalizedText(fac.details, language);
+        const isOperational = fac.is_operational !== false;
 
         return (
           <View key={fac.id || idx} style={styles.facilityItem}>
@@ -56,6 +57,22 @@ export const FacilitiesGrid: React.FC<Props> = ({ facilities = [] }) => {
                     <Text style={styles.countText}>{fac.count}</Text>
                   </View>
                 )}
+                {/* Operational Status Pill */}
+                <View
+                  style={[
+                    styles.operationalPill,
+                    { backgroundColor: isOperational ? '#DEF7EC' : '#FDE8E8' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.operationalText,
+                      { color: isOperational ? '#03543F' : '#9B1C1C' },
+                    ]}
+                  >
+                    {isOperational ? '● Operational' : '✕ Maintenance'}
+                  </Text>
+                </View>
               </View>
               {detail ? (
                 <Text style={[styles.facilityDetail, { fontFamily }]}>{detail}</Text>
@@ -103,6 +120,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
   facilityTitle: {
     fontSize: 14,
@@ -121,6 +139,15 @@ const styles = StyleSheet.create({
     color: '#0369A1',
     fontWeight: '800',
   },
+  operationalPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  operationalText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
   facilityDetail: {
     fontSize: 12,
     color: '#64748B',
@@ -138,4 +165,3 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 });
-

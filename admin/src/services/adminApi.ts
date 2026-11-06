@@ -122,5 +122,119 @@ export const AdminApi = {
     const json = await res.json();
     return { logs: json.data || [], total: json.total || 0 };
   },
+
+  // ----------------------------------------------------
+  // Module 9: Official News & Announcements
+  // ----------------------------------------------------
+  async getNews(params: Record<string, string> = {}): Promise<{ data: any[]; total: number }> {
+    const q = new URLSearchParams({ includeExpired: 'true', ...params });
+    const res = await fetch(`${API_BASE_URL}/news?${q.toString()}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch news: ${res.statusText}`);
+    const json = await res.json();
+    return { data: json.data || [], total: json.meta?.total || 0 };
+  },
+
+  async getNewsById(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/news/${id}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch news item: ${res.statusText}`);
+    const json = await res.json();
+    return json.data;
+  },
+
+  async createNews(payload: any): Promise<{ data: any; notificationSent: boolean }> {
+    const res = await fetch(`${API_BASE_URL}/admin/news`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create news announcement');
+    return { data: json.data, notificationSent: json.meta?.notificationSent || false };
+  },
+
+  async updateNews(id: string, payload: any): Promise<{ data: any; notificationSent: boolean }> {
+    const res = await fetch(`${API_BASE_URL}/admin/news/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update news announcement');
+    return { data: json.data, notificationSent: json.meta?.notificationSent || false };
+  },
+
+  async deleteNews(id: string, audit_reason: string): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/admin/news/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ audit_reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete news announcement');
+  },
+
+  async draftTranslate(data: {
+    title?: string;
+    content?: string;
+    summary?: string;
+    sourceLang?: string;
+  }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/news/draft-translate`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to draft translation');
+    return json.data;
+  },
+
+  // ----------------------------------------------------
+  // Module 9: Ghat Facilities Management
+  // ----------------------------------------------------
+  async getFacilities(ghatId: string): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/ghats/${ghatId}/facilities`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch facilities: ${res.statusText}`);
+    const json = await res.json();
+    return json.data || [];
+  },
+
+  async addFacility(ghatId: string, payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/ghats/${ghatId}/facilities`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to add facility');
+    return json.data;
+  },
+
+  async updateFacility(ghatId: string, facilityId: string, payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/ghats/${ghatId}/facilities/${facilityId}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update facility');
+    return json.data;
+  },
+
+  async deleteFacility(ghatId: string, facilityId: string, audit_reason: string): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/admin/ghats/${ghatId}/facilities/${facilityId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ audit_reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete facility');
+  },
 };
 

@@ -17,6 +17,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatPhoneNumberForDisplay } from '../../utils/validation';
 import { ConditionDisclaimerBanner } from '../../components/ConditionDisclaimerBanner';
+import { UrgentNewsBanner } from '../../components/UrgentNewsBanner';
 
 export default function AppHomeScreen() {
   const { t } = useTranslation();
@@ -204,6 +205,9 @@ export default function AppHomeScreen() {
           </View>
         )}
 
+        {/* Live Urgent Pushkaralu Advisory Banner */}
+        <UrgentNewsBanner />
+
         {/* Safety Disclaimer Banner */}
         <ConditionDisclaimerBanner />
 
@@ -254,6 +258,17 @@ export default function AppHomeScreen() {
               <Text style={styles.gridBtnIcon}>🗺️</Text>
               <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
                 {t('ghats.view_map', 'Interactive Map')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.gridBtn}
+              onPress={() => router.push('/(app)/news' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.gridBtnIcon}>📢</Text>
+              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
+                Official News
               </Text>
             </TouchableOpacity>
           </View>
