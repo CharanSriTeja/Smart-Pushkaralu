@@ -11,10 +11,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatPhoneNumberForDisplay } from '../../utils/validation';
+import { ConditionDisclaimerBanner } from '../../components/ConditionDisclaimerBanner';
+import { UrgentNewsBanner } from '../../components/UrgentNewsBanner';
 
 export default function AppHomeScreen() {
   const { t } = useTranslation();
@@ -23,6 +26,34 @@ export default function AppHomeScreen() {
   const { status, user, logout, deleteAccount } = useAuth();
 
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [isFindingNearest, setIsFindingNearest] = useState(false);
+
+  const handleFindNearestGhat = async () => {
+    setIsFindingNearest(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location Permission Required',
+          'Please grant GPS permission so we can find the nearest safe Pushkaralu ghat for your holy bath.',
+          [
+            { text: 'Browse List Instead', onPress: () => router.push('/(app)/ghats' as any) },
+            { text: 'OK' },
+          ]
+        );
+        setIsFindingNearest(false);
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      router.push(`/(app)/ghats?near=${loc.coords.latitude},${loc.coords.longitude}` as any);
+    } catch (err: any) {
+      Alert.alert('Location Error', 'Could not detect GPS coordinates. Opening ghat directory.');
+      router.push('/(app)/ghats' as any);
+    } finally {
+      setIsFindingNearest(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -174,39 +205,154 @@ export default function AppHomeScreen() {
           </View>
         )}
 
-        {/* Ghat Overview Section */}
+        {/* Live Urgent Pushkaralu Advisory Banner */}
+        <UrgentNewsBanner />
+
+        {/* Safety Disclaimer Banner */}
+        <ConditionDisclaimerBanner />
+
+        {/* Ghat Search & Quick Actions Section */}
         <View style={styles.sectionCard}>
           <Text style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}>
-            {t('home.ghat_overview')}
+            🌊 {t('ghats.title', 'Godavari Pushkaralu Ghats')}
           </Text>
           <Text style={[styles.sectionDesc, { fontFamily }]}>
-            {t('home.ghat_note')}
+            Official directory of holy bathing sites, real-time crowd density, safety alerts, and aarti timings across AP & Telangana.
           </Text>
 
+          {/* Find Nearest Ghat Button with GPS */}
+          <TouchableOpacity
+            style={styles.nearestButton}
+            onPress={handleFindNearestGhat}
+            disabled={isFindingNearest}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            {isFindingNearest ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={[styles.nearestButtonText, { fontFamily: fontFamilyBold }]}>
+                🎯 {t('ghats.find_nearest', 'Find Nearest Ghat (GPS)')}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Quick Action Navigation Grid */}
+          <View style={styles.actionGrid}>
+            <TouchableOpacity
+              style={styles.gridBtn}
+              onPress={() => router.push('/(app)/ghats' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.gridBtnIcon}>📋</Text>
+              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('ghats.view_list', 'All Ghats List')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.gridBtn}
+              onPress={() => router.push('/(app)/ghats/map' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.gridBtnIcon}>🗺️</Text>
+              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('ghats.view_map', 'Interactive Map')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.gridBtn}
+              onPress={() => router.push('/(app)/news' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.gridBtnIcon}>📢</Text>
+              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
+                Official News
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Module 8: Report an Issue Quick Action */}
+          <View style={styles.issueActionRow}>
+            <TouchableOpacity
+              style={styles.reportIssuePrimaryBtn}
+              onPress={() => router.push('/(app)/issues/report' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.reportIssueBtnIcon}>🚨</Text>
+              <Text style={[styles.reportIssueBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('issues.title', 'Report Grievance')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.myIssuesSecondaryBtn}
+              onPress={() => router.push('/(app)/issues' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.myIssuesBtnIcon}>📋</Text>
+              <Text style={[styles.myIssuesBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('issues.my_reports', 'My Reports')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Popular Ghats Quick List */}
+          <Text style={[styles.subHeading, { fontFamily: fontFamilyBold }]}>
+            Major Godavari Pilgrimage Centers:
+          </Text>
           <View style={styles.ghatPreviewList}>
-            <View style={styles.ghatItem}>
+            <TouchableOpacity
+              style={styles.ghatItem}
+              onPress={() => router.push('/(app)/ghats' as any)}
+              activeOpacity={0.7}
+            >
               <Text style={styles.ghatIcon}>🌊</Text>
               <View style={styles.ghatDetails}>
                 <Text style={[styles.ghatName, { fontFamily: fontFamilyBold }]}>
-                  Kotilingala Ghat (Rajahmundry)
+                  Rajamahendravaram (Rajahmundry) Ghats
                 </Text>
                 <Text style={[styles.ghatStatus, { fontFamily }]}>
-                  Status: Preparation Mode • River Godavari
+                  East Godavari, AP • Kotilingala, Pushkar & Saraswati Ghats
                 </Text>
               </View>
-            </View>
+              <Text style={styles.arrowIcon}>→</Text>
+            </TouchableOpacity>
 
-            <View style={styles.ghatItem}>
+            <TouchableOpacity
+              style={styles.ghatItem}
+              onPress={() => router.push('/(app)/ghats' as any)}
+              activeOpacity={0.7}
+            >
               <Text style={styles.ghatIcon}>🛕</Text>
               <View style={styles.ghatDetails}>
                 <Text style={[styles.ghatName, { fontFamily: fontFamilyBold }]}>
-                  Bhadrachalam Ghat
+                  Bhadrachalam Sri Rama Ghat
                 </Text>
                 <Text style={[styles.ghatStatus, { fontFamily }]}>
-                  Status: Divine Darshan & Holy Bath Zone
+                  Bhadradri Kothagudem, Telangana • Temple riverfront
                 </Text>
               </View>
-            </View>
+              <Text style={styles.arrowIcon}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.ghatItem}
+              onPress={() => router.push('/(app)/ghats' as any)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.ghatIcon}>🔱</Text>
+              <View style={styles.ghatDetails}>
+                <Text style={[styles.ghatName, { fontFamily: fontFamilyBold }]}>
+                  Kovvur Goshpada Kshetram Ghat
+                </Text>
+                <Text style={[styles.ghatStatus, { fontFamily }]}>
+                  West Godavari, AP • Gautama Teertham
+                </Text>
+              </View>
+              <Text style={styles.arrowIcon}>→</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -468,5 +614,109 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#DC2626',
+  },
+  nearestButton: {
+    backgroundColor: '#0F52BA',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    shadowColor: '#0F52BA',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  nearestButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  gridBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+  },
+  gridBtnIcon: {
+    fontSize: 18,
+  },
+  gridBtnText: {
+    fontSize: 13,
+    color: '#1E293B',
+    fontWeight: '700',
+  },
+  subHeading: {
+    fontSize: 13,
+    color: '#475569',
+    fontWeight: '700',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  issueActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  reportIssuePrimaryBtn: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    borderRadius: 10,
+    paddingVertical: 12,
+    gap: 8,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  reportIssueBtnIcon: {
+    fontSize: 16,
+  },
+  reportIssueBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  myIssuesSecondaryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    gap: 6,
+  },
+  myIssuesBtnIcon: {
+    fontSize: 16,
+  },
+  myIssuesBtnText: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  arrowIcon: {
+    fontSize: 16,
+    color: '#94A3B8',
+    fontWeight: '700',
   },
 });

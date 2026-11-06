@@ -16,7 +16,9 @@
     "refresh": "Refresh",
     "language": "Language",
     "welcome": "Welcome",
-    "search": "Search"
+    "search": "Search",
+    "distance_km": "{{distance}} km away",
+    "meters_away": "{{meters}} m away"
   },
   "auth": {
     "login": "Login",
@@ -30,15 +32,80 @@
     "delete_account": "Delete Account"
   },
   "ghats": {
-    "title": "Ghats & Timings",
-    "search_placeholder": "Search ghats by name or town...",
+    "title": "Pushkaralu Ghats",
+    "search_placeholder": "Search ghat, town, or district...",
     "water_level": "Water Level",
     "crowd_density": "Crowd Density",
     "cleanliness": "Cleanliness",
     "view_details": "View Ghat Details",
     "navigation": "Get Directions",
     "facilities": "Facilities & Changing Rooms",
-    "holy_dip": "Pushkara Snanam Ghats"
+    "holy_dip": "Pushkara Snanam Ghats",
+    "subtitle": "Godavari Holy Bathing Sites",
+    "find_nearest": "Find Nearest Ghat (GPS)",
+    "requesting_location": "Detecting nearest ghat...",
+    "location_denied": "Location access was denied. You can still search by district or town.",
+    "view_map": "Map View",
+    "view_list": "List View",
+    "filters_title": "Filters",
+    "all_districts": "All Districts",
+    "all_rivers": "Godavari River",
+    "apply_filters": "Apply Filters",
+    "reset_filters": "Reset",
+    "disclaimer_banner": "⚠️ Disclaimer: River currents, bathing safety, and crowd levels can change suddenly during Pushkaralu. Always follow on-duty police and NDRF instructions.",
+    "bathing_status_label": "Bathing Status",
+    "crowd_status_label": "Crowd Density",
+    "bathing": {
+      "allowed": "Safe for Holy Bath",
+      "restricted": "Restricted / High Flow",
+      "closed": "Strictly Closed",
+      "unknown": "Inspection Ongoing"
+    },
+    "crowd": {
+      "low": "Low Crowd (<30%)",
+      "medium": "Moderate Flow (30-60%)",
+      "high": "Heavy Rush (60-85%)",
+      "very_high": "Surge / Peak Density (>85%)",
+      "unknown": "Awaiting Updates",
+      "title": "Live Crowd Status",
+      "source_official": "Official District Admin",
+      "source_aggregate": "Aggregated Pilgrim Reports",
+      "source_sensor": "CCTV & Sensor Feed",
+      "updated_at": "Updated {{time}}",
+      "report_btn": "Report Current Crowd Here",
+      "report_modal_title": "Report Live Crowd Condition",
+      "report_modal_subtitle": "Help fellow pilgrims by sharing live ground conditions. Must be within 1 km.",
+      "select_level": "Select current crowd level at the ghat:",
+      "submit_report": "Verify GPS & Submit Report",
+      "report_success": "Report verified and recorded! Thank you for helping fellow pilgrims."
+    },
+    "trust": {
+      "official_badge": "Official District Approved",
+      "community_badge": "Community Reported",
+      "unverified_badge": "Unverified — Caution Advised",
+      "verified_date": "Last Verified: {{date}}",
+      "view_source": "View Official Government Portal"
+    },
+    "sections": {
+      "about": "About this Ghat",
+      "facilities": "On-Site Facilities",
+      "aarti": "Maha Godavari Aarti Timings",
+      "notices": "Emergency & Safety Advisories",
+      "connectivity": "Transport & Connectivity",
+      "nearest_railway": "Railway Station",
+      "nearest_bus": "Bus Station",
+      "nearest_town": "Nearest Town"
+    },
+    "facilities_list": {
+      "changing_room": "Changing Rooms",
+      "drinking_water": "Purified Water",
+      "medical_camp": "Medical Camp & Ambulance",
+      "police_post": "Police Helpdesk",
+      "parking": "Designated Parking",
+      "cloak_room": "Cloak Room",
+      "prasad_counter": "Prasadam Counter",
+      "toilet": "Sanitation Facilities"
+    }
   },
   "sos": {
     "sos_button": "EMERGENCY SOS",
@@ -56,17 +123,86 @@
     "report_issue": "Submit Grievance",
     "category": "Category",
     "description": "Describe what needs attention",
-    "location": "Ghat or Location",
+    "location": {
+      "title": "Incident Location",
+      "gps": "Current GPS Location",
+      "map_pin": "Map Location",
+      "qr_zone": "Zone / QR Code",
+      "detected": "Location Detected",
+      "detecting": "Detecting GPS...",
+      "zone_placeholder": "Enter Zone Code or Scan QR (e.g. ZONE-KOTI-A)"
+    },
     "status_open": "Under Review",
     "status_resolved": "Resolved",
-    "submitted": "Issue reported to authorities successfully."
+    "submitted": "Issue reported to authorities successfully.",
+    "subtitle": "Godavari Pushkaralu Grievance Redressal",
+    "my_reports": "My Reports",
+    "track_ticket": "Track Ticket",
+    "enter_ticket": "Enter Ticket Number",
+    "track_btn": "Track",
+    "select_category": "Select Grievance Category",
+    "categories": {
+      "sanitation": "Sanitation & Cleanliness",
+      "water": "Drinking Water Supply",
+      "road": "Pathways & Barricades",
+      "lighting": "Lighting & Electricity",
+      "crowd": "Heavy Crowd Congestion",
+      "other": "Other Facilities"
+    },
+    "form": {
+      "description_label": "Describe the Issue",
+      "description_placeholder": "Provide details to help the response squad locate and resolve the issue quickly (min 5 characters)...",
+      "photo_label": "Attach Live Photo (Optional)",
+      "take_photo": "Take Photo",
+      "choose_gallery": "Choose Gallery",
+      "remove_photo": "Remove",
+      "submitting": "Submitting Grievance...",
+      "submit_btn": "Submit Grievance Report"
+    },
+    "status": {
+      "submitted": "Submitted",
+      "under_review": "Under Review",
+      "in_progress": "In Progress",
+      "resolved": "Resolved",
+      "rejected": "Closed"
+    },
+    "timeline": {
+      "title": "Status Progression",
+      "step_submitted": "Report Received",
+      "step_under_review": "Assigned to Sector Team",
+      "step_in_progress": "Action Being Taken",
+      "step_resolved": "Resolved & Verified",
+      "public_notes": "Official Public Updates",
+      "resolution_photo": "Verification Photo"
+    },
+    "alerts": {
+      "success_title": "Grievance Logged",
+      "duplicate_title": "Existing Report Nearby",
+      "duplicate_msg": "A similar issue was recently reported at this location. You are now tracking the existing ticket to follow up.",
+      "view_status": "View Status Timeline",
+      "back_home": "Back to Home",
+      "helpline_disclaimer": "Pushkaralu 24x7 Helpline: 112 / 108. For life-threatening emergencies, alert the nearest police helpdesk immediately."
+    },
+    "empty": {
+      "no_reports": "No reports submitted yet from this device.",
+      "report_first": "Report an issue if you encounter problems at any ghat."
+    },
+    "location_label": "Ghat or Location"
   },
   "news": {
-    "title": "Advisories & News",
+    "title": "Official News & Advisories",
     "official_announcements": "District Administration Announcements",
     "read_more": "Read Full Advisory",
     "published_at": "Published",
-    "share": "Share Advisory"
+    "share": "Share Advisory",
+    "subtitle": "Godavari Pushkaralu Information Desk",
+    "urgent_alert": "URGENT OFFICIAL ADVISORY",
+    "important_notice": "IMPORTANT NOTICE",
+    "read_full": "Read Full Notice",
+    "official_label": "Official Source",
+    "verified_advisory": "Verified Official Government Advisory",
+    "offline_notice": "Showing cached announcements (Offline Mode)",
+    "no_announcements": "No Announcements Found"
   },
   "seva": {
     "title": "Seva & Volunteer",
@@ -148,8 +284,8 @@
     "error_consent_required": "Please accept the privacy policy to proceed."
   },
   "home": {
-    "welcome": "Namaskaram, {{name}}",
-    "pilgrim_id": "Pilgrim",
+    "welcome": "Welcome, {{name}}",
+    "pilgrim_id": "Pushkaralu Pilgrim",
     "quick_actions": "Quick Services",
     "view_ghats": "Find Ghats & River Status",
     "view_ghats_sub": "Water levels, crowds and facilities",
@@ -160,15 +296,67 @@
     "sos_emergency": "Emergency SOS Helpline",
     "sos_emergency_sub": "Instant police, medical & water rescue",
     "logout": "Log Out",
-    "confirm_logout": "Are you sure you want to log out of your account?",
+    "confirm_logout": "Log out from this device?",
     "delete_account": "Delete Account",
-    "confirm_delete": "Are you sure you want to delete your account? This action is permanent.",
+    "confirm_delete": "Delete your account and all associated tokens permanently?",
     "cancel": "Cancel",
-    "official_banner": "Official Godavari Pushkaralu Portal - District Administration Verified"
+    "official_banner": "Official Godavari Pushkaralu Portal - District Administration Verified",
+    "phone": "Phone: {{phone}}",
+    "role_admin": "Official Coordinator / Admin",
+    "ghat_overview": "Ghat Overview",
+    "ghat_note": "Rajamahendravaram (Rajahmundry), Bhadrachalam, and surrounding Godavari ghats will publish live capacity ratings here."
   },
   "guest": {
-    "banner_title": "Guest Pilgrim Mode",
-    "banner_desc": "You are browsing without logging in. You can check ghat water levels, routes, and public alerts freely.",
-    "login_button": "Log in with phone for safety alerts"
+    "banner_title": "Browsing as Guest",
+    "banner_desc": "You are browsing public ghat guides. Log in with your mobile number anytime to receive real-time push alerts.",
+    "login_button": "Log in with phone for safety alerts",
+    "login_prompt": "Login with Mobile Number"
+  },
+  "places": {
+    "title": "Nearby Hotels, Temples & Transport",
+    "subtitle": "Curated stays, holy shrines, and transit hubs around this ghat",
+    "view_all": "Explore All Nearby Places",
+    "disclaimer_notice": "Notice: During Godavari Pushkaralu, temple queues, road diversions, ghat security cordons, and parking regulations may affect real-time accessibility and timings. Conditions can change suddenly.",
+    "categories": {
+      "all": "🌟 All",
+      "temple": "🛕 Temples",
+      "hotel": "🏨 Hotels & Stays",
+      "transport_hub": "🚌 Transport Hubs"
+    },
+    "radii": {
+      "r1": "1 km",
+      "r3": "3 km",
+      "r5": "5 km",
+      "r10": "10 km"
+    },
+    "badges": {
+      "curated": "🛡️ Curated / Official",
+      "third_party": "🌐 Places Directory",
+      "verified": "Verified Record"
+    },
+    "actions": {
+      "call": "Call",
+      "map": "View Pin",
+      "directions": "Directions",
+      "view_all": "View All ({{count}})"
+    },
+    "details": {
+      "deity": "Main Deity",
+      "darshan": "Darshan Timings",
+      "special_entry": "Special Pushkaralu Entry",
+      "room_types": "Accommodation Types",
+      "price_range": "Category",
+      "price_free": "Free Seva / Pilgrim Shed",
+      "price_dharamshala": "Pilgrim Choultry / Dharamshala",
+      "price_budget": "Budget Friendly",
+      "price_mid_range": "Mid-Range Comfort",
+      "price_luxury": "Luxury Resort",
+      "hub_type": "Transit Facility",
+      "operating_hours": "Operating Hours"
+    },
+    "empty": {
+      "title": "No Places Found Nearby",
+      "desc": "No places found within {{radius}} km. Try selecting a wider search radius."
+    }
   }
 }
