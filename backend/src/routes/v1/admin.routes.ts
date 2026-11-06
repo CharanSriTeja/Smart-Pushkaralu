@@ -8,6 +8,7 @@ import { AuditController } from '../../modules/audit/audit.controller.js';
 import { NewsController } from '../../modules/news/news.controller.js';
 import { FacilitiesController } from '../../modules/facilities/facilities.controller.js';
 import { IssuesController } from '../../modules/issues/issues.controller.js';
+import { PlacesController } from '../../modules/places/places.controller.js';
 
 export const adminRouter = Router();
 
@@ -95,4 +96,34 @@ adminRouter.post(
   checkPermission('issues.update'),
   IssuesController.adminAddUpdate
 );
+
+// 8. Module 5: Nearby Places, Curated Records, Overrides & Cache
+// Curated places list
+adminRouter.get('/places/curated', checkPermission('places.read'), PlacesController.listCurated);
+
+// Hotels
+adminRouter.post('/places/hotels', checkPermission('places.create'), PlacesController.createHotel);
+adminRouter.patch('/places/hotels/:id', checkPermission('places.update'), PlacesController.updateHotel);
+adminRouter.delete('/places/hotels/:id', checkPermission('places.delete'), PlacesController.deleteHotel);
+
+// Temples
+adminRouter.post('/places/temples', checkPermission('places.create'), PlacesController.createTemple);
+adminRouter.patch('/places/temples/:id', checkPermission('places.update'), PlacesController.updateTemple);
+adminRouter.delete('/places/temples/:id', checkPermission('places.delete'), PlacesController.deleteTemple);
+
+// Transport Hubs
+adminRouter.post('/places/transport-hubs', checkPermission('places.create'), PlacesController.createTransportHub);
+adminRouter.patch('/places/transport-hubs/:id', checkPermission('places.update'), PlacesController.updateTransportHub);
+adminRouter.delete('/places/transport-hubs/:id', checkPermission('places.delete'), PlacesController.deleteTransportHub);
+
+// Overrides
+adminRouter.get('/places/overrides', checkPermission('places.read'), PlacesController.listOverrides);
+adminRouter.post('/places/overrides', checkPermission('places.update'), PlacesController.upsertOverride);
+adminRouter.delete('/places/overrides/:id', checkPermission('places.delete'), PlacesController.deleteOverride);
+
+// Cache status & operations
+adminRouter.get('/places/cache-status', checkPermission('places.cache'), PlacesController.getCacheStatus);
+adminRouter.post('/places/prewarm', checkPermission('places.cache'), PlacesController.prewarmCache);
+adminRouter.post('/places/cache/invalidate', checkPermission('places.cache'), PlacesController.invalidateCache);
+
 

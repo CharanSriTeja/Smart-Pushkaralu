@@ -15,6 +15,11 @@ const envSchema = z.object({
   MONTHLY_API_FREE_QUOTA: z.coerce.number().default(10000),
   SENTRY_DSN: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  GOOGLE_PLACES_API_KEY: z.string().optional(),
+  PLACES_CACHE_EXPIRY_DAYS: z.coerce.number().default(7),
+  PLACES_API_DAILY_LIMIT: z.coerce.number().default(500),
+  SPEED_FACTOR_DRIVING_KMH: z.coerce.number().default(15),
+  SPEED_FACTOR_WALKING_KMH: z.coerce.number().default(4.5),
 });
 
 const parsed = envSchema.safeParse(process.env);

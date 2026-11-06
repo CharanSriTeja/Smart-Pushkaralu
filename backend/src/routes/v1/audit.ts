@@ -73,6 +73,7 @@ auditRouter.get(
 
       res.json({
         items: rows,
+        data: rows,
         total,
         page,
         limit,

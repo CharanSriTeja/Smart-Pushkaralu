@@ -3,6 +3,7 @@ import { GhatsController } from '../../modules/ghats/ghats.controller.js';
 import { CrowdController } from '../../modules/crowd/crowd.controller.js';
 import { NoticesController } from '../../modules/notices/notices.controller.js';
 import { FacilitiesController } from '../../modules/facilities/facilities.controller.js';
+import { PlacesController } from '../../modules/places/places.controller.js';
 import { publicGhatsLimiter, crowdReportLimiter } from '../../middleware/rate-limiter.js';
 
 export const ghatsRouter = Router();
@@ -24,6 +25,9 @@ ghatsRouter.get('/ghats/:id/facilities', FacilitiesController.getGhatFacilities)
 
 // GET /v1/ghats/:id/crowd (live crowd status)
 ghatsRouter.get('/ghats/:id/crowd', CrowdController.getGhatCrowdStatus);
+
+// GET /v1/ghats/:id/nearby (Module 5: Nearby hotels, temples, transport hubs with caching & overrides)
+ghatsRouter.get('/ghats/:id/nearby', PlacesController.getNearby);
 
 // Crowd reports router (can also be mounted at root /v1/crowd-reports)
 export const crowdReportRouter = Router();
