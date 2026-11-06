@@ -235,6 +235,82 @@ export const GhatDetailScreen: React.FC = () => {
             </View>
           </View>
         </View>
+
+        {/* Nearby Hotels, Temples & Transport (Module 5) */}
+        <View style={styles.sectionCard}>
+          <View style={styles.nearbyHeaderRow}>
+            <Text style={[styles.sectionTitle, { fontFamily: fontFamilyBold, marginBottom: 0 }]}>
+              📍 {t('places.title', 'Nearby Hotels & Temples')}
+            </Text>
+            <TouchableOpacity
+              style={styles.exploreNearbyBadge}
+              onPress={() =>
+                router.push({
+                  pathname: '/(app)/ghats/nearby',
+                  params: { id: ghat.id, ghatName: name },
+                })
+              }
+            >
+              <Text style={[styles.exploreNearbyBadgeText, { fontFamily: fontFamilyBold }]}>
+                {t('places.view_all', 'Explore All →')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.bodyText, { fontFamily, marginTop: 8, marginBottom: 12 }]}>
+            {t(
+              'places.subtitle',
+              'Curated stays, holy shrines, and transit hubs around this ghat with travel estimates.'
+            )}
+          </Text>
+
+          <View style={styles.nearbyQuickLinks}>
+            <TouchableOpacity
+              style={styles.nearbyQuickBtn}
+              onPress={() =>
+                router.push({
+                  pathname: '/(app)/ghats/nearby',
+                  params: { id: ghat.id, ghatName: name },
+                })
+              }
+            >
+              <Text style={styles.quickBtnIcon}>🛕</Text>
+              <Text style={[styles.quickBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('places.categories.temple', 'Temples')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.nearbyQuickBtn}
+              onPress={() =>
+                router.push({
+                  pathname: '/(app)/ghats/nearby',
+                  params: { id: ghat.id, ghatName: name },
+                })
+              }
+            >
+              <Text style={styles.quickBtnIcon}>🏨</Text>
+              <Text style={[styles.quickBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('places.categories.hotel', 'Hotels & Stays')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.nearbyQuickBtn}
+              onPress={() =>
+                router.push({
+                  pathname: '/(app)/ghats/nearby',
+                  params: { id: ghat.id, ghatName: name },
+                })
+              }
+            >
+              <Text style={styles.quickBtnIcon}>🚌</Text>
+              <Text style={[styles.quickBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('places.categories.transport_hub', 'Transit Hubs')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
 
       {/* Crowd Report Modal with GPS Proximity Check */}
@@ -396,6 +472,46 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontWeight: '600',
     marginTop: 1,
+  },
+  nearbyHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  exploreNearbyBadge: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  exploreNearbyBadgeText: {
+    fontSize: 12,
+    color: '#1D4ED8',
+    fontWeight: 'bold',
+  },
+  nearbyQuickLinks: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  nearbyQuickBtn: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  quickBtnIcon: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  quickBtnText: {
+    fontSize: 11,
+    color: '#1E293B',
+    textAlign: 'center',
   },
   centerContainer: {
     flex: 1,

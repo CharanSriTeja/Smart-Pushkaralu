@@ -7,6 +7,7 @@ import { NewsEditorPage } from './pages/NewsEditorPage';
 import { FacilitiesEditorPage } from './pages/FacilitiesEditorPage';
 import { IssuesListPage } from './pages/IssuesListPage';
 import { IssueDetailPage } from './pages/IssueDetailPage';
+import { NearbyPlacesAdminPage } from './pages/NearbyPlacesAdminPage';
 import { ConditionDisclaimer } from './components/ConditionDisclaimer';
 import { Ghat, NewsPost } from './types';
 import { io } from 'socket.io-client';
@@ -21,6 +22,7 @@ type ActiveView =
   | 'facilities'
   | 'issues'
   | 'issue_detail'
+  | 'places'
   | 'audit_logs';
 
 export const App: React.FC = () => {
@@ -141,6 +143,7 @@ export const App: React.FC = () => {
       }}>
         {[
           { key: 'ghats', label: '🌊 Ghats Directory', view: 'ghats' },
+          { key: 'places', label: '📍 Nearby Places & Cache (Mod 5)', view: 'places' },
           { key: 'news', label: '📢 Official Bulletins (Mod 9)', view: 'news' },
           { key: 'facilities', label: '🚻 Ghat Facilities (Mod 9)', view: 'facilities' },
           { key: 'issues', label: '🚨 Grievances & Issues (Mod 8)', view: 'issues' },
@@ -227,6 +230,10 @@ export const App: React.FC = () => {
             issueId={selectedIssueId}
             onBack={() => setCurrentView('issues')}
           />
+        )}
+
+        {currentView === 'places' && (
+          <NearbyPlacesAdminPage />
         )}
 
         {currentView === 'audit_logs' && (

@@ -291,6 +291,179 @@ export const AdminApi = {
     if (!res.ok) throw new Error(json.error?.message || 'Failed to add timeline update');
     return json;
   },
+
+  // ----------------------------------------------------
+  // Module 5: Nearby Places, Curated Records & Cache
+  // ----------------------------------------------------
+  async getCuratedPlaces(): Promise<{ hotels: any[]; temples: any[]; transport_hubs: any[] }> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/curated`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch curated places');
+    const json = await res.json();
+    return json.data;
+  },
+
+  async createHotel(payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/hotels`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create hotel');
+    return json.data;
+  },
+
+  async updateHotel(id: string, payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/hotels/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update hotel');
+    return json.data;
+  },
+
+  async deleteHotel(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/hotels/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete hotel');
+    return json;
+  },
+
+  async createTemple(payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/temples`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create temple');
+    return json.data;
+  },
+
+  async updateTemple(id: string, payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/temples/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update temple');
+    return json.data;
+  },
+
+  async deleteTemple(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/temples/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete temple');
+    return json;
+  },
+
+  async createTransportHub(payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/transport-hubs`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create transport hub');
+    return json.data;
+  },
+
+  async updateTransportHub(id: string, payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/transport-hubs/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update transport hub');
+    return json.data;
+  },
+
+  async deleteTransportHub(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/transport-hubs/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete transport hub');
+    return json;
+  },
+
+  async getOverrides(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/overrides`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch overrides');
+    const json = await res.json();
+    return json.data;
+  },
+
+  async upsertOverride(payload: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/overrides`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to save override');
+    return json.data;
+  },
+
+  async deleteOverride(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/overrides/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete override');
+    return json;
+  },
+
+  async getCacheStatus(): Promise<{ cache_entries: any[]; usage_stats: any }> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/cache-status`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch cache status');
+    const json = await res.json();
+    return json.data;
+  },
+
+  async prewarmCache(reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/prewarm`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to pre-warm cache');
+    return json.data;
+  },
+
+  async invalidateCache(payload: { ghat_id?: string; type?: string; radius_m?: number; reason?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/places/cache/invalidate`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to invalidate cache');
+    return json;
+  },
 };
 
 

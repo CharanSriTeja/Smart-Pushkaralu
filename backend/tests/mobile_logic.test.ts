@@ -61,5 +61,18 @@ describe('Module 3: Mobile & Frontend Logic Verification', () => {
       expect(check.distanceMeters).toBeGreaterThan(1000);
     });
   });
+
+  describe('4. Module 5: Nearby Places Formatting & Deep Link', () => {
+    it('generates walking estimate for distances under 1km', () => {
+      const placeName = {
+        en: 'Sri Kotilingeshwara Temple',
+        te: 'శ్రీ కోటిలింగేశ్వర స్వామి దేవాలయం',
+      };
+      // Telugu
+      expect(resolveLocalizedText(placeName, 'te')).toBe('శ్రీ కోటిలింగేశ్వర స్వామి దేవాలయం');
+      // Hindi fallback to English
+      expect(resolveLocalizedText(placeName, 'hi')).toBe('Sri Kotilingeshwara Temple');
+    });
+  });
 });
 

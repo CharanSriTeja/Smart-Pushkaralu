@@ -10,6 +10,11 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters long').default('smart-pushkaralu-dev-secret-super-safe-key-32chars'),
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional(),
   ADMIN_PHONES: z.string().default(''),
+  GOOGLE_PLACES_API_KEY: z.string().optional(),
+  PLACES_CACHE_EXPIRY_DAYS: z.coerce.number().default(7),
+  PLACES_API_DAILY_LIMIT: z.coerce.number().default(500),
+  SPEED_FACTOR_DRIVING_KMH: z.coerce.number().default(15),
+  SPEED_FACTOR_WALKING_KMH: z.coerce.number().default(4.5),
 });
 
 const parsed = envSchema.safeParse(process.env);
