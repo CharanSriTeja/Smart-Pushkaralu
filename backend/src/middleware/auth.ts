@@ -107,3 +107,40 @@ export function can(permission: string) {
   };
 }
 
+/**
+ * Optional authentication middleware for guest-friendly endpoints.
+ * Populates req.user if valid bearer token is present; proceeds as guest otherwise.
+ */
+export async function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.substring(7).trim();
+  try {
+    const payload = verifyAccessToken(token);
+    const user = await findUserById(payload.userId);
+    if (user && user.status === 'active') {
+      const isAdmin = await isUserAdmin(user.id, user.phone);
+      req.user = {
+        userId: user.id,
+        firebaseUid: user.firebase_uid,
+        phone: user.phone,
+        isAdmin,
+        name: user.name,
+        language: user.language,
+        status: user.status,
+      };
+    }
+  } catch {
+    // Guest fallback, ignore token validation error
+  }
+  next();
+}
+
+

@@ -7,6 +7,7 @@ import { NoticesController } from '../../modules/notices/notices.controller.js';
 import { AuditController } from '../../modules/audit/audit.controller.js';
 import { NewsController } from '../../modules/news/news.controller.js';
 import { FacilitiesController } from '../../modules/facilities/facilities.controller.js';
+import { IssuesController } from '../../modules/issues/issues.controller.js';
 
 export const adminRouter = Router();
 
@@ -73,3 +74,25 @@ adminRouter.delete(
   checkPermission('ghats.update'),
   FacilitiesController.deleteFacility
 );
+
+// 7. Grievances & Issue Management (Module 8)
+// GET /v1/admin/issues
+adminRouter.get('/issues', checkPermission('issues.read'), IssuesController.adminListIssues);
+
+// GET /v1/admin/issues/:id
+adminRouter.get('/issues/:id', checkPermission('issues.read'), IssuesController.adminGetIssue);
+
+// PATCH /v1/admin/issues/:id/status
+adminRouter.patch(
+  '/issues/:id/status',
+  checkPermission('issues.update'),
+  IssuesController.adminUpdateStatus
+);
+
+// POST /v1/admin/issues/:id/updates
+adminRouter.post(
+  '/issues/:id/updates',
+  checkPermission('issues.update'),
+  IssuesController.adminAddUpdate
+);
+

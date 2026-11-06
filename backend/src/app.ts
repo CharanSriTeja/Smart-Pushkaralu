@@ -1,3 +1,4 @@
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -9,15 +10,21 @@ import { userRouter } from './routes/v1/user.js';
 import { ghatsRouter, crowdReportRouter } from './routes/v1/ghats.routes.js';
 import { newsRouter } from './routes/v1/news.routes.js';
 import { devicesRouter } from './routes/v1/devices.routes.js';
+import { issuesRouter } from './routes/v1/issues.routes.js';
 import { adminRouter } from './routes/v1/admin.routes.js';
 
 export const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}));
 app.use(cors());
 
-// Strict body parsing limit for low bandwidth / security
+// Serve static uploads (with cross-origin access for mobile preview)
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Strict body parsing limit for low bandwidth / security (unless specific route overrides)
 app.use(express.json({ limit: '100kb' }));
 
 // Custom secure logger (masks phones and tokens)
@@ -30,6 +37,7 @@ app.use('/v1', ghatsRouter);
 app.use('/v1', crowdReportRouter);
 app.use('/v1', newsRouter);
 app.use('/v1', devicesRouter);
+app.use('/v1', issuesRouter);
 app.use('/v1', userRouter);
 app.use('/v1/admin', adminRouter);
 

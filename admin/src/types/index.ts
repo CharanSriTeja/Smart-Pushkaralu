@@ -162,4 +162,46 @@ export interface UpdateNewsPayload {
   audit_reason: string;
 }
 
+// Module 8: Grievances & Issue Management Types
+export type IssueCategory = 'sanitation' | 'road' | 'water' | 'lighting' | 'crowd' | 'other';
+export type IssueStatus = 'submitted' | 'under_review' | 'in_progress' | 'resolved' | 'rejected';
+
+export interface IssueReport {
+  id: string;
+  ticket_no: string;
+  category: IssueCategory;
+  description: string;
+  photo_url: string | null;
+  location_type: 'gps' | 'map_pin' | 'qr_zone';
+  lat: number;
+  lng: number;
+  qr_zone_id: string | null;
+  ghat_id: string | null;
+  status: IssueStatus;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  reporter_id: string | null;
+  reporter_phone: string | null;
+  duplicate_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IssueUpdate {
+  id: string;
+  issue_id: string;
+  status: IssueStatus;
+  public_note: string | null;
+  internal_note?: string | null;
+  resolution_photo_url: string | null;
+  updated_by_admin_id: string | null;
+  created_at: string;
+}
+
+export interface IssueDetailResponse {
+  issue: IssueReport;
+  timeline: IssueUpdate[];
+  auditLogs: AuditLog[];
+}
+
+
 

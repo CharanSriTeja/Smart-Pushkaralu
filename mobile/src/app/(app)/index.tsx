@@ -273,6 +273,31 @@ export default function AppHomeScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Module 8: Report an Issue Quick Action */}
+          <View style={styles.issueActionRow}>
+            <TouchableOpacity
+              style={styles.reportIssuePrimaryBtn}
+              onPress={() => router.push('/(app)/issues/report' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.reportIssueBtnIcon}>🚨</Text>
+              <Text style={[styles.reportIssueBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('issues.title', 'Report Grievance')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.myIssuesSecondaryBtn}
+              onPress={() => router.push('/(app)/issues' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.myIssuesBtnIcon}>📋</Text>
+              <Text style={[styles.myIssuesBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('issues.my_reports', 'My Reports')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Popular Ghats Quick List */}
           <Text style={[styles.subHeading, { fontFamily: fontFamilyBold }]}>
             Major Godavari Pilgrimage Centers:
@@ -640,6 +665,54 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  issueActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  reportIssuePrimaryBtn: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    borderRadius: 10,
+    paddingVertical: 12,
+    gap: 8,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  reportIssueBtnIcon: {
+    fontSize: 16,
+  },
+  reportIssueBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  myIssuesSecondaryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    gap: 6,
+  },
+  myIssuesBtnIcon: {
+    fontSize: 16,
+  },
+  myIssuesBtnText: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
   },
   arrowIcon: {
     fontSize: 16,

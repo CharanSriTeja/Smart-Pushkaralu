@@ -5,6 +5,8 @@ import { AuditLogsPage } from './pages/AuditLogsPage';
 import { NewsListPage } from './pages/NewsListPage';
 import { NewsEditorPage } from './pages/NewsEditorPage';
 import { FacilitiesEditorPage } from './pages/FacilitiesEditorPage';
+import { IssuesListPage } from './pages/IssuesListPage';
+import { IssueDetailPage } from './pages/IssueDetailPage';
 import { ConditionDisclaimer } from './components/ConditionDisclaimer';
 import { Ghat, NewsPost } from './types';
 import { io } from 'socket.io-client';
@@ -17,12 +19,15 @@ type ActiveView =
   | 'create_news'
   | 'edit_news'
   | 'facilities'
+  | 'issues'
+  | 'issue_detail'
   | 'audit_logs';
 
 export const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ActiveView>('ghats');
   const [editingGhat, setEditingGhat] = useState<Ghat | null>(null);
   const [editingNews, setEditingNews] = useState<NewsPost | null>(null);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
@@ -138,12 +143,14 @@ export const App: React.FC = () => {
           { key: 'ghats', label: '🌊 Ghats Directory', view: 'ghats' },
           { key: 'news', label: '📢 Official Bulletins (Mod 9)', view: 'news' },
           { key: 'facilities', label: '🚻 Ghat Facilities (Mod 9)', view: 'facilities' },
+          { key: 'issues', label: '🚨 Grievances & Issues (Mod 8)', view: 'issues' },
           { key: 'audit_logs', label: '📋 Audit Trail', view: 'audit_logs' },
         ].map((tab) => {
           const isActive =
             currentView === tab.view ||
             (tab.view === 'ghats' && (currentView === 'create_ghat' || currentView === 'edit_ghat')) ||
-            (tab.view === 'news' && (currentView === 'create_news' || currentView === 'edit_news'));
+            (tab.view === 'news' && (currentView === 'create_news' || currentView === 'edit_news')) ||
+            (tab.view === 'issues' && currentView === 'issue_detail');
 
           return (
             <button
@@ -204,6 +211,22 @@ export const App: React.FC = () => {
 
         {currentView === 'facilities' && (
           <FacilitiesEditorPage />
+        )}
+
+        {currentView === 'issues' && (
+          <IssuesListPage
+            onSelectIssue={(id) => {
+              setSelectedIssueId(id);
+              setCurrentView('issue_detail');
+            }}
+          />
+        )}
+
+        {currentView === 'issue_detail' && selectedIssueId && (
+          <IssueDetailPage
+            issueId={selectedIssueId}
+            onBack={() => setCurrentView('issues')}
+          />
         )}
 
         {currentView === 'audit_logs' && (

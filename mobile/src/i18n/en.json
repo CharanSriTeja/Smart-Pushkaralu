@@ -152,6 +152,70 @@
     "verified_advisory": "Verified Official Government Advisory",
     "offline_notice": "Showing cached announcements (Offline Mode)",
     "no_announcements": "No Announcements Found"
+  },
+  "issues": {
+    "title": "Report an Issue",
+    "subtitle": "Godavari Pushkaralu Grievance Redressal",
+    "my_reports": "My Reports",
+    "track_ticket": "Track Ticket",
+    "enter_ticket": "Enter Ticket Number",
+    "track_btn": "Track",
+    "select_category": "Select Grievance Category",
+    "categories": {
+      "sanitation": "Sanitation & Cleanliness",
+      "water": "Drinking Water Supply",
+      "road": "Pathways & Barricades",
+      "lighting": "Lighting & Electricity",
+      "crowd": "Heavy Crowd Congestion",
+      "other": "Other Facilities"
+    },
+    "location": {
+      "title": "Incident Location",
+      "gps": "Current GPS Location",
+      "map_pin": "Map Location",
+      "qr_zone": "Zone / QR Code",
+      "detected": "Location Detected",
+      "detecting": "Detecting GPS...",
+      "zone_placeholder": "Enter Zone Code or Scan QR (e.g. ZONE-KOTI-A)"
+    },
+    "form": {
+      "description_label": "Describe the Issue",
+      "description_placeholder": "Provide details to help the response squad locate and resolve the issue quickly (min 5 characters)...",
+      "photo_label": "Attach Live Photo (Optional)",
+      "take_photo": "Take Photo",
+      "choose_gallery": "Choose Gallery",
+      "remove_photo": "Remove",
+      "submitting": "Submitting Grievance...",
+      "submit_btn": "Submit Grievance Report"
+    },
+    "status": {
+      "submitted": "Submitted",
+      "under_review": "Under Review",
+      "in_progress": "In Progress",
+      "resolved": "Resolved",
+      "rejected": "Closed"
+    },
+    "timeline": {
+      "title": "Status Progression",
+      "step_submitted": "Report Received",
+      "step_under_review": "Assigned to Sector Team",
+      "step_in_progress": "Action Being Taken",
+      "step_resolved": "Resolved & Verified",
+      "public_notes": "Official Public Updates",
+      "resolution_photo": "Verification Photo"
+    },
+    "alerts": {
+      "success_title": "Grievance Logged",
+      "duplicate_title": "Existing Report Nearby",
+      "duplicate_msg": "A similar issue was recently reported at this location. You are now tracking the existing ticket to follow up.",
+      "view_status": "View Status Timeline",
+      "back_home": "Back to Home",
+      "helpline_disclaimer": "Pushkaralu 24x7 Helpline: 112 / 108. For life-threatening emergencies, alert the nearest police helpdesk immediately."
+    },
+    "empty": {
+      "no_reports": "No reports submitted yet from this device.",
+      "report_first": "Report an issue if you encounter problems at any ghat."
+    }
   }
 }
 

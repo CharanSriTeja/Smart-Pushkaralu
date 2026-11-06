@@ -236,5 +236,61 @@ export const AdminApi = {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error?.message || 'Failed to delete facility');
   },
+
+  // ----------------------------------------------------
+  // Module 8: Grievances & Issue Management
+  // ----------------------------------------------------
+  async getIssues(params: Record<string, string> = {}): Promise<{ issues: any[]; total: number; page: number; limit: number }> {
+    const q = new URLSearchParams(params);
+    const res = await fetch(`${API_BASE_URL}/admin/issues?${q.toString()}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch issues: ${res.statusText}`);
+    return await res.json();
+  },
+
+  async getIssueById(id: string): Promise<{ issue: any; timeline: any[]; auditLogs: any[] }> {
+    const res = await fetch(`${API_BASE_URL}/admin/issues/${id}`, {
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to fetch issue details');
+    return json;
+  },
+
+  async updateIssueStatus(id: string, payload: {
+    status: string;
+    reason: string;
+    public_note?: string;
+    internal_note?: string;
+    resolution_photo_url?: string;
+  }): Promise<{ issue: any; update: any }> {
+    const res = await fetch(`${API_BASE_URL}/admin/issues/${id}/status`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update issue status');
+    return json;
+  },
+
+  async addIssueUpdate(id: string, payload: {
+    reason: string;
+    status?: string;
+    public_note?: string;
+    internal_note?: string;
+    resolution_photo_url?: string;
+  }): Promise<{ issue: any; update: any }> {
+    const res = await fetch(`${API_BASE_URL}/admin/issues/${id}/updates`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to add timeline update');
+    return json;
+  },
 };
+
 
