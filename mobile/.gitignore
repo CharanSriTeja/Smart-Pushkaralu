@@ -9,6 +9,13 @@ web-build/
 # Native build outputs
 android/
 ios/
+**/local.properties
+**/.cxx/
+**/.gradle/
+*.apk
+*.aab
+*.keystore
+*.jks
 
 # Environment variables and secrets
 .env

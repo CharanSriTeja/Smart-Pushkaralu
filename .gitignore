@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+firebase-service-account*.json
+service-account*.json
+*.pem
+*.key
+*.keystore
+*.jks
+
+# Build outputs
+dist/
+build/
+web-build/
+.expo/
+*.tsbuildinfo
+
+# Native Android / iOS build outputs
+mobile/android/
+mobile/ios/
+**/local.properties
+**/.cxx/
+**/.gradle/
+**/build/
+*.apk
+*.aab
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+logs/
+
+# Testing
+coverage/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.local
+

@@ -54,10 +54,11 @@
     "vitest": "^5.1.0"
   },
   "scripts": {
+    "postinstall": "node ./scripts/fix-windows-paths.js",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "vitest run"

@@ -49,7 +49,14 @@ Before running the app, ensure your machine has:
 1. **Node.js**: v20.x or v22.x LTS (`node -v`)
 2. **npm**: v10.x+ (`npm -v`)
 3. **PostgreSQL Database**: Either a local PostgreSQL instance or a free cloud database on [Neon.tech](https://neon.tech).
-4. *(Optional for Android native dev)*: Android Studio with Android SDK and an emulator, or an EAS account.
+4. **Android Development (for Mobile App / Emulator)**:
+   - **Android Studio** with Android SDK (API 34+ / 36+), Build Tools, and an Android Emulator (e.g. `Pixel_10_Pro`).
+   - **Environment Variables**:
+     - `ANDROID_HOME`: Set to your Android SDK path (e.g. `C:\Users\<username>\AppData\Local\Android\Sdk` on Windows, or `~/Library/Android/sdk` on macOS).
+     - `JAVA_HOME`: Set to Android Studio's bundled JBR (e.g. `C:\Program Files\Android\Android Studio\jbr`) or OpenJDK 17+.
+     - Add to `PATH`:
+       - `%ANDROID_HOME%\platform-tools` (provides `adb`)
+       - `%ANDROID_HOME%\emulator` (provides `emulator`)
 
 ---
 
@@ -142,14 +149,47 @@ cd smart-pushkaralu
    ```
 
 5. **Run the Mobile App**:
-   - **Web Browser Preview**:
+
+   - **A. Build & Run on Android Emulator (Recommended for Firebase & Native Modules)**:
+     Because the app uses native `@react-native-firebase` (Phone OTP & FCM Push), it requires a custom development build rather than basic Expo Go.
+
+     *First-time compile & install on emulator*:
+     ```bash
+     npx expo run:android
+     ```
+     *(This compiles the native Android app, runs the automated `fix-windows-paths.js` script, packages `com.smartpushkaralu.app`, installs it on your running emulator, and starts Metro bundler).*
+
+     *Subsequent runs (once the APK is already installed on the emulator)*:
+     ```bash
+     npx expo start --android
+     # or simply:
+     npx expo start
+     ```
+     *(Opens Metro; press `a` to connect to the emulator instantly).*
+
+   - **B. Web Browser Preview**:
      ```bash
      npm run web
      ```
      Opens `http://localhost:8081`.
-   - **Android Emulator / Device**:
+
+   - **C. Expo Go (Quick UI Preview only)**:
      ```bash
-     npm run android
+     npx expo start --go --android
+     ```
+     *(Note: Native Firebase modules will not be available inside standard Expo Go).*
+
+6. **Android Build Solutions & Fixes (Windows)**:
+   - **Ninja Long Paths & MAX_PATH Fix**:
+     Windows enforces a default 260-character limit (`MAX_PATH`). Older Ninja bundled with Android SDK CMake 3.22.1 (`ninja 1.10.2`) fails when deeply nested React Native New Architecture C++ source paths exceed 260 characters (`ninja: error: mkdir / Stat: Filename longer than 260 characters`).
+     - **Automated Path Fix (`mobile/scripts/fix-windows-paths.js`)**: Runs automatically on `npm install` (via `postinstall`). It creates NTFS junctions for `react-native-worklets`, `react-native-reanimated`, `react-native-gesture-handler`, `react-native-screens`, and `react-native-safe-area-context` to keep all C++ source files within local relative paths.
+     - **Ninja 1.12+ Upgrade**: Android SDK's bundled `ninja.exe` in `Sdk/cmake/3.22.1/bin` has been upgraded to Ninja 1.12.1 which natively supports Windows Win32 long paths when `LongPathsEnabled = 1`.
+   - **Kotlin Metadata Version Fix**:
+     Google's `firebase-auth:25.0.0` library contains Kotlin 2.4 metadata. Configured automatically via `mobile/plugins/withKotlinCompilerArgs.js` to supply `-Xskip-metadata-version-check` to all Kotlin compiler tasks.
+   - **`SDK location not found`**:
+     Defined in `mobile/android/local.properties`:
+     ```properties
+     sdk.dir=C\:\\Users\\<username>\\AppData\\Local\\Android\\Sdk
      ```
 
 ---

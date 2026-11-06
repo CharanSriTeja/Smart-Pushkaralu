@@ -42,6 +42,7 @@
       "expo-sharing",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
+      "./plugins/withKotlinCompilerArgs.js",
       [
         "expo-build-properties",
         {
