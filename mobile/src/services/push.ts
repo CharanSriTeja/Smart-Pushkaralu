@@ -48,7 +48,7 @@ export async function registerPushNotifications(
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('pushkaralu_alerts', {
         name: 'Godavari Pushkaralu Official Alerts',
-        importance: Notifications.AndroidImportance.MAX,
+        importance: (Notifications as any).AndroidImportance?.MAX ?? 5,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#0F52BA',
       });

@@ -34,6 +34,21 @@ export async function requireAuth(
 
   const token = authHeader.substring(7).trim();
 
+  // Support local development and staging mock admin token
+  if (process.env.NODE_ENV !== 'production' && token === 'dev-admin-token') {
+    req.user = {
+      userId: 'admin-super-01',
+      firebaseUid: 'dev-super-admin-uid',
+      phone: '+919999999999',
+      isAdmin: true,
+      name: 'District Collector (Super Admin)',
+      language: 'en',
+      status: 'active',
+    };
+    next();
+    return;
+  }
+
   try {
     const payload = verifyAccessToken(token);
     const user = await findUserById(payload.userId);
@@ -97,6 +112,21 @@ export async function optionalAuth(
   }
 
   const token = authHeader.substring(7).trim();
+
+  if (process.env.NODE_ENV !== 'production' && token === 'dev-admin-token') {
+    req.user = {
+      userId: 'admin-super-01',
+      firebaseUid: 'dev-super-admin-uid',
+      phone: '+919999999999',
+      isAdmin: true,
+      name: 'District Collector (Super Admin)',
+      language: 'en',
+      status: 'active',
+    };
+    next();
+    return;
+  }
+
   try {
     const payload = verifyAccessToken(token);
     const user = await findUserById(payload.userId);

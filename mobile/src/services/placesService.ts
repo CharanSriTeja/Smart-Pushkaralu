@@ -1,7 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { NearbyPlace, NearbyPlacesResponse, QueryPlaceType } from '../types/places';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/v1';
+import { API_V1_URL as API_BASE_URL } from './api';
 const PLACES_CACHE_PREFIX = 'offline_cached_nearby_places_';
 
 export class PlacesService {

@@ -70,6 +70,12 @@ export default function AppLayout() {
             href: null, // Hidden from bottom bar tabs, triggered via floating SOS button
           }}
         />
+        <Tabs.Screen
+          name="issues"
+          options={{
+            href: null, // Sub-navigation screens (grievances, timeline)
+          }}
+        />
       </Tabs>
       <SOSFloatingButton />
     </View>

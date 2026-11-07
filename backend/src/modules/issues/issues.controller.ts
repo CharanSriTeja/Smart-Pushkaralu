@@ -149,7 +149,7 @@ export class IssuesController {
    */
   static async getIssueByTicketNo(req: Request, res: Response): Promise<void> {
     try {
-      const ticketNo = req.params.ticket_no;
+      const ticketNo = req.params.ticket_no as string;
       if (!ticketNo) {
         res.status(400).json({
           error: { code: 'INVALID_TICKET', message: 'Ticket number is required' },
@@ -199,7 +199,7 @@ export class IssuesController {
    */
   static async handleStorageUpload(req: Request, res: Response): Promise<void> {
     try {
-      const token = req.params.token;
+      const token = req.params.token as string;
       if (!token) {
         res.status(400).json({ error: { code: 'MISSING_TOKEN', message: 'Upload token required' } });
         return;
@@ -305,7 +305,7 @@ export class IssuesController {
    */
   static async adminGetIssue(req: Request, res: Response): Promise<void> {
     try {
-      const id = req.params.id;
+      const id = req.params.id as string;
       const result = await IssuesService.adminGetIssue(id);
       res.status(200).json(result);
     } catch (err: any) {
@@ -324,7 +324,7 @@ export class IssuesController {
    */
   static async adminUpdateStatus(req: Request, res: Response): Promise<void> {
     try {
-      const id = req.params.id;
+      const id = req.params.id as string;
       const parsed = updateStatusSchema.parse(req.body);
       const adminUser = {
         userId: req.user!.userId,
@@ -373,7 +373,7 @@ export class IssuesController {
    */
   static async adminAddUpdate(req: Request, res: Response): Promise<void> {
     try {
-      const id = req.params.id;
+      const id = req.params.id as string;
       const parsed = addUpdateSchema.parse(req.body);
       const adminUser = {
         userId: req.user!.userId,
@@ -382,6 +382,7 @@ export class IssuesController {
 
       const result = await IssuesService.adminAddTimelineUpdate({
         issueId: id,
+        adminUser,
         reason: parsed.reason,
         status: parsed.status,
         publicNote: parsed.public_note,

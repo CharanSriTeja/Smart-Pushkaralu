@@ -1,7 +1,6 @@
 import { Ghat, GhatFilters, CrowdStatus, GhatNotice } from '../types/ghats';
 import * as SecureStore from 'expo-secure-store';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/v1';
+import { API_V1_URL as API_BASE_URL } from './api';
 const GHATS_CACHE_KEY = 'offline_cached_ghats_v1';
 const GHAT_DETAIL_CACHE_PREFIX = 'offline_cached_ghat_detail_';
 

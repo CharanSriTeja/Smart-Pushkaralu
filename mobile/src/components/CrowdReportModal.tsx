@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import * as Location from 'expo-location';
+import { acquireUserLocation } from '../utils/location';
 import * as Device from 'expo-device';
 import * as SecureStore from 'expo-secure-store';
 import { useTranslation } from 'react-i18next';
@@ -48,9 +48,9 @@ export const CrowdReportModal: React.FC<Props> = ({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // 1. Explicitly ask for GPS permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      // 1. Explicitly acquire GPS location
+      const locResult = await acquireUserLocation();
+      if (!locResult.granted || !locResult.coords) {
         Alert.alert(
           t('common.error', 'Permission Required'),
           'GPS location access is required to verify that you are near the ghat to prevent false crowd reports.',
@@ -60,19 +60,14 @@ export const CrowdReportModal: React.FC<Props> = ({
         return;
       }
 
-      // 2. Fetch current GPS position
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
       const fingerprint = await getDeviceFingerprint();
 
-      // 3. Submit report to backend
+      // 2. Submit report to backend
       const result = await GhatService.submitCrowdReport({
         ghat_id: ghatId,
         reported_crowd_level: selectedLevel,
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
+        lat: locResult.coords.latitude,
+        lng: locResult.coords.longitude,
         device_fingerprint: fingerprint,
       });
 

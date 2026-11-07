@@ -116,7 +116,7 @@ export class UploadService {
 
     if (enforceMime) {
       const expectedFormat = this.getFormatFromMime(enforceMime);
-      if (expectedFormat && metadata.format !== expectedFormat && !(expectedFormat === 'jpeg' && metadata.format === 'jpg')) {
+      if (expectedFormat && metadata.format !== expectedFormat && !(expectedFormat === 'jpeg' && (metadata.format as string) === 'jpg')) {
         throw new Error(`File content format (${metadata.format}) does not match declared MIME (${enforceMime}).`);
       }
     }

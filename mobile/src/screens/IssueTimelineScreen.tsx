@@ -55,7 +55,7 @@ export default function IssueTimelineScreen() {
     }
   }, [ticketNo]);
 
-  const loadTimeline = async () => {
+  async function loadTimeline() {
     try {
       const data = await IssueService.getIssueByTicket(ticketNo);
       setIssue(data.issue);

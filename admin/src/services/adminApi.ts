@@ -1,6 +1,7 @@
 import { Ghat, GhatNotice, CrowdStatus, AuditLog, PublishStatus, CrowdLevel } from '../types';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000/v1';
+const rawApiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000';
+const API_BASE_URL = rawApiUrl.endsWith('/v1') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/v1`;
 
 // Default mock admin token for control room development session
 let activeToken = localStorage.getItem('pushkaralu_admin_token') || 'dev-admin-token';
@@ -11,12 +12,17 @@ export function setAdminToken(token: string) {
 }
 
 export function getAdminToken() {
-  return activeToken;
+  return (
+    localStorage.getItem('sp_admin_token') ||
+    localStorage.getItem('pushkaralu_admin_token') ||
+    activeToken ||
+    'dev-admin-token'
+  );
 }
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
-  Authorization: `Bearer ${activeToken}`,
+  Authorization: `Bearer ${getAdminToken()}`,
 });
 
 export const AdminApi = {
@@ -70,6 +76,28 @@ export const AdminApi = {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error?.message || 'Failed to change publish status');
     return json.data;
+  },
+
+  async deleteGhat(id: string, reason: string = 'Ghat removed by administrator'): Promise<boolean> {
+    const res = await fetch(`${API_BASE_URL}/admin/ghats/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete ghat');
+    return true;
+  },
+
+  async bulkImportGhats(ghats: any[], reason: string = 'Bulk import from CSV'): Promise<{ count: number; errors: any[] }> {
+    const res = await fetch(`${API_BASE_URL}/admin/ghats/bulk`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ ghats, reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to bulk import ghats');
+    return { count: json.count || 0, errors: json.errors || [] };
   },
 
   async overrideCrowd(
@@ -464,6 +492,141 @@ export const AdminApi = {
     if (!res.ok) throw new Error(json.error?.message || 'Failed to invalidate cache');
     return json;
   },
+
+  // Module 7 Emergency SOS Endpoints
+  async getSosAlerts(params: { status?: string; type?: string; ghatId?: string; page?: number; limit?: number } = {}): Promise<{ data: any[]; total: number }> {
+    const q = new URLSearchParams();
+    if (params.status) q.append('status', params.status);
+    if (params.type) q.append('type', params.type);
+    if (params.ghatId) q.append('ghatId', params.ghatId);
+    if (params.page) q.append('page', String(params.page));
+    if (params.limit) q.append('limit', String(params.limit));
+
+    const res = await fetch(`${API_BASE_URL}/admin/sos?${q.toString()}`, { headers: authHeaders() });
+    if (!res.ok) throw new Error(`Failed to fetch SOS alerts: ${res.statusText}`);
+    const json = await res.json();
+    return { data: json.data || [], total: json.total || 0 };
+  },
+
+  async getSosAlertById(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/${id}`, { headers: authHeaders() });
+    if (!res.ok) throw new Error(`Failed to fetch SOS alert: ${res.statusText}`);
+    const json = await res.json();
+    return json.data;
+  },
+
+  async updateSosStatus(id: string, status: string, note: string, isPublic: boolean = true): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/${id}/status`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ status, note, isPublic }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update alert status');
+    return json.data;
+  },
+
+  async assignSosResponder(id: string, assignedToName: string, assignedToPhone?: string, note?: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/${id}/assign`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ assignedToName, assignedToPhone, note }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to assign responder');
+    return json.data;
+  },
+
+  async addSosNote(id: string, note: string, isPublic: boolean = false): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/${id}/notes`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ note, isPublic }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to add note');
+    return json.data;
+  },
+
+  async mergeSosAlerts(sourceAlertId: string, targetAlertId: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/merge`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ sourceAlertId, targetAlertId, reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to merge alerts');
+    return json;
+  },
+
+  async getQrZones(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/zones`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch QR zones');
+    const json = await res.json();
+    return json.data || [];
+  },
+
+  async createQrZone(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/zones`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create QR zone');
+    return json.data;
+  },
+
+  async updateQrZone(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/zones/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update QR zone');
+    return json.data;
+  },
+
+  async getEmergencyContacts(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/contacts`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch emergency contacts');
+    const json = await res.json();
+    return json.data || [];
+  },
+
+  async createEmergencyContact(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/contacts`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create emergency contact');
+    return json.data;
+  },
+
+  async updateEmergencyContact(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/contacts/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update emergency contact');
+    return json.data;
+  },
+
+  async deleteEmergencyContact(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/sos/contacts/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to deactivate contact');
+    return json;
+  },
 };
+
 
 

@@ -69,6 +69,7 @@ export const GhatListScreen: React.FC = () => {
   }, [selectedDistrict, selectedBathing, selectedCrowd, search]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadGhats();
   }, [loadGhats]);
 

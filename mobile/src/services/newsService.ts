@@ -1,8 +1,7 @@
 import { NewsPost, NewsFilters, RegisterDevicePayload } from '../types/news';
 import { GhatFacility } from '../types/ghats';
 import * as SecureStore from 'expo-secure-store';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/v1';
+import { API_V1_URL as API_BASE_URL } from './api';
 const NEWS_CACHE_KEY = 'offline_cached_news_v1';
 const FACILITIES_CACHE_PREFIX = 'offline_cached_facilities_';
 

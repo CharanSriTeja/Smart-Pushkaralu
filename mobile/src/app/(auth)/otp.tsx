@@ -36,11 +36,10 @@ export default function OtpScreen() {
 
   // Timer state
   const [remainingSeconds, setRemainingSeconds] = useState(OTP_RESEND_COOLDOWN_SECONDS);
-  const timerStartRef = useRef<number>(Date.now());
+  const timerStartRef = useRef<number>(0);
 
   useEffect(() => {
     timerStartRef.current = Date.now();
-    setRemainingSeconds(OTP_RESEND_COOLDOWN_SECONDS);
 
     const interval = setInterval(() => {
       const remaining = calculateRemainingSeconds(
@@ -63,7 +62,7 @@ export default function OtpScreen() {
     }
   }, [otpCode]);
 
-  const handleVerify = async (codeToVerify: string = otpCode) => {
+  async function handleVerify(codeToVerify: string = otpCode) {
     if (codeToVerify.length !== 6 || isVerifying) return;
 
     setIsVerifying(true);

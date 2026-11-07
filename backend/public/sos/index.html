@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart Pushkaralu - Emergency SOS</title>
+  <style>
+    :root {
+      --red-600: #dc2626;
+      --red-700: #b91c1c;
+      --red-800: #991b1b;
+      --amber-500: #f59e0b;
+      --green-600: #16a34a;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-700: #374151;
+      --gray-900: #111827;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-900);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.4;
+    }
+    header {
+      background: var(--red-800);
+      color: white;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    .brand { font-size: 1.15rem; font-weight: 800; letter-spacing: 0.5px; }
+    .lang-select {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.4);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .lang-select option { color: var(--gray-900); }
+    .banner-112 {
+      background: #fee2e2;
+      border-bottom: 2px solid #ef4444;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--red-800);
+      font-weight: 700;
+    }
+    .banner-112 a {
+      color: #991b1b;
+      text-decoration: underline;
+      margin-left: 6px;
+    }
+    main {
+      flex: 1;
+      padding: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .zone-badge {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+    }
+    h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; color: var(--gray-900); }
+    .subtitle { font-size: 0.9rem; color: #4b5563; margin-bottom: 16px; }
+    .categories { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .btn-cat {
+      min-height: 58px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 2px solid transparent;
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn-cat:active { transform: scale(0.98); }
+    .cat-med { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+    .cat-pol { background: #dbeafe; border-color: #3b82f6; color: #1e40af; }
+    .cat-fir { background: #ffedd5; border-color: #f97316; color: #9a3412; }
+    .cat-lost { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    .cat-gen { background: #f3f4f6; border-color: #6b7280; color: #1f2937; }
+    .cat-icon { font-size: 1.6rem; line-height: 1; }
+    .cat-text { display: flex; flex-direction: column; }
+    .cat-title { font-size: 1.05rem; }
+    .cat-sub { font-size: 0.8rem; font-weight: 500; opacity: 0.85; }
+    .options-box {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .form-group { margin-bottom: 10px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: var(--gray-700); }
+    input[type="tel"] {
+      width: 100%;
+      height: 44px;
+      padding: 8px 12px;
+      font-size: 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+    }
+    .gps-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .btn-gps {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .gps-status { font-size: 0.8rem; color: #4b5563; }
+    .direct-calls {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn-call {
+      flex: 1;
+      height: 52px;
+      background: var(--red-600);
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.05rem;
+      gap: 6px;
+    }
+    .btn-sms {
+      flex: 1;
+      height: 52px;
+      background: #4b5563;
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      gap: 6px;
+    }
+    .app-link {
+      display: block;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #2563eb;
+      margin-top: 14px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    /* Status Screen */
+    .status-panel {
+      display: none;
+      background: white;
+      border-radius: 12px;
+      border: 2px solid #ef4444;
+      padding: 20px;
+      text-align: center;
+    }
+    .status-indicator {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #fee2e2;
+      color: var(--red-600);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 12px;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(220, 38, 38, 0); }
+      100% { transform: scale(0.95); }
+    }
+    .status-title { font-size: 1.3rem; font-weight: 800; color: var(--red-700); margin-bottom: 6px; }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      background: #fef3c7;
+      color: #92400e;
+      margin-bottom: 12px;
+    }
+    .updates-list {
+      text-align: left;
+      background: var(--gray-50);
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 140px;
+      overflow-y: auto;
+      margin: 12px 0;
+      font-size: 0.85rem;
+    }
+    .update-item { border-bottom: 1px solid #e5e7eb; padding: 6px 0; }
+    .update-item:last-child { border-bottom: none; }
+    .btn-cancel {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      color: #374151;
+      width: 100%;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">🚨 SMART PUSHKARALU SOS</div>
+    <select id="langSelect" class="lang-select" aria-label="Select Language">
+      <option value="en">English</option>
+      <option value="te">తెలుగు</option>
+      <option value="hi">हिन्दी</option>
+    </select>
+  </header>
+
+  <div class="banner-112">
+    <span id="bannerText">Life-threatening emergency? Call National Helpline:</span>
+    <a href="tel:112" style="font-weight:900;">DIAL 112</a>
+  </div>
+
+  <main>
+    <div id="triggerPanel">
+      <div id="zoneBadge" class="zone-badge" style="display:none;"></div>
+      <h1 id="heading">Emergency Assistance</h1>
+      <p id="subtitle" class="subtitle">Select the emergency type. Control center and ghat volunteer teams will be notified immediately.</p>
+
+      <div class="categories">
+        <button class="btn-cat cat-med" onclick="triggerSos('medical')">
+          <span class="cat-icon">🚑</span>
+          <div class="cat-text">
+            <span class="cat-title" id="lblMedTitle">Medical Emergency</span>
+            <span class="cat-sub" id="lblMedSub">Heart attack, injury, drowning, breathing difficulty</span>
+          </div>
+        </button>
+
+        <button class="btn-cat cat-pol" onclick="triggerSos('police')">
+          <span class="cat-icon">👮</span>
+          <div class="cat-text">
+            <span class="cat-title" id="lblPolTitle">Police Assistance</span>
+            <span class="cat-sub" id="lblPolSub">Stampede risk, theft, harassment, physical danger</span>
+          </div>
+        </button>
+
+        <button class="btn-cat cat-fir" onclick="triggerSos('fire')">
+          <span class="cat-icon">🚒</span>
+          <div class="cat-text">
+            <span class="cat-title" id="lblFirTitle">Fire & Disaster</span>
+            <span class="cat-sub" id="lblFirSub">Electrical fire, cylinder leak, structural collapse</span>
+          </div>
+        </button>
+
+        <button class="btn-cat cat-lost" onclick="triggerSos('lost_person')">
+          <span class="cat-icon">🧒</span>
+          <div class="cat-text">
+            <span class="cat-title" id="lblLostTitle">Lost Child / Elder</span>
+            <span class="cat-sub" id="lblLostSub">Separated in crowd, missing vulnerable pilgrim</span>
+          </div>
+        </button>
+
+        <button class="btn-cat cat-gen" onclick="triggerSos('general')">
+          <span class="cat-icon">🆘</span>
+          <div class="cat-text">
+            <span class="cat-title" id="lblGenTitle">General Urgent Help</span>
+            <span class="cat-sub" id="lblGenSub">Assistance required at this location immediately</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="options-box">
+        <div class="form-group">
+          <label class="form-label" id="lblPhone">Contact Phone (Optional):</label>
+          <input type="tel" id="userPhone" placeholder="10-digit mobile number" maxlength="15" />
+        </div>
+        <div class="form-group">
+          <div class="gps-row">
+            <button type="button" class="btn-gps" onclick="fetchLocation()" id="btnGps">📍 Share GPS</button>
+            <span class="gps-status" id="gpsStatus">Coordinates not acquired</span>
+          </div>
+          <div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;" id="gpsDisclaimer">
+            Location is shared only to dispatch emergency rescue personnel.
+          </div>
+        </div>
+      </div>
+
+      <div class="direct-calls">
+        <a href="tel:112" class="btn-call">📞 Call 112</a>
+        <a id="smsFallbackLink" href="sms:112?body=SOS%20GENERAL" class="btn-sms">💬 SMS 112</a>
+      </div>
+
+      <a id="deepLinkApp" href="smartpushkaralu://sos" class="app-link">Open in Smart Pushkaralu App →</a>
+    </div>
+
+    <!-- Active Alert Status Panel -->
+    <div id="statusPanel" class="status-panel">
+      <div class="status-indicator">🚨</div>
+      <div class="status-title" id="statusTitle">Alert Registered</div>
+      <div id="statusBadge" class="status-badge">New Alert</div>
+      <p id="statusMsg" style="font-size:0.9rem; color:#4b5563; margin-bottom:12px;">
+        Pushkaralu command center has received your alert. Please stay at your current location if safe.
+      </p>
+
+      <div id="updatesList" class="updates-list"></div>
+
+      <div class="direct-calls" style="margin-top:10px;">
+        <a href="tel:112" class="btn-call">📞 Call 112</a>
+      </div>
+
+      <button type="button" class="btn-cancel" onclick="cancelAlert()" id="btnCancel">
+        Cancel Alert (False Alarm)
+      </button>
+    </div>
+  </main>
+
+  <script>
+    const translations = {
+      en: {
+        banner: "Life-threatening emergency? Call National Helpline:",
+        heading: "Emergency Assistance",
+        subtitle: "Select the emergency type. Control center and ghat volunteer teams will be notified immediately.",
+        medTitle: "Medical Emergency",
+        medSub: "Heart attack, injury, drowning, breathing difficulty",
+        polTitle: "Police Assistance",
+        polSub: "Stampede risk, theft, harassment, physical danger",
+        firTitle: "Fire & Disaster",
+        firSub: "Electrical fire, cylinder leak, structural collapse",
+        lostTitle: "Lost Child / Elder",
+        lostSub: "Separated in crowd, missing vulnerable pilgrim",
+        genTitle: "General Urgent Help",
+        genSub: "Assistance required at this location immediately",
+        phoneLbl: "Contact Phone (Optional):",
+        btnGps: "📍 Share GPS",
+        gpsWaiting: "Acquiring GPS...",
+        gpsSuccess: "GPS coordinates attached",
+        gpsFailed: "Could not get GPS (using zone)",
+        gpsDisclaimer: "Location is shared only to dispatch emergency rescue personnel.",
+        appLink: "Open in Smart Pushkaralu App →",
+        cancelBtn: "Cancel Alert (False Alarm)",
+        statusNew: "Alert Received",
+        statusAck: "Acknowledged & Assigned",
+        statusDisp: "Rescue Team Dispatched",
+        statusRes: "Incident Resolved",
+        statusCancelled: "Alert Cancelled"
+      },
+      te: {
+        banner: "ప్రాణాపాయ అత్యవసర సమయాల్లో జాతీయ నంబర్‌కు కాల్ చేయండి:",
+        heading: "అత్యవసర సహాయం",
+        subtitle: "అత్యవసర రకాన్ని ఎంచుకోండి. కంట్రోల్ రూమ్ మరియు ఘాట్ వాలంటీర్లకు తక్షణ సమాచారం అందుతుంది.",
+        medTitle: "వైద్య సహాయం (Medical)",
+        medSub: "గుండెపోటు, గాయాలు, మునిగిపోవడం, శ్వాస సమస్యలు",
+        polTitle: "పోలీస్ సహాయం (Police)",
+        polSub: "తొక్కిసలాట ప్రమాదం, దొంగతనం, వేధింపులు, శారీరక ప్రమాదం",
+        firTitle: "అగ్నిప్రమాదం & రక్షణ (Fire)",
+        firSub: "విద్యుత్ అగ్నిప్రమాదం, సిలిండర్ లీక్, ప్రమాదాలు",
+        lostTitle: "తప్పిపోయిన బాలురు / వృద్ధులు",
+        lostSub: "జనసందోహంలో తప్పిపోయిన కుటుంబ సభ్యులు",
+        genTitle: "సాధారణ అత్యవసరం (SOS)",
+        genSub: "ఈ ప్రదేశంలో వెంటనే అత్యవసర సహాయం అవసరం",
+        phoneLbl: "మీ ఫోన్ నంబర్ (ఐచ్ఛికం):",
+        btnGps: "📍 GPS పంచుకోండి",
+        gpsWaiting: "GPS సేకరిస్తోంది...",
+        gpsSuccess: "GPS సమకూర్చబడింది",
+        gpsFailed: "GPS రాలేదు (సెక్టార్ ఉపయోగించబడుతుంది)",
+        gpsDisclaimer: "రెస్క్యూ బృందాల రాక కొరకు మాత్రమే మీ స్థానం నమోదు చేయబడుతుంది.",
+        appLink: "స్మార్ట్ పుష్కరాల యాప్‌లో తెరవండి →",
+        cancelBtn: "హెచ్చరిక రద్దు చేయండి (పొరపాటు సమాచారం)",
+        statusNew: "హెచ్చరిక అందింది",
+        statusAck: "బృందం కేటాయించబడింది",
+        statusDisp: "రెస్క్యూ బృందం బయలుదేరింది",
+        statusRes: "సమస్య పరిష్కరించబడింది",
+        statusCancelled: "హెచ్చరిక రద్దు చేయబడింది"
+      },
+      hi: {
+        banner: "गंभीर आपातकाल में राष्ट्रीय हेल्पलाइन डायल करें:",
+        heading: "आपातकालीन सहायता",
+        subtitle: "आपातकाल का प्रकार चुनें। नियंत्रण कक्ष और घाट टीमों को तुरंत सूचित किया जाएगा।",
+        medTitle: "चिकित्सा आपातकाल (Medical)",
+        medSub: "दिल का दौरा, चोट, डूबना, सांस लेने में तकलीफ",
+        polTitle: "पुलिस सहायता (Police)",
+        polSub: "भगदड़ का खतरा, चोरी, उत्पीड़न, शारीरिक संकट",
+        firTitle: "अग्निशमन एवं बचाव (Fire)",
+        firSub: "बिजली की आग, गैस रिसाव, संरचनात्मक पतन",
+        lostTitle: "लापता बच्चा / बुजुर्ग",
+        lostSub: "भीड़ में बिछड़े हुए परिजन",
+        genTitle: "सामान्य आपातकालीन मदद",
+        genSub: "इस स्थान पर तत्काल सहायता की आवश्यकता है",
+        phoneLbl: "संपर्क फोन नंबर (वैकल्पिक):",
+        btnGps: "📍 GPS साझा करें",
+        gpsWaiting: "GPS प्राप्त हो रहा है...",
+        gpsSuccess: "GPS स्थिति प्राप्त हुई",
+        gpsFailed: "GPS नहीं मिला (ज़ोन कोड प्रयुक्त)",
+        gpsDisclaimer: "स्थान केवल बचाव दल भेजने के लिए उपयोग किया जाता है।",
+        appLink: "स्मार्ट पुष्करालु ऐप में खोलें →",
+        cancelBtn: "अलर्ट रद्द करें (गलत सूचना)",
+        statusNew: "अलर्ट प्राप्त हुआ",
+        statusAck: "स्वीकृत और टीम नियत",
+        statusDisp: "बचाव दल रवाना",
+        statusRes: "समस्या सुलझाई गई",
+        statusCancelled: "अलर्ट रद्द किया गया"
+      }
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const zoneCode = urlParams.get('zone') || '';
+    let currentLang = urlParams.get('lang') || 'en';
+    if (!['en', 'te', 'hi'].includes(currentLang)) currentLang = 'en';
+
+    let userCoords = null;
+    let activeAlertId = null;
+    let activeStatusToken = null;
+    let pollInterval = null;
+
+    function applyLang(lang) {
+      currentLang = lang;
+      const t = translations[lang] || translations.en;
+      document.getElementById('langSelect').value = lang;
+      document.getElementById('bannerText').textContent = t.banner;
+      document.getElementById('heading').textContent = t.heading;
+      document.getElementById('subtitle').textContent = t.subtitle;
+      document.getElementById('lblMedTitle').textContent = t.medTitle;
+      document.getElementById('lblMedSub').textContent = t.medSub;
+      document.getElementById('lblPolTitle').textContent = t.polTitle;
+      document.getElementById('lblPolSub').textContent = t.polSub;
+      document.getElementById('lblFirTitle').textContent = t.firTitle;
+      document.getElementById('lblFirSub').textContent = t.firSub;
+      document.getElementById('lblLostTitle').textContent = t.lostTitle;
+      document.getElementById('lblLostSub').textContent = t.lostSub;
+      document.getElementById('lblGenTitle').textContent = t.genTitle;
+      document.getElementById('lblGenSub').textContent = t.genSub;
+      document.getElementById('lblPhone').textContent = t.phoneLbl;
+      document.getElementById('btnGps').textContent = t.btnGps;
+      document.getElementById('gpsDisclaimer').textContent = t.gpsDisclaimer;
+      document.getElementById('appLink').textContent = t.appLink;
+      document.getElementById('btnCancel').textContent = t.cancelBtn;
+    }
+
+    document.getElementById('langSelect').addEventListener('change', (e) => {
+      applyLang(e.target.value);
+    });
+
+    if (zoneCode) {
+      const zb = document.getElementById('zoneBadge');
+      zb.textContent = '📍 Zone: ' + zoneCode;
+      zb.style.display = 'inline-block';
+      document.getElementById('smsFallbackLink').href = 'sms:112?body=' + encodeURIComponent('SOS GENERAL ' + zoneCode);
+      document.getElementById('deepLinkApp').href = 'smartpushkaralu://sos?zone=' + encodeURIComponent(zoneCode);
+    }
+
+    function fetchLocation() {
+      const statusEl = document.getElementById('gpsStatus');
+      const t = translations[currentLang] || translations.en;
+      if (!navigator.geolocation) {
+        statusEl.textContent = t.gpsFailed;
+        return;
+      }
+      statusEl.textContent = t.gpsWaiting;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userCoords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracyM: pos.coords.accuracy
+          };
+          statusEl.textContent = t.gpsSuccess + ' (±' + Math.round(pos.coords.accuracy) + 'm)';
+          statusEl.style.color = '#16a34a';
+        },
+        () => {
+          statusEl.textContent = t.gpsFailed;
+          statusEl.style.color = '#dc2626';
+        },
+        { timeout: 8000, enableHighAccuracy: true }
+      );
+    }
+
+    async function triggerSos(type) {
+      const phoneInput = document.getElementById('userPhone').value.trim();
+      const payload = {
+        channel: 'qr',
+        type: type,
+        zoneCode: zoneCode || null,
+        phone: phoneInput || null,
+        language: currentLang,
+        lat: userCoords ? userCoords.lat : null,
+        lng: userCoords ? userCoords.lng : null,
+        accuracyM: userCoords ? userCoords.accuracyM : null
+      };
+
+      try {
+        const res = await fetch('/v1/sos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.data) {
+          activeAlertId = data.data.id;
+          activeStatusToken = data.data.statusToken;
+          showStatusView(data.data.status);
+          startPolling();
+        } else {
+          fallbackToCall();
+        }
+      } catch (err) {
+        fallbackToCall();
+      }
+    }
+
+    function fallbackToCall() {
+      alert("Network request failed. Connecting you to emergency helpline 112 directly.");
+      window.location.href = "tel:112";
+    }
+
+    function showStatusView(status) {
+      document.getElementById('triggerPanel').style.display = 'none';
+      document.getElementById('statusPanel').style.display = 'block';
+      updateStatusBadge(status);
+    }
+
+    function updateStatusBadge(status) {
+      const badge = document.getElementById('statusBadge');
+      const t = translations[currentLang] || translations.en;
+      badge.textContent = status;
+      if (status === 'new') {
+        badge.textContent = t.statusNew;
+        badge.style.background = '#fef3c7'; badge.style.color = '#92400e';
+      } else if (status === 'acknowledged') {
+        badge.textContent = t.statusAck;
+        badge.style.background = '#dbeafe'; badge.style.color = '#1e40af';
+      } else if (status === 'dispatched') {
+        badge.textContent = t.statusDisp;
+        badge.style.background = '#ffedd5'; badge.style.color = '#9a3412';
+      } else if (status === 'resolved') {
+        badge.textContent = t.statusRes;
+        badge.style.background = '#dcfce7'; badge.style.color = '#166534';
+      } else if (status === 'false_alarm') {
+        badge.textContent = t.statusCancelled;
+        badge.style.background = '#f3f4f6'; badge.style.color = '#4b5563';
+      }
+    }
+
+    function startPolling() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(async () => {
+        if (!activeAlertId || !activeStatusToken) return;
+        try {
+          const res = await fetch('/v1/sos/' + activeAlertId + '/status?token=' + encodeURIComponent(activeStatusToken));
+          if (!res.ok) return;
+          const json = await res.json();
+          if (json.data && json.data.alert) {
+            updateStatusBadge(json.data.alert.status);
+            renderUpdates(json.data.updates || []);
+            if (json.data.alert.status === 'resolved' || json.data.alert.status === 'false_alarm') {
+              clearInterval(pollInterval);
+            }
+          }
+        } catch (_) {}
+      }, 5000);
+    }
+
+    function renderUpdates(updates) {
+      const container = document.getElementById('updatesList');
+      container.innerHTML = '';
+      updates.forEach((u) => {
+        const item = document.createElement('div');
+        item.className = 'update-item';
+        const time = new Date(u.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        item.innerHTML = '<strong>' + time + ':</strong> ' + (u.note || '');
+        container.appendChild(item);
+      });
+    }
+
+    async function cancelAlert() {
+      if (!confirm("Are you sure you want to cancel this emergency alert?")) return;
+      if (!activeAlertId || !activeStatusToken) return;
+      try {
+        await fetch('/v1/sos/' + activeAlertId + '/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: activeStatusToken, reason: 'Reporter cancelled on web page' })
+        });
+        updateStatusBadge('false_alarm');
+        clearInterval(pollInterval);
+      } catch (_) {}
+    }
+
+    // Initialize translations
+    applyLang(currentLang);
+  </script>
+</body>
+</html>
+

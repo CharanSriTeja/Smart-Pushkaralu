@@ -73,3 +73,165 @@ export interface EmergencyAlert {
   longitude?: number;
 }
 
+export type RecordStatus = 'officially_listed' | 'reported' | 'unverified';
+export type BathingStatus = 'allowed' | 'restricted' | 'closed' | 'unknown';
+export type CrowdLevel = 'low' | 'medium' | 'high' | 'very_high' | 'unknown';
+export type PublishStatus = 'draft' | 'published' | 'hidden';
+export type NoticeSeverity = 'info' | 'warning' | 'emergency';
+export type CrowdSourceType = 'official_override' | 'crowdsourced_aggregate' | 'sensor_or_camera' | 'default';
+
+export interface GhatNotice {
+  id: string;
+  ghat_id: string;
+  title: LocalizedText;
+  message: LocalizedText;
+  severity: NoticeSeverity;
+  is_active: boolean;
+  starts_at: string;
+  ends_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrowdStatus {
+  id: string;
+  ghat_id: string;
+  current_level: CrowdLevel;
+  source_type: CrowdSourceType;
+  override_by_admin_id: string | null;
+  confidence_score: number;
+  recent_report_count: number;
+  note: LocalizedText | null;
+  updated_at: string;
+}
+
+export interface AuditLog {
+  id: string;
+  admin_id: string;
+  admin_email: string;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  old_values: any | null;
+  new_values: any | null;
+  source_url: string | null;
+  reason: string;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface Ghat {
+  id: string;
+  name: LocalizedText;
+  river: string;
+  district: string;
+  state: string;
+  lat: number;
+  lng: number;
+  distance_meters?: number;
+  distance_km?: number;
+  nearest_town: LocalizedText;
+  nearest_railway_station: LocalizedText;
+  nearest_bus_stand: LocalizedText;
+  official_source_url: string | null;
+  verified_at: string | null;
+  record_status: RecordStatus;
+  bathing_status: BathingStatus;
+  crowd_level: CrowdLevel;
+  publish_status: PublishStatus;
+  description?: LocalizedText | null;
+  max_capacity?: number | null;
+  sources?: any[];
+  facilities?: any[];
+  aarti_timings?: any[];
+}
+
+export interface NewsPost {
+  id: string;
+  title: LocalizedText;
+  content: LocalizedText;
+  summary?: LocalizedText | null;
+  is_urgent: boolean;
+  is_important: boolean;
+  publish_status: PublishStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SosChannel = 'app' | 'sms' | 'qr' | 'call';
+export type SosType = 'medical' | 'police' | 'fire' | 'lost_person' | 'other' | 'general';
+export type SosStatus = 'new' | 'acknowledged' | 'dispatched' | 'resolved' | 'false_alarm';
+
+export interface SosAlertAdminRecord {
+  id: string;
+  user_id: string | null;
+  phone: string | null;
+  channel: SosChannel;
+  type: SosType;
+  lat: number | null;
+  lng: number | null;
+  accuracy_m: number | null;
+  ghat_id: string | null;
+  ghat_name?: any;
+  zone_id: string | null;
+  zone_code: string | null;
+  zone_label?: any;
+  language: string;
+  status: SosStatus;
+  severity: number;
+  assigned_to_name: string | null;
+  assigned_to_phone: string | null;
+  device_id: string | null;
+  status_token: string;
+  merged_into_id: string | null;
+  metadata?: Record<string, any> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SosUpdateAdminRecord {
+  id: string;
+  alert_id: string;
+  admin_id: string | null;
+  admin_name?: string | null;
+  status: SosStatus | null;
+  note: string;
+  is_public: boolean;
+  created_at: string;
+}
+
+export interface QrZoneAdminRecord {
+  id: string;
+  zone_code: string;
+  ghat_id: string | null;
+  ghat_name?: any;
+  label: LocalizedText;
+  lat: number | null;
+  lng: number | null;
+  active: boolean;
+  created_at: string;
+}
+
+export interface EmergencyContactAdminRecord {
+  id: string;
+  label: LocalizedText;
+  phone: string;
+  kind: string;
+  ghat_id: string | null;
+  ghat_name?: any;
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+}
+
+export interface ClusterNotification {
+  ghatId?: string | null;
+  ghatName?: string | null;
+  zoneCode?: string | null;
+  alertCount: number;
+  timeWindowMinutes: number;
+  detectedAt: string;
+  recentAlertIds: string[];
+}
+
+

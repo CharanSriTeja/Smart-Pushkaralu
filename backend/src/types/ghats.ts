@@ -30,6 +30,8 @@ export interface GhatFacility {
   details: LocalizedString;
   is_operational: boolean;
   count: number;
+  source_url?: string | null;
+  last_verified_at?: string | null;
   updated_at: string;
 }
 
@@ -85,7 +87,7 @@ export interface CrowdReport {
 
 export interface AuditLog {
   id: string;
-  admin_id: string;
+  admin_id: string | null;
   admin_email: string;
   action: string;
   entity_type: string;

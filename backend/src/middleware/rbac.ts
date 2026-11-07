@@ -34,9 +34,9 @@ export async function verifyUserPermission(userId: string, permissionName: strin
     return true;
   }
 
-  // Support domain wildcard, e.g. "ghats.*" matches "ghats.update"
+  // Support domain wildcard, e.g. "ghats.*" or "ghats.write" matches "ghats.update"
   const domain = permissionName.split('.')[0];
-  if (domain && perms.includes(`${domain}.*`)) {
+  if (domain && (perms.includes(`${domain}.*`) || perms.includes(`${domain}.write`))) {
     return true;
   }
 

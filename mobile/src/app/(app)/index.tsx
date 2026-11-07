@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
+import { acquireUserLocation } from '../../utils/location';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -31,8 +31,8 @@ export default function AppHomeScreen() {
   const handleFindNearestGhat = async () => {
     setIsFindingNearest(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      const locResult = await acquireUserLocation();
+      if (!locResult.granted || !locResult.coords) {
         Alert.alert(
           'Location Permission Required',
           'Please grant GPS permission so we can find the nearest safe Pushkaralu ghat for your holy bath.',
@@ -45,9 +45,8 @@ export default function AppHomeScreen() {
         return;
       }
 
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      router.push(`/(app)/ghats?near=${loc.coords.latitude},${loc.coords.longitude}` as any);
-    } catch (err: any) {
+      router.push(`/(app)/ghats?near=${locResult.coords.latitude},${locResult.coords.longitude}` as any);
+    } catch {
       Alert.alert('Location Error', 'Could not detect GPS coordinates. Opening ghat directory.');
       router.push('/(app)/ghats' as any);
     } finally {

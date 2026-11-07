@@ -23,6 +23,8 @@ import { ghatsRouter, crowdReportRouter } from './routes/v1/ghats.routes.js';
 import { newsRouter } from './routes/v1/news.routes.js';
 import { issuesRouter } from './routes/v1/issues.routes.js';
 import { adminRouter } from './routes/v1/admin.routes.js';
+import { sosRouter } from './routes/v1/sos.routes.js';
+import { adminSosRouter } from './routes/v1/admin-sos.routes.js';
 
 // Initialize Sentry error reporting
 initSentry();
@@ -57,6 +59,12 @@ app.use(generalLimiter);
 // Serve static uploads (with cross-origin access for mobile preview)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+// Serve Module 7 standalone emergency SOS web page
+app.get(['/sos', '/sos/'], (_req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public/sos/index.html'));
+});
+app.use('/sos', express.static(path.join(process.cwd(), 'public/sos')));
+
 // Strict body parsing limit for low bandwidth / security (unless specific route overrides)
 app.use(express.json({ limit: '100kb' }));
 
@@ -75,6 +83,8 @@ app.use('/v1', crowdReportRouter);
 app.use('/v1', newsRouter);
 app.use('/v1', publicWriteLimiter, devicesRouter);
 app.use('/v1', issuesRouter);
+app.use('/v1', sosRouter);
+app.use('/v1/admin/sos', adminSosRouter);
 app.use('/v1/admin', auditRouter);
 app.use('/v1/admin', adminRouter);
 

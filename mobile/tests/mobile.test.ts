@@ -235,7 +235,7 @@ describe('Mobile App Unit Tests (Smart Pushkaralu)', () => {
       await i18n.changeLanguage('te');
 
       let capturedHeaders: any = null;
-      global.fetch = vi.fn().mockImplementation(async (_url, options) => {
+      (globalThis as any).fetch = vi.fn().mockImplementation(async (_url, options) => {
         capturedHeaders = options.headers;
         return {
           ok: true,
@@ -251,7 +251,7 @@ describe('Mobile App Unit Tests (Smart Pushkaralu)', () => {
 
     it('retries on 500 error and succeeds on subsequent attempt', async () => {
       let callCount = 0;
-      global.fetch = vi.fn().mockImplementation(async () => {
+      (globalThis as any).fetch = vi.fn().mockImplementation(async () => {
         callCount++;
         if (callCount === 1) {
           return {
@@ -273,7 +273,7 @@ describe('Mobile App Unit Tests (Smart Pushkaralu)', () => {
     });
 
     it('aborts and returns TIMEOUT_ERROR when request exceeds timeoutMs', async () => {
-      global.fetch = vi.fn().mockImplementation((_url, { signal }) => {
+      (globalThis as any).fetch = vi.fn().mockImplementation((_url, { signal }) => {
         return new Promise((_, reject) => {
           signal.addEventListener('abort', () => {
             const err = new Error('The user aborted a request.');

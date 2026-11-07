@@ -27,7 +27,7 @@ export const Screen: React.FC<ScreenProps> = ({
 }) => {
   return (
     <SafeAreaView style={[styles.safeArea, style]}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+      <StatusBar barStyle="dark-content" />
       {showOfflineBanner && <OfflineBanner />}
       {scrollable ? (
         <ScrollView

@@ -20,6 +20,16 @@ const envSchema = z.object({
   PLACES_API_DAILY_LIMIT: z.coerce.number().default(500),
   SPEED_FACTOR_DRIVING_KMH: z.coerce.number().default(15),
   SPEED_FACTOR_WALKING_KMH: z.coerce.number().default(4.5),
+  // Module 7 Emergency SOS configuration
+  SOS_DEFAULT_NUMBER: z.string().default('112'),
+  SOS_SMS_GATEWAY_ADAPTER: z.enum(['mock', 'generic']).default('mock'),
+  SOS_WEBHOOK_SECRET: z.string().default('dev-sos-webhook-secret-key-32chars'),
+  SOS_WEB_BASE_URL: z.string().default('http://localhost:4000'),
+  SOS_BACKUP_NOTIFY_PHONE: z.string().optional(),
+  SOS_RATE_LIMIT_PER_HOUR: z.coerce.number().default(10),
+  SOS_DEDUP_WINDOW_MINUTES: z.coerce.number().default(5),
+  SOS_CLUSTER_THRESHOLD: z.coerce.number().default(5),
+  SOS_CLUSTER_WINDOW_MINUTES: z.coerce.number().default(10),
 });
 
 const parsed = envSchema.safeParse(process.env);

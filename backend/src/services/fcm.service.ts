@@ -1,4 +1,5 @@
-import admin from 'firebase-admin';
+import { getApps } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import { NewsPost, SupportedLanguage } from '../types/news.js';
 import { query } from '../db/index.js';
 
@@ -145,8 +146,8 @@ export class FCMService {
     this.sentHistory.push(record);
 
     try {
-      if (admin.apps && admin.apps.length > 0) {
-        await admin.messaging().send({
+      if (getApps().length > 0) {
+        await getMessaging().send({
           token,
           notification: { title, body },
           data,
@@ -247,8 +248,8 @@ export class FCMService {
 
     try {
       // Check if Firebase Admin is initialized with active project credentials
-      if (admin.apps && admin.apps.length > 0) {
-        await admin.messaging().send({
+      if (getApps().length > 0) {
+        await getMessaging().send({
           topic,
           notification: {
             title,

@@ -1,6 +1,7 @@
 import { AuditLogRecord, SettingRecord, UsageStats } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_BASE = rawApiUrl.endsWith('/v1') ? rawApiUrl.slice(0, -3) : rawApiUrl.replace(/\/+$/, '');
 
 function getHeaders(token?: string | null): HeadersInit {
   const headers: Record<string, string> = {

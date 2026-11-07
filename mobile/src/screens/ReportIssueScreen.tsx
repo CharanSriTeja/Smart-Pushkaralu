@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
+import { acquireUserLocation } from '../utils/location';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
@@ -64,11 +64,11 @@ export default function ReportIssueScreen() {
     detectLocation();
   }, []);
 
-  const detectLocation = async () => {
+  async function detectLocation() {
     setIsDetectingGps(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      const locResult = await acquireUserLocation();
+      if (!locResult.granted || !locResult.coords) {
         Alert.alert(
           'Location Permission Required',
           'Please allow GPS access so the grievance response squad can pinpoint your exact position on the ghat.'
@@ -80,11 +80,8 @@ export default function ReportIssueScreen() {
         return;
       }
 
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      setLat(loc.coords.latitude);
-      setLng(loc.coords.longitude);
+      setLat(locResult.coords.latitude);
+      setLng(locResult.coords.longitude);
     } catch {
       // Fallback coordinate
       setLat(16.989065);

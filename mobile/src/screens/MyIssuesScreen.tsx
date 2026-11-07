@@ -46,11 +46,7 @@ export default function MyIssuesScreen() {
   const [searchTicket, setSearchTicket] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'resolved'>('all');
 
-  useEffect(() => {
-    loadMyIssues();
-  }, []);
-
-  const loadMyIssues = async () => {
+  async function loadMyIssues() {
     try {
       const data = await IssueService.getMyIssues();
       setIssues(data);
@@ -60,7 +56,12 @@ export default function MyIssuesScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadMyIssues();
+  }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);

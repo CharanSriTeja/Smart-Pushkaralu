@@ -27,7 +27,7 @@ export class NoticesController {
    */
   static async getGhatNotices(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const ghat = await GhatsRepository.findGhatById(id);
 
       if (!ghat) {

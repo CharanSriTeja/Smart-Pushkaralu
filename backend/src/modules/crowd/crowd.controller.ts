@@ -30,7 +30,7 @@ export class CrowdController {
    */
   static async getGhatCrowdStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const ghat = await GhatsRepository.findGhatById(id);
 
       if (!ghat) {
@@ -120,7 +120,7 @@ export class CrowdController {
    */
   static async adminOverrideCrowd(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const body = crowdOverrideSchema.parse(req.body);
 
       const ghat = await GhatsRepository.findGhatById(id);

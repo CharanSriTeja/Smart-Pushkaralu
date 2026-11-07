@@ -9,9 +9,10 @@ import {
   StatusBar,
   Dimensions,
   Platform,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
+import { acquireUserLocation } from '../utils/location';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
 import { Ghat } from '../types/ghats';
@@ -23,12 +24,14 @@ import { ConditionDisclaimerBanner } from '../components/ConditionDisclaimerBann
 let MapView: any = null;
 let Marker: any = null;
 let Callout: any = null;
+let UrlTile: any = null;
 
 try {
   const Maps = require('react-native-maps');
   MapView = Maps.default;
   Marker = Maps.Marker;
   Callout = Maps.Callout;
+  UrlTile = Maps.UrlTile;
 } catch (err) {
   console.warn('react-native-maps not loaded in current environment');
 }
@@ -70,11 +73,10 @@ export const GhatMapScreen: React.FC = () => {
 
   const handleCenterOnUser = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
+      const locResult = await acquireUserLocation();
+      if (!locResult.granted || !locResult.coords) return;
 
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+      const coords = { lat: locResult.coords.latitude, lng: locResult.coords.longitude };
       setUserLocation(coords);
 
       mapRef.current?.animateToRegion({
@@ -93,6 +95,26 @@ export const GhatMapScreen: React.FC = () => {
     if (ghat.bathing_status === 'restricted' || ghat.crowd_level === 'high') return '#EA580C'; // Orange
     if (ghat.crowd_level === 'medium') return '#CA8A04'; // Amber
     return '#16A34A'; // Green
+  };
+
+  const handleGetDirections = (ghat: Ghat) => {
+    const lat = Number(ghat.lat);
+    const lng = Number(ghat.lng);
+    const label = encodeURIComponent(getLocalizedText(ghat.name, language));
+    const url = Platform.select({
+      ios: `maps:0,0?q=${label}@${lat},${lng}`,
+      android: `geo:0,0?q=${lat},${lng}(${label})`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+    });
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
+      }
+    }).catch(() => {
+      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
+    });
   };
 
   return (
@@ -129,6 +151,14 @@ export const GhatMapScreen: React.FC = () => {
           showsUserLocation={!!userLocation}
           showsCompass
         >
+          {UrlTile && (
+            <UrlTile
+              urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maximumZ={19}
+              flipY={false}
+              zIndex={-1}
+            />
+          )}
           {ghats.map((ghat) => {
             const name = getLocalizedText(ghat.name, language);
             const pinColor = getMarkerColor(ghat);
@@ -204,14 +234,24 @@ export const GhatMapScreen: React.FC = () => {
               <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.viewDetailBtn}
-            onPress={() => router.push(`/(app)/ghats/${selectedGhat.id}` as any)}
-          >
-            <Text style={[styles.viewDetailText, { fontFamily: fontFamilyBold }]}>
-              View Full Ghat Information & Crowd Reports →
-            </Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              style={[styles.directionsBtn, { flex: 1 }]}
+              onPress={() => handleGetDirections(selectedGhat)}
+            >
+              <Text style={[styles.directionsBtnText, { fontFamily: fontFamilyBold }]}>
+                🧭 {t('ghats.navigation', 'Directions')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.viewDetailBtn, { flex: 2 }]}
+              onPress={() => router.push(`/(app)/ghats/${selectedGhat.id}` as any)}
+            >
+              <Text style={[styles.viewDetailText, { fontFamily: fontFamilyBold }]}>
+                {t('ghats.view_details', 'Details & Crowd →')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </SafeAreaView>
@@ -393,6 +433,18 @@ const styles = StyleSheet.create({
   viewDetailText: {
     color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '700',
+  },
+  directionsBtn: {
+    backgroundColor: '#2563EB',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  directionsBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '700',
   },
   fallbackContainer: {

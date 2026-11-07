@@ -19,6 +19,13 @@ function getApiBaseUrl(): string {
 }
 
 export const API_BASE_URL = getApiBaseUrl();
+export const API_V1_URL = API_BASE_URL.endsWith('/v1')
+  ? API_BASE_URL
+  : `${API_BASE_URL.replace(/\/+$/, '')}/v1`;
+
+export function getBaseV1Url(): string {
+  return API_V1_URL;
+}
 
 let inMemoryAccessToken: string | null = null;
 let logoutCallback: (() => void) | null = null;

@@ -16,11 +16,17 @@ export const adminRouter = Router();
 adminRouter.use(requireAuth);
 
 // 1. Ghat Management
+// POST /v1/admin/ghats/bulk
+adminRouter.post('/ghats/bulk', checkPermission('ghats.create'), GhatsController.bulkCreateGhats);
+
 // POST /v1/admin/ghats
 adminRouter.post('/ghats', checkPermission('ghats.create'), GhatsController.createGhat);
 
 // PATCH /v1/admin/ghats/:id
 adminRouter.patch('/ghats/:id', checkPermission('ghats.update'), GhatsController.updateGhat);
+
+// DELETE /v1/admin/ghats/:id
+adminRouter.delete('/ghats/:id', checkPermission('ghats.update'), GhatsController.deleteGhat);
 
 // PATCH /v1/admin/ghats/:id/publish-status
 adminRouter.patch(

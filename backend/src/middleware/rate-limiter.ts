@@ -70,3 +70,18 @@ export const crowdReportLimiter = rateLimit({
     },
   },
 });
+
+export const sosLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: env.SOS_RATE_LIMIT_PER_HOUR || 30, // Configurable rate limit per IP per hour
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => env.NODE_ENV === 'test',
+  message: {
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'SOS trigger rate limit reached. In case of real emergency, please call 112 directly.',
+    },
+  },
+});
+

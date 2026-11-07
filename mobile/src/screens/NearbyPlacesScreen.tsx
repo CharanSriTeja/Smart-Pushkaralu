@@ -37,7 +37,6 @@ export const NearbyPlacesScreen: React.FC = () => {
 
   const loadPlaces = useCallback(async () => {
     if (!ghatId) return;
-    setLoading(true);
     try {
       const res = await PlacesService.getNearbyPlaces(ghatId, category, radiusKm);
       setPlaces(res.data.places || []);
@@ -53,6 +52,7 @@ export const NearbyPlacesScreen: React.FC = () => {
   }, [ghatId, category, radiusKm, language]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPlaces();
   }, [loadPlaces]);
 

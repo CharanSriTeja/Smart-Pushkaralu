@@ -2,27 +2,34 @@ import { query } from '../../db/index.js';
 import { AuditLog } from '../../types/ghats.js';
 
 export interface CreateAuditLogParams {
-  adminId: string;
-  adminEmail: string;
+  adminId?: string | null;
+  /** Deprecated alias kept for backward compatibility with existing callers. Not stored in DB. */
+  adminEmail?: string;
   action: string;
   entityType: string;
-  entityId: string;
+  entityId?: string | null;
+  /** New field name matching DB column */
+  oldValue?: any;
+  /** Old field name alias – maps to old_value DB column */
   oldValues?: any;
+  /** New field name matching DB column */
+  newValue?: any;
+  /** Old field name alias – maps to new_value DB column */
   newValues?: any;
   sourceUrl?: string | null;
-  reason: string;
+  reason?: string | null;
+  /** Deprecated – not stored in DB column, ignored silently */
   ipAddress?: string | null;
 }
 
 export class AuditService {
   /**
    * Records an administrative action in the audit_logs table.
-   * Logs admin, timestamp, old value, new value, source URL, and required reason.
+   * Logs admin, timestamp, old value, new value, source URL, and reason.
    */
   static async record(params: CreateAuditLogParams): Promise<AuditLog> {
-    if (!params.reason || params.reason.trim().length === 0) {
-      throw new Error('An audit reason is strictly required for all administrative modifications.');
-    }
+    const resolvedOld = params.oldValue ?? params.oldValues ?? null;
+    const resolvedNew = params.newValue ?? params.newValues ?? null;
 
     const { rows } = await query<AuditLog>(
       `INSERT INTO audit_logs (
@@ -31,15 +38,15 @@ export class AuditService {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
-        params.adminId,
-        params.adminEmail,
+        params.adminId || null,
+        params.adminEmail || 'admin',
         params.action,
         params.entityType,
-        params.entityId,
-        params.oldValues ? JSON.stringify(params.oldValues) : null,
-        params.newValues ? JSON.stringify(params.newValues) : null,
+        params.entityId || null,
+        resolvedOld ? JSON.stringify(resolvedOld) : null,
+        resolvedNew ? JSON.stringify(resolvedNew) : null,
         params.sourceUrl || null,
-        params.reason.trim(),
+        params.reason || null,
         params.ipAddress || null,
       ]
     );

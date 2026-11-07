@@ -29,6 +29,9 @@ const createGhatSchema = z.object({
   publish_status: z.enum(['draft', 'published', 'hidden']).default('draft'),
   description: localizedStringSchema.optional(),
   max_capacity: z.number().int().positive().nullable().optional(),
+  sources: z.array(z.any()).optional(),
+  facilities: z.array(z.any()).optional(),
+  aarti_timings: z.array(z.any()).optional(),
   reason: z.string().min(5, 'Audit reason of at least 5 characters is required for creating a ghat'),
 });
 
@@ -50,6 +53,9 @@ const updateGhatSchema = z.object({
   publish_status: z.enum(['draft', 'published', 'hidden']).optional(),
   description: localizedStringSchema.optional(),
   max_capacity: z.number().int().positive().nullable().optional(),
+  sources: z.array(z.any()).optional(),
+  facilities: z.array(z.any()).optional(),
+  aarti_timings: z.array(z.any()).optional(),
   reason: z.string().min(5, 'Audit reason of at least 5 characters is required for updating a ghat'),
 });
 
@@ -122,7 +128,7 @@ export class GhatsController {
    */
   static async getGhatById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const ghat = await GhatsRepository.findGhatById(id);
 
       if (!ghat) {
@@ -206,7 +212,7 @@ export class GhatsController {
    */
   static async updateGhat(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const body = updateGhatSchema.parse(req.body);
 
       const existing = await GhatsRepository.findGhatById(id);
@@ -269,7 +275,7 @@ export class GhatsController {
    */
   static async setPublishStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { publish_status, reason } = publishStatusSchema.parse(req.body);
 
       const existing = await GhatsRepository.findGhatById(id);
@@ -302,6 +308,107 @@ export class GhatsController {
       res.json({
         data: updated,
         message: `Ghat status changed to '${publish_status}' with audit logging.`,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * DELETE /v1/admin/ghats/:id
+   * Admin delete ghat with audit logging
+   */
+  static async deleteGhat(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string;
+      const reason = (req.body?.reason || req.query?.reason || 'Ghat removed by administrator') as string;
+
+      const existing = await GhatsRepository.findGhatById(id);
+      if (!existing) {
+        res.status(404).json({
+          error: {
+            code: 'GHAT_NOT_FOUND',
+            message: `Ghat with ID '${id}' was not found.`,
+          },
+        });
+        return;
+      }
+
+      const deleted = await GhatsRepository.deleteGhat(id);
+      if (!deleted) {
+        res.status(500).json({
+          error: {
+            code: 'DELETE_FAILED',
+            message: 'Failed to delete ghat from database.',
+          },
+        });
+        return;
+      }
+
+      // Record audit log
+      await AuditService.record({
+        adminId: req.user!.userId,
+        adminEmail: req.user!.phone || 'admin',
+        action: 'ghat.delete',
+        entityType: 'ghat',
+        entityId: id,
+        oldValues: existing,
+        newValues: null,
+        sourceUrl: existing.official_source_url,
+        reason,
+        ipAddress: req.ip,
+      });
+
+      res.json({
+        success: true,
+        message: 'Ghat deleted successfully.',
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /v1/admin/ghats/bulk
+   * Admin bulk import ghats (e.g. from CSV parser) with audit logging
+   */
+  static async bulkCreateGhats(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ghatList = Array.isArray(req.body) ? req.body : req.body?.ghats;
+      const reason = (req.body?.reason || 'Bulk import of ghats by administrator') as string;
+
+      if (!Array.isArray(ghatList) || ghatList.length === 0) {
+        res.status(400).json({
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'An array of ghats under "ghats" or directly in the request body is required.',
+          },
+        });
+        return;
+      }
+
+      const result = await GhatsRepository.bulkCreateGhats(ghatList);
+
+      // Record audit log for bulk import
+      await AuditService.record({
+        adminId: req.user!.userId,
+        adminEmail: req.user!.phone || 'admin',
+        action: 'ghat.bulk_import',
+        entityType: 'ghat',
+        entityId: 'bulk',
+        oldValues: null,
+        newValues: { imported_count: result.count, error_count: result.errors.length },
+        sourceUrl: null,
+        reason,
+        ipAddress: req.ip,
+      });
+
+      res.status(201).json({
+        success: true,
+        count: result.count,
+        ghats: result.ghats,
+        errors: result.errors,
+        message: `Successfully imported ${result.count} ghats.${result.errors.length > 0 ? ` (${result.errors.length} errors encountered)` : ''}`,
       });
     } catch (err) {
       next(err);

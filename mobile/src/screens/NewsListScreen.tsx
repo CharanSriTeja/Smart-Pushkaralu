@@ -62,7 +62,6 @@ export const NewsListScreen: React.FC = () => {
   }, [selectedCategory, language]);
 
   useEffect(() => {
-    setLoading(true);
     loadNews();
   }, [loadNews]);
 

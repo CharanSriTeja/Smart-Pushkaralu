@@ -273,6 +273,9 @@ export class GhatsRepository {
     publish_status?: string;
     description?: any;
     max_capacity?: number | null;
+    sources?: any[];
+    facilities?: any[];
+    aarti_timings?: any[];
   }): Promise<Ghat> {
     const { rows } = await query<Ghat>(
       `INSERT INTO ghats (
@@ -313,6 +316,70 @@ export class GhatsRepository {
        ON CONFLICT (ghat_id) DO NOTHING`,
       [newGhat.id, newGhat.crowd_level || 'unknown']
     );
+
+    // If sources provided, insert them
+    if (Array.isArray(data.sources)) {
+      for (const s of data.sources) {
+        if (s.source_url) {
+          await query(
+            `INSERT INTO ghat_sources (ghat_id, source_url, source_name, source_type, is_official, notes)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT DO NOTHING`,
+            [
+              newGhat.id,
+              s.source_url,
+              s.source_name || 'Official Portal',
+              s.source_type || 'district_portal',
+              s.is_official !== undefined ? s.is_official : true,
+              s.notes || null,
+            ]
+          );
+        }
+      }
+    }
+
+    // If facilities provided, insert them
+    if (Array.isArray(data.facilities)) {
+      for (const f of data.facilities) {
+        if (f.facility_type) {
+          const facDetails = typeof f.details === 'object' ? f.details : { en: String(f.details || f.facility_type) };
+          await query(
+            `INSERT INTO ghat_facilities (ghat_id, facility_type, details, is_operational, count)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [
+              newGhat.id,
+              f.facility_type,
+              JSON.stringify(facDetails),
+              f.available !== undefined ? f.available : (f.is_operational !== undefined ? f.is_operational : true),
+              f.count ? parseInt(String(f.count), 10) : 1,
+            ]
+          );
+        }
+      }
+    }
+
+    // If aarti timings provided, insert them
+    if (Array.isArray(data.aarti_timings)) {
+      for (const a of data.aarti_timings) {
+        const aName = typeof a.aarti_name === 'object' ? a.aarti_name : (typeof a.name === 'object' ? a.name : { en: a.aarti_name || a.name || 'Aarti' });
+        const aDesc = typeof a.description === 'object' ? a.description : { en: a.description || '' };
+        const timeStart = a.time || a.time_start || '18:00';
+        const timeEnd = a.time_end || (a.time ? a.time : '19:00');
+        const days = Array.isArray(a.days) ? a.days.join(', ') : (a.days_of_week || 'everyday');
+        await query(
+          `INSERT INTO ghat_aarti_timings (ghat_id, name, time_start, time_end, description, days_of_week)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            newGhat.id,
+            JSON.stringify(aName),
+            timeStart,
+            timeEnd,
+            JSON.stringify(aDesc),
+            days,
+          ]
+        );
+      }
+    }
 
     return newGhat;
   }
@@ -403,6 +470,186 @@ export class GhatsRepository {
       ]
     );
     return rows[0];
+  }
+
+  /**
+   * Delete a ghat by ID
+   */
+  static async deleteGhat(id: string): Promise<boolean> {
+    const { rows } = await query('DELETE FROM ghats WHERE id = $1 RETURNING id', [id]);
+    return rows.length > 0;
+  }
+
+  /**
+   * Bulk insert ghats with related sources, facilities, and aarti timings
+   */
+  static async bulkCreateGhats(
+    ghatList: any[]
+  ): Promise<{ count: number; ghats: Ghat[]; errors: Array<{ index: number; error: string }> }> {
+    const createdGhats: Ghat[] = [];
+    const errors: Array<{ index: number; error: string }> = [];
+
+    const parseLocalized = (val: any, fallback = '') => {
+      if (!val) return { en: fallback };
+      if (typeof val === 'object') return val;
+      if (typeof val === 'string') {
+        try {
+          const parsed = JSON.parse(val);
+          if (typeof parsed === 'object') return parsed;
+        } catch {
+          return { en: val };
+        }
+      }
+      return { en: String(val) };
+    };
+
+    const parseArray = (val: any) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') {
+        try {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    for (let i = 0; i < ghatList.length; i++) {
+      const item = ghatList[i];
+      try {
+        const name = parseLocalized(item.name, 'Pushkaralu Ghat');
+        const river = item.river || 'Godavari';
+        const district = item.district || 'East Godavari';
+        const state = item.state || 'Andhra Pradesh';
+        const lat = typeof item.lat === 'number' ? item.lat : parseFloat(item.lat);
+        const lng = typeof item.lng === 'number' ? item.lng : parseFloat(item.lng);
+
+        if (isNaN(lat) || isNaN(lng)) {
+          errors.push({ index: i, error: `Invalid coordinates (lat: ${item.lat}, lng: ${item.lng})` });
+          continue;
+        }
+
+        const nearest_town = parseLocalized(item.nearest_town, district);
+        const nearest_railway_station = parseLocalized(item.nearest_railway_station, '');
+        const nearest_bus_stand = parseLocalized(item.nearest_bus_stand, '');
+        const description = item.description ? parseLocalized(item.description, '') : null;
+        const max_capacity = item.max_capacity ? parseInt(String(item.max_capacity), 10) : null;
+
+        const { rows } = await query<Ghat>(
+          `INSERT INTO ghats (
+            name, river, district, state, lat, lng,
+            nearest_town, nearest_railway_station, nearest_bus_stand,
+            official_source_url, verified_at, record_status,
+            bathing_status, crowd_level, publish_status,
+            description, max_capacity
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          RETURNING *`,
+          [
+            JSON.stringify(name),
+            river,
+            district,
+            state,
+            lat,
+            lng,
+            JSON.stringify(nearest_town),
+            JSON.stringify(nearest_railway_station),
+            JSON.stringify(nearest_bus_stand),
+            item.official_source_url || null,
+            item.verified_at || null,
+            item.record_status || 'officially_listed',
+            item.bathing_status || 'allowed',
+            item.crowd_level || 'medium',
+            item.publish_status || 'published',
+            description ? JSON.stringify(description) : null,
+            max_capacity,
+          ]
+        );
+
+        const newGhat = rows[0];
+
+        // Default crowd status
+        await query(
+          `INSERT INTO crowd_status (ghat_id, current_level, source_type, confidence_score)
+           VALUES ($1, $2, 'default', 0.5)
+           ON CONFLICT (ghat_id) DO NOTHING`,
+          [newGhat.id, newGhat.crowd_level || 'medium']
+        );
+
+        // Sources
+        const sources = parseArray(item.sources);
+        for (const s of sources) {
+          if (s.source_url) {
+            await query(
+              `INSERT INTO ghat_sources (ghat_id, source_url, source_name, source_type, is_official, notes)
+               VALUES ($1, $2, $3, $4, $5, $6)
+               ON CONFLICT DO NOTHING`,
+              [
+                newGhat.id,
+                s.source_url,
+                s.source_name || 'Official Source',
+                s.source_type || 'district_portal',
+                s.is_official !== undefined ? s.is_official : true,
+                s.notes || null,
+              ]
+            );
+          }
+        }
+
+        // Facilities
+        const facilities = parseArray(item.facilities);
+        for (const f of facilities) {
+          if (f.facility_type) {
+            const facDetails = parseLocalized(f.details, f.facility_type);
+            await query(
+              `INSERT INTO ghat_facilities (ghat_id, facility_type, details, is_operational, count)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [
+                newGhat.id,
+                f.facility_type,
+                JSON.stringify(facDetails),
+                f.available !== undefined ? f.available : (f.is_operational !== undefined ? f.is_operational : true),
+                f.count ? parseInt(String(f.count), 10) : 1,
+              ]
+            );
+          }
+        }
+
+        // Aarti Timings
+        const aartiTimings = parseArray(item.aarti_timings);
+        for (const a of aartiTimings) {
+          const aartiName = parseLocalized(a.aarti_name || a.name, 'Aarti');
+          const aartiDesc = parseLocalized(a.description, '');
+          const timeStart = a.time || a.time_start || '18:00';
+          const timeEnd = a.time_end || (a.time ? a.time : '19:00');
+          const daysOfWeek = Array.isArray(a.days) ? a.days.join(', ') : (a.days_of_week || 'everyday');
+          await query(
+            `INSERT INTO ghat_aarti_timings (ghat_id, name, time_start, time_end, description, days_of_week)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+              newGhat.id,
+              JSON.stringify(aartiName),
+              timeStart,
+              timeEnd,
+              JSON.stringify(aartiDesc),
+              daysOfWeek,
+            ]
+          );
+        }
+
+        createdGhats.push(newGhat);
+      } catch (err: any) {
+        errors.push({ index: i, error: err.message || 'Failed to insert ghat' });
+      }
+    }
+
+    return {
+      count: createdGhats.length,
+      ghats: createdGhats,
+      errors,
+    };
   }
 }
 

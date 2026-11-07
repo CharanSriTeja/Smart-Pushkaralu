@@ -405,5 +405,46 @@
       "title": "No Places Found Nearby",
       "desc": "No places found within {{radius}} km. Try selecting a wider search radius."
     }
+  },
+  "sos": {
+    "_comment": "NOTE: Emergency and safety strings. Review by native speaker required before production deployment.",
+    "official_disclaimer": "This app assists pushkaralu volunteers and command control. It supplements and NEVER replaces official emergency 112.",
+    "call_112_banner": "Emergency? Call 112 immediately",
+    "call_112_button": "Dial 112 Now",
+    "title": "Emergency SOS",
+    "subtitle": "Select emergency category. Countdown will trigger alert.",
+    "countdown_msg": "Sending {{type}} alert in {{seconds}}s...",
+    "cancel_countdown": "Cancel",
+    "send_now": "Send Now",
+    "gps_privacy_notice": "Your location is acquired only when you trigger an emergency SOS alert, used exclusively to dispatch help.",
+    "categories": {
+      "medical": "Medical Emergency",
+      "medical_desc": "Heart attack, drowning, injury, breathing trouble",
+      "police": "Police Assistance",
+      "police_desc": "Stampede risk, theft, physical danger, assault",
+      "fire": "Fire & Rescue",
+      "fire_desc": "Fire outbreak, cylinder leak, structural collapse",
+      "lost_person": "Lost Person / Child",
+      "lost_person_desc": "Separated child, missing elder in crowd",
+      "general": "General Emergency",
+      "general_desc": "Urgent assistance required at this location"
+    },
+    "status": {
+      "title": "SOS Alert Status",
+      "new": "Alert Logged",
+      "acknowledged": "Acknowledged & Assigned",
+      "dispatched": "Rescue Team Dispatched",
+      "resolved": "Emergency Resolved",
+      "false_alarm": "Alert Cancelled"
+    },
+    "actions": {
+      "cancel_alert": "Cancel Alert (False Alarm)",
+      "send_sms": "Send SOS by SMS",
+      "emergency_contacts": "Emergency Helplines",
+      "call_control_room": "Call Control Room"
+    },
+    "offline_queued": "Network unavailable. Alert queued and will sync automatically.",
+    "zone_detected": "Attached to Zone: {{zone}}"
   }
 }
+
