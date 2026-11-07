@@ -397,6 +397,29 @@ describe('Module 3: Ghat Information & Trust Engine Tests', () => {
         }
       }
 
+      // DELETE FROM ghats
+      if (lowerSql.includes('delete from ghats where id = $1')) {
+        const id = params[0];
+        const idx = mockGhats.findIndex((g) => g.id === id);
+        if (idx !== -1) {
+          const removed = mockGhats.splice(idx, 1)[0];
+          return { rows: [{ id: removed.id }], rowCount: 1 } as any;
+        }
+        return { rows: [], rowCount: 0 } as any;
+      }
+
+      if (lowerSql.includes('insert into ghat_sources')) {
+        return { rows: [{ id: 'src-mock' }], rowCount: 1 } as any;
+      }
+
+      if (lowerSql.includes('insert into ghat_facilities')) {
+        return { rows: [{ id: 'fac-mock' }], rowCount: 1 } as any;
+      }
+
+      if (lowerSql.includes('insert into ghat_aarti_timings')) {
+        return { rows: [{ id: 'aarti-mock' }], rowCount: 1 } as any;
+      }
+
       // INSERT INTO ghats
       if (lowerSql.includes('insert into ghats')) {
         const newGhat = {
@@ -707,6 +730,120 @@ describe('Module 3: Ghat Information & Trust Engine Tests', () => {
       const audit = mockAuditLogs.find((l) => l.action === 'ghat.crowd_override');
       expect(audit).toBeDefined();
       expect(audit?.reason).toContain('NDRF drone surveillance');
+    });
+
+    it('deletes a ghat with audit logging and permission checking', async () => {
+      const ghatId = 'ghat-uuid-1';
+      const res = await request(app)
+        .delete(`/v1/admin/ghats/${ghatId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          reason: 'Decommissioned old ghat due to renovation',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+
+      // Verify audit log
+      const audit = mockAuditLogs.find((l) => l.action === 'ghat.delete');
+      expect(audit).toBeDefined();
+      expect(audit?.entity_id).toBe(ghatId);
+      expect(audit?.reason).toContain('Decommissioned old ghat');
+    });
+
+    it('bulk imports ghats in Saraswati Ghat specification format with audit logging', async () => {
+      const saraswatiGhatData = {
+        name: {
+          en: 'Saraswati Ghat',
+          te: 'సరస్వతి ఘాట్',
+          hi: 'सरस्वती घाट',
+        },
+        river: 'Godavari',
+        district: 'East Godavari',
+        state: 'Andhra Pradesh',
+        lat: 17.0048,
+        lng: 81.7762,
+        nearest_town: {
+          en: 'Rajahmundry',
+          te: 'రాజమండ్రి',
+          hi: 'राजमुंदरी',
+        },
+        nearest_railway_station: {
+          en: 'Godavari Railway Station (GVN - 1.4 km)',
+          te: 'గోదావరి రైల్వే స్టేషన్ (GVN - 1.4 కి.మీ)',
+          hi: 'गोदावरी रेलवे स्टेशन (GVN - 1.4 किमी)',
+        },
+        nearest_bus_stand: {
+          en: 'Kotipalli Bus Stand (3.0 km)',
+          te: 'కోటిపల్లి బస్టాండ్ (3.0 కి.మీ)',
+          hi: 'कोटिपल्ली बस स्टैंड (3.0 किमी)',
+        },
+        official_source_url: 'https://eastgodavari.ap.gov.in/pushkaralu/saraswati-ghat',
+        verified_at: '2026-09-20T11:30:00Z',
+        record_status: 'officially_listed',
+        bathing_status: 'allowed',
+        crowd_level: 'medium',
+        publish_status: 'published',
+        description: {
+          en: 'Tranquil ghat situated slightly north of Pushkar ghat, preferred by families and elder pilgrims.',
+          te: 'పుష్కర్ ఘాట్‌కు కొద్దిగా ఉత్తరాన ఉన్న ప్రశాంతమైన ఘాట్, కుటుంబాలు మరియు వృద్ధ భక్తులకు అత్యంత అనుకూలమైనది.',
+          hi: 'पुष्कर घाट के उत्तर में स्थित शांत घाट, परिवारों और वृद्ध श्रद्धालुओं के लिए उपयुक्त।',
+        },
+        max_capacity: 30000,
+        sources: [
+          {
+            source_url: 'https://eastgodavari.ap.gov.in/pushkaralu/saraswati-ghat',
+            source_name: 'East Godavari District Portal',
+            source_type: 'district_portal',
+          },
+        ],
+        facilities: [
+          {
+            facility_type: 'changing_rooms',
+            available: true,
+            details: {
+              en: 'Separate enclosures for men and women',
+              te: 'స్త్రీలు మరియు పురుషులకు ప్రత్యేక గదులు',
+              hi: 'महिला एवं पुरुष हेतु पृथक कक्ष',
+            },
+            count: 12,
+          },
+        ],
+        aarti_timings: [
+          {
+            aarti_name: {
+              en: 'Godavari Harathi',
+              te: 'గోదావరి హారతి',
+              hi: 'गोदावरी आरती',
+            },
+            time: '19:00',
+            days: ['everyday'],
+            description: {
+              en: 'Daily evening aarti by the river bank',
+              te: 'నదీ తీరాన రోజువారీ సాయంత్రం హారతి',
+              hi: 'నదీ తీరాన రోజువారీ సాయంత్రం హారతి',
+            },
+          },
+        ],
+      };
+
+      const res = await request(app)
+        .post('/v1/admin/ghats/bulk')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          ghats: [saraswatiGhatData],
+          reason: 'Official District Collectorate bulk CSV upload',
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.count).toBe(1);
+      expect(res.body.ghats[0].name.en).toBe('Saraswati Ghat');
+
+      // Verify audit log
+      const audit = mockAuditLogs.find((l) => l.action === 'ghat.bulk_import');
+      expect(audit).toBeDefined();
+      expect(audit?.reason).toContain('bulk CSV upload');
     });
   });
 

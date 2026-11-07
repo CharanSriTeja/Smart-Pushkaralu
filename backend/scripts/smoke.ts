@@ -288,6 +288,40 @@ async function runAllSmokeTests() {
     expectedStatus: 200,
   });
 
+  // Admin Bulk Import Ghats
+  const bulkGhatRes = await runStep('Admin Bulk Import Ghats (Super Admin 201)', 'POST', '/v1/admin/ghats/bulk', {
+    token: superAdminToken,
+    body: {
+      ghats: [
+        {
+          name: { en: 'Smoke Test Temporary Ghat', te: 'స్మోక్ టెస్ట్ ఘాట్', hi: 'स्मोक टेस्ट घाट' },
+          river: 'Godavari',
+          district: 'East Godavari',
+          state: 'Andhra Pradesh',
+          lat: 17.0099,
+          lng: 81.7799,
+          nearest_town: { en: 'Rajahmundry' },
+          record_status: 'officially_listed',
+          bathing_status: 'allowed',
+          crowd_level: 'low',
+          publish_status: 'draft',
+          facilities: [{ facility_type: 'changing_rooms', count: 2 }],
+        },
+      ],
+      reason: 'Smoke test bulk ghat import verification',
+    },
+    expectedStatus: 201,
+  });
+
+  const createdSmokeGhatId = bulkGhatRes.body?.ghats?.[0]?.id;
+  if (createdSmokeGhatId) {
+    await runStep('Admin Delete Ghat (Super Admin 200)', 'DELETE', `/v1/admin/ghats/${createdSmokeGhatId}`, {
+      token: superAdminToken,
+      body: { reason: 'Smoke test temporary ghat cleanup' },
+      expectedStatus: 200,
+    });
+  }
+
   // --- 10. INPUT VALIDATION & ERROR SHAPE CHECK (NEGATIVE CASES) ---
   const invalidGhat = await runStep('Invalid Ghat Creation (Missing fields 400)', 'POST', '/v1/admin/ghats', {
     token: superAdminToken,
