@@ -17,6 +17,9 @@ export const ROLE_PERMISSIONS: Record<MockRole, string[]> = {
     'places.create',
     'places.delete',
     'places.cache',
+    'transport.read',
+    'transport.write',
+    'transport.delete',
   ],
   editor: [
     'ghats.write',
@@ -27,8 +30,10 @@ export const ROLE_PERMISSIONS: Record<MockRole, string[]> = {
     'places.update',
     'places.create',
     'places.cache',
+    'transport.read',
+    'transport.write',
   ],
-  viewer: ['audit.read', 'places.read'],
+  viewer: ['audit.read', 'places.read', 'transport.read'],
   guest: [],
 };
 

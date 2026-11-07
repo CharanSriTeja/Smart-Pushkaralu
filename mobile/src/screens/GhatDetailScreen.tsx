@@ -271,7 +271,7 @@ export const GhatDetailScreen: React.FC = () => {
               onPress={() =>
                 router.push({
                   pathname: '/(app)/ghats/nearby',
-                  params: { id: ghat.id, ghatName: name },
+                  params: { id: ghat.id, ghatName: name, type: 'temple' },
                 })
               }
             >
@@ -286,7 +286,7 @@ export const GhatDetailScreen: React.FC = () => {
               onPress={() =>
                 router.push({
                   pathname: '/(app)/ghats/nearby',
-                  params: { id: ghat.id, ghatName: name },
+                  params: { id: ghat.id, ghatName: name, type: 'hotel' },
                 })
               }
             >
@@ -300,7 +300,7 @@ export const GhatDetailScreen: React.FC = () => {
               style={styles.nearbyQuickBtn}
               onPress={() =>
                 router.push({
-                  pathname: '/(app)/ghats/nearby',
+                  pathname: '/(app)/ghats/transport',
                   params: { id: ghat.id, ghatName: name },
                 })
               }

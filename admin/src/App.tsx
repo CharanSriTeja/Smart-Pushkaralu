@@ -12,6 +12,7 @@ import { AuditLogsPage } from './pages/AuditLogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { UsagePage } from './pages/UsagePage';
 import { NearbyPlacesAdminPage } from './pages/NearbyPlacesAdminPage';
+import { TransportAdminPage } from './pages/TransportAdminPage';
 
 export const App: React.FC = () => {
   return (
@@ -23,6 +24,7 @@ export const App: React.FC = () => {
             <Route path="sos" element={<SOSDashboardPage />} />
             <Route path="ghats" element={<GhatsPage />} />
             <Route path="places" element={<NearbyPlacesAdminPage />} />
+            <Route path="transport" element={<TransportAdminPage />} />
             <Route path="news" element={<NewsPage />} />
             <Route path="seva" element={<SevaPage />} />
             <Route path="issues" element={<IssuesPage />} />

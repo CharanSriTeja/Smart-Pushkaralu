@@ -219,11 +219,21 @@
     "route_summary": "Travel Route & Walking Corridor"
   },
   "transport": {
-    "title": "Transport & Parking",
+    "title": "Transport & Shuttles",
     "parking_status": "Parking Lots & Real-time Slots",
     "shuttle_bus": "Free Shuttle Buses",
     "traffic_updates": "Traffic Restrictions & Corridors",
-    "nearby_parking": "Find Nearby Parking"
+    "nearby_parking": "Find Nearby Parking",
+    "tabs": {
+      "buses": "RTC Buses",
+      "trains": "Trains",
+      "shuttles": "Free Shuttles"
+    },
+    "specials_title": "Pushkaralu Special RTC Fleets",
+    "rail_title": "Railway Stations & Halts",
+    "shuttle_title": "Free Green Corridor Shuttles",
+    "official_portals": "Official Reservation Portals",
+    "disclaimer": "Notice: During Godavari Pushkaralu, bus routes, rail platforms, and green corridors are dynamically managed by district traffic authorities. Conditions and timings can change suddenly."
   },
   "settings": {
     "title": "App Settings",

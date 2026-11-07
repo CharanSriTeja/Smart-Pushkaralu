@@ -25,6 +25,8 @@ import { issuesRouter } from './routes/v1/issues.routes.js';
 import { adminRouter } from './routes/v1/admin.routes.js';
 import { sosRouter } from './routes/v1/sos.routes.js';
 import { adminSosRouter } from './routes/v1/admin-sos.routes.js';
+import { transportRouter } from './routes/v1/transport.routes.js';
+import { adminTransportRouter } from './routes/v1/admin-transport.routes.js';
 
 // Initialize Sentry error reporting
 initSentry();
@@ -85,6 +87,8 @@ app.use('/v1', publicWriteLimiter, devicesRouter);
 app.use('/v1', issuesRouter);
 app.use('/v1', sosRouter);
 app.use('/v1/admin/sos', adminSosRouter);
+app.use('/v1/transport', transportRouter);
+app.use('/v1/admin/transport', adminTransportRouter);
 app.use('/v1/admin', auditRouter);
 app.use('/v1/admin', adminRouter);
 

@@ -15,6 +15,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/sos', label: 'SOS Command Live', icon: '🚨', permission: 'sos.update' },
   { to: '/ghats', label: 'Ghats Management', icon: '🌊', permission: 'ghats.write' },
   { to: '/places', label: 'Nearby Places', icon: '🏨', permission: 'places.read' },
+  { to: '/transport', label: 'Transport & Shuttles', icon: '🚌', permission: 'transport.read' },
   { to: '/news', label: 'News & Advisories', icon: '📰', permission: 'news.publish' },
   { to: '/seva', label: 'Seva & Volunteers', icon: '🙏', permission: 'seva.write' },
   { to: '/issues', label: 'Grievance / Issues', icon: '📋', permission: 'issues.update' },

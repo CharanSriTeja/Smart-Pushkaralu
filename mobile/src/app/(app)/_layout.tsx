@@ -76,6 +76,12 @@ export default function AppLayout() {
             href: null, // Sub-navigation screens (grievances, timeline)
           }}
         />
+        <Tabs.Screen
+          name="transport"
+          options={{
+            href: null, // Sub-navigation screen for Module 6 Transport & Shuttles
+          }}
+        />
       </Tabs>
       <SOSFloatingButton />
     </View>

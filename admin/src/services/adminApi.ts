@@ -626,6 +626,369 @@ export const AdminApi = {
     if (!res.ok) throw new Error(json.error?.message || 'Failed to deactivate contact');
     return json;
   },
+
+  // ==========================================
+  // MODULE 6: TRANSPORT & SHUTTLES ADMIN API
+  // ==========================================
+
+  // Hubs
+  async getTransportHubs(params: Record<string, string> = {}): Promise<any[]> {
+    try {
+      const q = new URLSearchParams(params);
+      const res = await fetch(`${API_BASE_URL}/admin/transport/hubs?${q.toString()}`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('API offline');
+      const json = await res.json();
+      return json.items || [];
+    } catch {
+      return [
+        {
+          id: 'mock-hub-1',
+          name: { en: 'Rajahmundry Central Bus Station', te: 'రాజమండ్రి సెంట్రల్ బస్ స్టేషన్', hi: 'राजमंड्री सेंट्रल बस स्टेशन' },
+          hub_type: 'bus_stand',
+          operator: 'APSRTC',
+          code: 'RJY-CBS',
+          phone: '+91 883 2462002',
+          lat: 17.0095,
+          lng: 81.7892,
+          is_active: true,
+        },
+        {
+          id: 'mock-hub-2',
+          name: { en: 'Rajahmundry Railway Station (RJY)', te: 'రాజమండ్రి రైల్వే స్టేషన్ (RJY)', hi: 'राजमंड्री रेलवे स्टेशन (RJY)' },
+          hub_type: 'railway_station',
+          operator: 'Indian Railways (SCR)',
+          code: 'RJY',
+          phone: '139',
+          lat: 16.9934,
+          lng: 81.7821,
+          is_active: true,
+        },
+      ];
+    }
+  },
+
+  async createTransportHub(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create hub');
+    return json.item;
+  },
+
+  async updateTransportHub(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update hub');
+    return json.item;
+  },
+
+  async deleteTransportHub(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete hub');
+    return json;
+  },
+
+  // Bus Routes
+  async getBusRoutes(params: Record<string, string> = {}): Promise<any[]> {
+    try {
+      const q = new URLSearchParams(params);
+      const res = await fetch(`${API_BASE_URL}/admin/transport/bus-routes?${q.toString()}`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('API offline');
+      const json = await res.json();
+      return json.items || [];
+    } catch {
+      return [
+        {
+          id: 'mock-route-1',
+          route_number: 'Route 101',
+          operator: 'APSRTC',
+          origin: { en: 'RTC Complex', te: 'ఆర్టీసీ కాంప్లెక్స్' },
+          destination: { en: 'Pushkar Ghat', te: 'పుష్కర్ ఘాట్' },
+          frequency_minutes: 10,
+          bus_type: 'ordinary',
+          is_active: true,
+        },
+      ];
+    }
+  },
+
+  async createBusRoute(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/bus-routes`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create route');
+    return json.item;
+  },
+
+  async updateBusRoute(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/bus-routes/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update route');
+    return json.item;
+  },
+
+  async deleteBusRoute(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/bus-routes/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete route');
+    return json;
+  },
+
+  // Special Services
+  async getSpecialServices(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/transport/special-services`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('API offline');
+      const json = await res.json();
+      return json.items || [];
+    } catch {
+      return [
+        {
+          id: 'mock-spl-1',
+          service_code: 'PUSH-SPL-HYD-01',
+          service_title: { en: 'Hyderabad to Rajahmundry Pushkaralu Special', te: 'హైదరాబాద్ - రాజమండ్రి ప్రత్యేక బస్సు' },
+          operator: 'APSRTC',
+          origin_city: { en: 'Hyderabad (MGBS)' },
+          destination_town: { en: 'Rajahmundry' },
+          operating_dates: { start_date: '2027-07-14', end_date: '2027-07-25' },
+          booking_url: 'https://www.apsrtconline.in',
+          is_active: true,
+        },
+      ];
+    }
+  },
+
+  async createSpecialService(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/special-services`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create special service');
+    return json.item;
+  },
+
+  async updateSpecialService(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/special-services/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update special service');
+    return json.item;
+  },
+
+  async deleteSpecialService(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/special-services/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete special service');
+    return json;
+  },
+
+  // Rail Stations
+  async getRailStations(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/transport/rail-stations`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('API offline');
+      const json = await res.json();
+      return json.items || [];
+    } catch {
+      return [
+        {
+          id: 'mock-rail-1',
+          station_code: 'RJY',
+          station_name: { en: 'Rajahmundry', te: 'రాజమండ్రి', hi: 'राजमंड्री' },
+          division: 'Vijayawada (BZA)',
+          zone: 'SCR',
+          total_platforms: 5,
+          has_pushkaralu_special_trains: true,
+          helpdesk_phone: '+91 883 2463131',
+          is_active: true,
+        },
+      ];
+    }
+  },
+
+  async createRailStation(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/rail-stations`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create rail station');
+    return json.item;
+  },
+
+  async updateRailStation(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/rail-stations/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update rail station');
+    return json.item;
+  },
+
+  async deleteRailStation(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/rail-stations/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete rail station');
+    return json;
+  },
+
+  // Shuttles & Stops
+  async getShuttleRoutes(params: Record<string, string> = {}): Promise<any[]> {
+    try {
+      const q = new URLSearchParams(params);
+      const res = await fetch(`${API_BASE_URL}/admin/transport/shuttle-routes?${q.toString()}`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('API offline');
+      const json = await res.json();
+      return json.items || [];
+    } catch {
+      return [
+        {
+          id: 'mock-shuttle-1',
+          route_code: 'SHTL-GREEN-01',
+          route_name: { en: 'Morampudi Parking to Pushkar Ghat Free Shuttle', te: 'మొరంపూడి పార్కింగ్ నుండి పుష్కర్ ఘాట్ ఉచిత షటిల్' },
+          shuttle_type: 'free',
+          fare: 0,
+          frequency_minutes: 8,
+          accessible_for_elderly_disabled: true,
+          color_code: '#2E7D32',
+          is_active: true,
+          stops: [
+            { stop_order: 1, stop_name: { en: 'Morampudi Boarding Point' } },
+            { stop_order: 2, stop_name: { en: 'Pushkar Ghat Drop-off' } },
+          ],
+        },
+      ];
+    }
+  },
+
+  async createShuttleRoute(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/shuttle-routes`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create shuttle route');
+    return json.item;
+  },
+
+  async updateShuttleRoute(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/shuttle-routes/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update shuttle route');
+    return json.item;
+  },
+
+  async deleteShuttleRoute(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/shuttle-routes/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete shuttle route');
+    return json;
+  },
+
+  async addShuttleStop(routeId: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/shuttle-routes/${routeId}/stops`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to add shuttle stop');
+    return json.item;
+  },
+
+  // External Links
+  async getExternalLinks(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/transport/external-links`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('API offline');
+      const json = await res.json();
+      return json.items || [];
+    } catch {
+      return [
+        {
+          id: 'mock-link-1',
+          category: 'bus',
+          key: 'apsrtc_booking',
+          title: { en: 'APSRTC Official Ticket Booking', te: 'ఆర్టీసీ అధికారిక టికెట్ బుకింగ్' },
+          url: 'https://www.apsrtconline.in',
+          official_authority: 'APSRTC (Govt. of AP)',
+          is_verified: true,
+          is_active: true,
+        },
+      ];
+    }
+  },
+
+  async updateExternalLink(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/external-links/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update external link');
+    return json.item;
+  },
 };
 
 
