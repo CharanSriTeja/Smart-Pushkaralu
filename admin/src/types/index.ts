@@ -357,5 +357,39 @@ export interface AdminExternalLink {
   updated_at?: string;
 }
 
+export type SevaCategory =
+  | 'aarthi'
+  | 'pooja'
+  | 'cultural'
+  | 'snanam'
+  | 'live_darshan'
+  | 'general';
+
+export interface AdminSevaVideo {
+  id: string;
+  youtube_id: string;
+  youtube_url: string;
+  title_en: string;
+  title_te: string;
+  title_hi?: string | null;
+  description_en?: string | null;
+  description_te?: string | null;
+  description_hi?: string | null;
+  title?: LocalizedText;
+  description?: LocalizedText;
+  category: SevaCategory;
+  ghat_id?: string | null;
+  ghat_name?: LocalizedText | null;
+  event_date: string;
+  is_live: boolean;
+  published: boolean;
+  sort_order: number;
+  thumbnail_url: string;
+  view_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+
 
 

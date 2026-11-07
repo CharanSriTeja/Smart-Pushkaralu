@@ -205,11 +205,19 @@
     "no_announcements": "No Announcements Found"
   },
   "seva": {
-    "title": "Seva & Volunteer",
+    "title": "Virtual Seva & Events",
+    "live_darshan": "Live Darshan",
+    "godavari_aarthi": "Godavari Harathi",
+    "rituals_pooja": "Pujas & Rituals",
+    "cultural_events": "Cultural & Music",
+    "snanam_guide": "Holy Dip Guidelines",
+    "open_youtube": "Open on YouTube",
+    "tap_to_play": "Tap to play video",
     "available_services": "Pilgrim Services & Annadanam",
     "volunteer_register": "Register as Volunteer",
     "prasadam_schedule": "Annadanam & Prasadam Timings",
-    "queue_status": "Darshan & Holy Dip Queue Status"
+    "queue_status": "Darshan & Holy Dip Queue Status",
+    "disclaimer": "Ritual and Harathi timings are subject to change suddenly due to crowd safety protocols and river water levels. All streams are officially sanctioned by the District Administration."
   },
   "planner": {
     "title": "Pushkaralu Planner",

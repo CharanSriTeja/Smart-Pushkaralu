@@ -27,6 +27,8 @@ import { sosRouter } from './routes/v1/sos.routes.js';
 import { adminSosRouter } from './routes/v1/admin-sos.routes.js';
 import { transportRouter } from './routes/v1/transport.routes.js';
 import { adminTransportRouter } from './routes/v1/admin-transport.routes.js';
+import { sevaRouter } from './routes/v1/seva.routes.js';
+import { adminSevaRouter } from './routes/v1/admin-seva.routes.js';
 
 // Initialize Sentry error reporting
 initSentry();
@@ -89,6 +91,8 @@ app.use('/v1', sosRouter);
 app.use('/v1/admin/sos', adminSosRouter);
 app.use('/v1/transport', transportRouter);
 app.use('/v1/admin/transport', adminTransportRouter);
+app.use('/v1/seva', sevaRouter);
+app.use('/v1/admin/seva', adminSevaRouter);
 app.use('/v1/admin', auditRouter);
 app.use('/v1/admin', adminRouter);
 
