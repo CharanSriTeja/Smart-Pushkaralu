@@ -4,23 +4,32 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   SafeAreaView,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
 import { Ghat, GhatFilters, CrowdLevel, BathingStatus } from '../types/ghats';
 import { GhatService } from '../services/ghatService';
-import { getLocalizedText } from '../utils/localized';
-import { BathingStatusBadge } from '../components/BathingStatusBadge';
-import { CrowdStatusBadge } from '../components/CrowdStatusBadge';
-import { OfficialTrustBadge } from '../components/OfficialTrustBadge';
-import { ConditionDisclaimerBanner } from '../components/ConditionDisclaimerBanner';
+import { getLocalizedText, formatVerifiedDate } from '../utils/localized';
+import { colors, radii, spacing, touchTargets, typography, shadows } from '../theme/tokens';
+import {
+  Card,
+  Button,
+  SearchField,
+  Chip,
+  BathingBadge,
+  CrowdBadge,
+  VerificationBadge,
+  SkeletonList,
+  EmptyState,
+  ErrorState,
+  OfflineBanner,
+} from '../components';
 
 export const GhatListScreen: React.FC = () => {
   const router = useRouter();
@@ -30,6 +39,7 @@ export const GhatListScreen: React.FC = () => {
 
   const [ghats, setGhats] = useState<Ghat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
@@ -38,45 +48,65 @@ export const GhatListScreen: React.FC = () => {
   const [selectedDistrict, setSelectedDistrict] = useState<string>(params.district || 'all');
   const [selectedBathing, setSelectedBathing] = useState<BathingStatus | 'all'>('all');
   const [selectedCrowd, setSelectedCrowd] = useState<CrowdLevel | 'all'>('all');
-
-  useEffect(() => {
-    if (params.district) setSelectedDistrict(params.district);
-    if (params.search) setSearch(params.search);
-  }, [params.district, params.search]);
+  const [selectedFacility, setSelectedFacility] = useState<string>('all');
 
   const districts = [
     { id: 'all', label: t('ghats.all_districts', 'All Districts') },
     { id: 'East Godavari', label: 'East Godavari' },
     { id: 'West Godavari', label: 'West Godavari' },
     { id: 'Dr. B.R. Ambedkar Konaseema', label: 'Konaseema' },
-    { id: 'Bhadradri Kothagudem', label: 'Bhadradri Kothagudem' },
+    { id: 'Bhadradri Kothagudem', label: 'Bhadradri' },
     { id: 'Jagtial', label: 'Jagtial' },
     { id: 'Nirmal', label: 'Nirmal' },
     { id: 'Jayashankar Bhupalpally', label: 'Jayashankar' },
   ];
 
+  const bathingOptions: { id: BathingStatus | 'all'; label: string }[] = [
+    { id: 'all', label: 'All Bathing Status' },
+    { id: 'allowed', label: 'Safe for Holy Bath' },
+    { id: 'restricted', label: 'Restricted / Caution' },
+    { id: 'closed', label: 'Strictly Closed' },
+  ];
+
+  const crowdOptions: { id: CrowdLevel | 'all'; label: string }[] = [
+    { id: 'all', label: 'All Crowds' },
+    { id: 'low', label: 'Low Crowd' },
+    { id: 'medium', label: 'Moderate' },
+    { id: 'high', label: 'High / Surge' },
+  ];
+
+  const facilityOptions = [
+    { id: 'all', label: 'All Facilities' },
+    { id: 'changing_rooms', label: 'Changing Rooms' },
+    { id: 'drinking_water', label: 'Drinking Water' },
+    { id: 'medical_aid', label: 'Medical Post' },
+    { id: 'parking', label: 'Parking Space' },
+  ];
+
   const loadGhats = useCallback(async () => {
+    setError(null);
     try {
       const filters: GhatFilters = {};
       if (selectedDistrict !== 'all') filters.district = selectedDistrict;
       if (selectedBathing !== 'all') filters.bathingStatus = selectedBathing;
       if (selectedCrowd !== 'all') filters.crowdLevel = selectedCrowd;
+      if (selectedFacility !== 'all') filters.facilities = selectedFacility;
       if (search.trim()) filters.search = search.trim();
       if (params.near) filters.near = params.near;
 
       const res = await GhatService.getGhats(filters);
       setGhats(res.ghats);
       setIsOffline(res.isOffline);
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Failed to load ghats:', err);
+      setError(err.message || 'Could not connect to ghats registry');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedDistrict, selectedBathing, selectedCrowd, search, params.near]);
+  }, [selectedDistrict, selectedBathing, selectedCrowd, selectedFacility, search, params.near]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadGhats();
   }, [loadGhats]);
 
@@ -85,52 +115,88 @@ export const GhatListScreen: React.FC = () => {
     loadGhats();
   };
 
+  const resetFilters = () => {
+    setSearch('');
+    setSelectedDistrict('all');
+    setSelectedBathing('all');
+    setSelectedCrowd('all');
+    setSelectedFacility('all');
+  };
+
   const renderGhatCard = ({ item }: { item: Ghat }) => {
     const name = getLocalizedText(item.name, language);
     const town = getLocalizedText(item.nearest_town, language);
+    const verifiedDate = item.verified_at ? formatVerifiedDate(item.verified_at, language) : null;
 
     return (
-      <TouchableOpacity
-        style={styles.card}
+      <Card
+        variant="elevated"
         onPress={() => router.push(`/(app)/ghats/${item.id}` as any)}
-        activeOpacity={0.8}
-        accessibilityRole="button"
         accessibilityLabel={`${name}, ${item.district}`}
+        style={styles.card}
       >
+        {/* Title & Location Header */}
         <View style={styles.cardHeader}>
           <View style={styles.titleArea}>
-            <Text style={[styles.ghatName, { fontFamily: fontFamilyBold }]}>{name}</Text>
-            <Text style={[styles.ghatLocation, { fontFamily }]}>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.ghatName, { fontFamily: fontFamilyBold }]}
+            >
+              {name}
+            </Text>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.ghatLocation, { fontFamily }]}
+            >
               📍 {town ? `${town}, ` : ''}{item.district} ({item.state})
             </Text>
           </View>
           {item.distance_km !== undefined && (
             <View style={styles.distanceBadge}>
-              <Text style={styles.distanceText}>{item.distance_km} km</Text>
+              <Text style={styles.distanceText}>
+                {item.distance_km < 1
+                  ? `${Math.round(item.distance_km * 1000)} m`
+                  : `${item.distance_km.toFixed(1)} km`}
+              </Text>
             </View>
           )}
         </View>
 
-        <OfficialTrustBadge
-          recordStatus={item.record_status}
-          officialSourceUrl={item.official_source_url}
-          verifiedAt={item.verified_at}
-          showSourceButton={false}
-        />
-
-        <View style={styles.statusRow}>
-          <BathingStatusBadge status={item.bathing_status} size="small" />
-          <CrowdStatusBadge level={item.crowd_level} size="small" />
+        {/* Verification & Source */}
+        <View style={styles.verificationRow}>
+          <VerificationBadge
+            verified={item.record_status === 'officially_listed'}
+            label={item.record_status === 'officially_listed' ? 'Official Registry' : 'Unverified'}
+            size="sm"
+          />
+          {verifiedDate && (
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.verifiedDateText, { fontFamily }]}
+            >
+              Updated: {verifiedDate}
+            </Text>
+          )}
         </View>
 
+        {/* Status Badges: Bathing status & Crowd level */}
+        <View style={styles.statusRow}>
+          <BathingBadge status={item.bathing_status} size="sm" />
+          <CrowdBadge crowd={item.crowd_level} size="sm" />
+        </View>
+
+        {/* Safety Advisories notice if present */}
         {item.active_notices && item.active_notices.length > 0 && (
           <View style={styles.noticeNotice}>
-            <Text style={styles.noticeNoticeText}>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.noticeNoticeText, { fontFamily }]}
+            >
               ⚠️ {item.active_notices.length} active safety advisory
             </Text>
           </View>
         )}
-      </TouchableOpacity>
+      </Card>
     );
   };
 
@@ -138,86 +204,96 @@ export const GhatListScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Top Header */}
-      <View style={styles.header}>
+      {/* Sticky Search & Filter Header */}
+      <View style={styles.stickyHeader}>
         <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            style={styles.backBtn}
+          >
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
-          <Text style={[styles.screenTitle, { fontFamily: fontFamilyBold }]}>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.screenTitle, { fontFamily: fontFamilyBold }]}
+          >
             {t('ghats.title', 'Pushkaralu Ghats')}
           </Text>
           <TouchableOpacity
             style={styles.mapToggleBtn}
             onPress={() => router.push('/(app)/ghats/map' as any)}
             accessibilityRole="button"
+            accessibilityLabel="Switch to map view"
           >
             <Text style={styles.mapToggleText}>🗺️ {t('ghats.view_map', 'Map')}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Search bar */}
-        <View style={styles.searchBox}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={[styles.searchInput, { fontFamily }]}
-            placeholder={t('ghats.search_placeholder', 'Search ghat, town, or district...')}
-            placeholderTextColor="#94A3B8"
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <SearchField
             value={search}
             onChangeText={setSearch}
-            returnKeyType="search"
+            placeholder={t('ghats.search_placeholder', 'Search ghat, town, or district...')}
+            onClear={() => setSearch('')}
           />
-          {search ? (
-            <TouchableOpacity onPress={() => setSearch('')} style={styles.clearBtn}>
-              <Text style={styles.clearText}>✕</Text>
-            </TouchableOpacity>
-          ) : null}
         </View>
 
-        {/* Horizontal District Filter Pills */}
-        <FlatList
+        {/* Filter Chips Scroll (Districts, Bathing, Crowd) */}
+        <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={districts}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.filterPillsContainer}
-          renderItem={({ item }) => {
-            const isSelected = selectedDistrict === item.id;
-            return (
-              <TouchableOpacity
-                style={[styles.pill, isSelected && styles.pillSelected]}
-                onPress={() => setSelectedDistrict(item.id)}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    isSelected && styles.pillTextSelected,
-                    { fontFamily: isSelected ? fontFamilyBold : fontFamily },
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          }}
-        />
+          contentContainerStyle={styles.filterScroll}
+        >
+          {/* Districts */}
+          {districts.map((d) => (
+            <Chip
+              key={d.id}
+              label={d.label}
+              selected={selectedDistrict === d.id}
+              onPress={() => setSelectedDistrict(d.id)}
+            />
+          ))}
+
+          {/* Bathing Status filter */}
+          {bathingOptions.map((b) => (
+            <Chip
+              key={b.id}
+              label={b.label}
+              selected={selectedBathing === b.id}
+              onPress={() => setSelectedBathing(b.id)}
+            />
+          ))}
+
+          {/* Crowd filter */}
+          {crowdOptions.map((c) => (
+            <Chip
+              key={c.id}
+              label={c.label}
+              selected={selectedCrowd === c.id}
+              onPress={() => setSelectedCrowd(c.id)}
+            />
+          ))}
+        </ScrollView>
       </View>
 
-      {/* Offline Alert Strip if on cached data */}
-      {isOffline && (
-        <View style={styles.offlineBanner}>
-          <Text style={[styles.offlineText, { fontFamily }]}>
-            📡 Offline Mode: Displaying saved ghat directory. Live crowd status requires network.
-          </Text>
-        </View>
-      )}
+      {/* Offline Alert Strip */}
+      {isOffline && <OfflineBanner />}
 
-      {/* Main List */}
+      {/* Main Content Area */}
       {loading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#0F52BA" />
-          <Text style={[styles.loadingText, { fontFamily }]}>{t('common.loading')}</Text>
+        <View style={styles.loadingPadding}>
+          <SkeletonList count={4} />
         </View>
+      ) : error ? (
+        <ErrorState
+          title="Could not load ghats"
+          message={error}
+          onRetry={loadGhats}
+          retryTitle={t('common.retry', 'Retry')}
+        />
       ) : (
         <FlatList
           data={ghats}
@@ -226,19 +302,21 @@ export const GhatListScreen: React.FC = () => {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0F52BA']} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary700]}
+              tintColor={colors.primary700}
+            />
           }
-          ListHeaderComponent={<ConditionDisclaimerBanner compact />}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>🌊</Text>
-              <Text style={[styles.emptyTitle, { fontFamily: fontFamilyBold }]}>
-                No Ghats Found
-              </Text>
-              <Text style={[styles.emptySubtitle, { fontFamily }]}>
-                Try adjusting your search criteria or district filter.
-              </Text>
-            </View>
+            <EmptyState
+              icon="🌊"
+              title={t('ghats.no_ghats_found', 'No Ghats Found')}
+              description="No holy bathing ghats matched your search criteria or district filter."
+              actionTitle="Clear All Filters"
+              onAction={resetFilters}
+            />
           }
         />
       )}
@@ -249,202 +327,131 @@ export const GhatListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
+  stickyHeader: {
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
+    ...shadows.card,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
   },
   backBtn: {
-    padding: 6,
+    minWidth: touchTargets.minTouch,
+    minHeight: touchTargets.minTouch,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backIcon: {
     fontSize: 22,
-    color: '#0F52BA',
+    color: colors.textPrimary,
     fontWeight: '700',
   },
   screenTitle: {
-    fontSize: 18,
+    fontSize: typography.sizes.h2,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.primary700,
   },
   mapToggleBtn: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    minHeight: 38,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.primary50,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: colors.borderOrange,
+    borderRadius: radii.pill,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   mapToggleText: {
     fontSize: 13,
-    color: '#1D4ED8',
     fontWeight: '700',
+    color: colors.primary700,
   },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 42,
-    marginBottom: 10,
+  searchContainer: {
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
   },
-  searchIcon: {
-    fontSize: 16,
-    marginRight: 8,
+  filterScroll: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#0F172A',
-  },
-  clearBtn: {
-    padding: 4,
-  },
-  clearText: {
-    fontSize: 14,
-    color: '#94A3B8',
-  },
-  filterPillsContainer: {
-    gap: 8,
-    paddingVertical: 4,
-  },
-  pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  pillSelected: {
-    backgroundColor: '#0F52BA',
-    borderColor: '#0F52BA',
-  },
-  pillText: {
-    fontSize: 13,
-    color: '#475569',
-  },
-  pillTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  offlineBanner: {
-    backgroundColor: '#FEF3C7',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-  },
-  offlineText: {
-    fontSize: 12,
-    color: '#92400E',
-    textAlign: 'center',
+  loadingPadding: {
+    padding: spacing.md,
   },
   listContent: {
-    padding: 16,
-    gap: 14,
+    padding: spacing.md,
+    gap: spacing.md,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    gap: spacing.xs,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 6,
   },
   titleArea: {
     flex: 1,
+    marginRight: spacing.sm,
   },
   ghatName: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: typography.sizes.h3,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
   ghatLocation: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: typography.sizes.caption,
+    color: colors.textMuted,
     marginTop: 2,
   },
   distanceBadge: {
-    backgroundColor: '#E0F2FE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    backgroundColor: colors.primary50,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.borderOrange,
   },
   distanceText: {
     fontSize: 12,
-    color: '#0284C7',
     fontWeight: '700',
+    color: colors.primary700,
+  },
+  verificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 2,
+  },
+  verifiedDateText: {
+    fontSize: 11,
+    color: colors.textMuted,
   },
   statusRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 10,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   noticeNotice: {
-    marginTop: 8,
-    backgroundColor: '#FEF2F2',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
+    marginTop: spacing.xs,
+    padding: spacing.xs,
+    backgroundColor: colors.status.warningLight,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.status.warningBorder,
   },
   noticeNoticeText: {
-    fontSize: 11,
-    color: '#DC2626',
+    fontSize: 12,
+    color: colors.status.warning,
     fontWeight: '600',
   },
-  centerContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#64748B',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    color: '#0F172A',
-    fontWeight: '700',
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    textAlign: 'center',
-    marginTop: 4,
-  },
 });
-

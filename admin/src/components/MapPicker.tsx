@@ -178,3 +178,4 @@ export const MapPicker: React.FC<MapPickerProps> = ({
     </div>
   );
 };
+

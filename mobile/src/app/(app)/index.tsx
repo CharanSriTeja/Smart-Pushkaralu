@@ -1,837 +1,670 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  StatusBar,
-  Alert,
-  ActivityIndicator,
+  FlatList,
+  Linking,
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { acquireUserLocation } from '../../utils/location';
+import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
-import { formatPhoneNumberForDisplay } from '../../utils/validation';
-import { ConditionDisclaimerBanner } from '../../components/ConditionDisclaimerBanner';
+import { colors, radii, spacing, touchTargets, typography, shadows } from '../../theme/tokens';
+import {
+  ScreenContainer,
+  Card,
+  Button,
+  CrowdBadge,
+  BathingBadge,
+  SearchField,
+  SkeletonCard,
+  BottomSheet,
+  LanguageSwitcher,
+} from '../../components';
 import { UrgentNewsBanner } from '../../components/UrgentNewsBanner';
+import { GhatService } from '../../services/ghatService';
+import { NewsService } from '../../services/newsService';
+import { getLocalizedText } from '../../utils/localized';
+import { Ghat } from '../../types/ghats';
+import { NewsPost } from '../../types/news';
 
-export default function AppHomeScreen() {
+export default function HomeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { fontFamily, fontFamilyBold } = useLanguage();
-  const { status, user, logout, deleteAccount } = useAuth();
+  const { language, fontFamily, fontFamilyBold } = useLanguage();
+  const { user, status } = useAuth();
 
-  const [isActionLoading, setIsActionLoading] = useState(false);
-  const [isFindingNearest, setIsFindingNearest] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [nearestGhat, setNearestGhat] = useState<Ghat | null>(null);
+  const [loadingNearest, setLoadingNearest] = useState(false);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [latestNews, setLatestNews] = useState<NewsPost[]>([]);
+  const [loadingNews, setLoadingNews] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showLanguageSheet, setShowLanguageSheet] = useState(false);
 
-  const handleFindNearestGhat = async () => {
-    setIsFindingNearest(true);
+  // Load data without prompting for location permissions on launch
+  const loadHomeData = useCallback(async () => {
+    // 1. Check if location permission is ALREADY granted (never prompt on launch)
     try {
-      const locResult = await acquireUserLocation();
-      if (!locResult.granted || !locResult.coords) {
-        const msg = 'Please grant GPS permission in your browser or device settings so we can find the nearest safe Pushkaralu ghat for your holy bath.';
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          const ok = window.confirm(`${msg}\n\nClick OK to browse all ghats list instead.`);
-          if (ok) {
+      const perm = await Location.getForegroundPermissionsAsync();
+      if (perm.granted) {
+        setLocationPermissionGranted(true);
+        setLoadingNearest(true);
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (loc?.coords) {
+          const res = await GhatService.getGhats({
+            near: `${loc.coords.latitude},${loc.coords.longitude}`,
+            limit: 1,
+          } as any);
+          if (res.ghats && res.ghats.length > 0) {
+            setNearestGhat(res.ghats[0]);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Home] Silent location check failed:', e);
+    } finally {
+      setLoadingNearest(false);
+    }
+
+    // 2. Fetch latest official news
+    try {
+      setLoadingNews(true);
+      const newsRes = await NewsService.getNews({ language });
+      if (newsRes.news) {
+        setLatestNews(newsRes.news.slice(0, 3));
+      }
+    } catch (e) {
+      console.warn('[Home] Fetching latest news failed:', e);
+    } finally {
+      setLoadingNews(false);
+    }
+  }, [language]);
+
+  useEffect(() => {
+    loadHomeData();
+  }, [loadHomeData]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadHomeData();
+    setRefreshing(false);
+  };
+
+  // User explicitly asks to find nearest ghat
+  const handleRequestLocation = async () => {
+    setLoadingNearest(true);
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.granted) {
+        setLocationPermissionGranted(true);
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (loc?.coords) {
+          const res = await GhatService.getGhats({
+            near: `${loc.coords.latitude},${loc.coords.longitude}`,
+            limit: 1,
+          } as any);
+          if (res.ghats && res.ghats.length > 0) {
+            setNearestGhat(res.ghats[0]);
+          } else {
             router.push('/(app)/ghats' as any);
           }
-        } else {
-          Alert.alert(
-            'Location Permission Required',
-            msg,
-            [
-              { text: 'Browse List Instead', onPress: () => router.push('/(app)/ghats' as any) },
-              { text: 'OK' },
-            ]
-          );
         }
-        setIsFindingNearest(false);
-        return;
-      }
-
-      router.push(`/(app)/ghats?near=${locResult.coords.latitude},${locResult.coords.longitude}` as any);
-    } catch {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.alert('Could not detect GPS coordinates. Opening ghat directory.');
       } else {
-        Alert.alert('Location Error', 'Could not detect GPS coordinates. Opening ghat directory.');
+        router.push('/(app)/ghats' as any);
       }
+    } catch {
       router.push('/(app)/ghats' as any);
     } finally {
-      setIsFindingNearest(false);
+      setLoadingNearest(false);
     }
   };
 
-  const handleOpenSos = () => {
-    try {
-      router.navigate('/(app)/sos' as any);
-    } catch {
-      try {
-        router.push('/(app)/sos' as any);
-      } catch {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/(app)/sos';
-        }
-      }
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      router.push(`/(app)/ghats?search=${encodeURIComponent(searchQuery.trim())}` as any);
+    } else {
+      router.push('/(app)/ghats' as any);
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      t('home.logout'),
-      t('home.confirm_logout'),
-      [
-        { text: t('home.cancel'), style: 'cancel' },
-        {
-          text: t('home.logout'),
-          style: 'destructive',
-          onPress: async () => {
-            setIsActionLoading(true);
-            try {
-              await logout();
-              router.replace('/(auth)/landing' as any);
-            } finally {
-              setIsActionLoading(false);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      t('home.delete_account'),
-      t('home.confirm_delete'),
-      [
-        { text: t('home.cancel'), style: 'cancel' },
-        {
-          text: t('home.delete_account'),
-          style: 'destructive',
-          onPress: async () => {
-            setIsActionLoading(true);
-            try {
-              await deleteAccount();
-              router.replace('/(auth)/landing' as any);
-            } catch (err: any) {
-              Alert.alert(t('common.error'), err.message || 'Failed to delete account');
-            } finally {
-              setIsActionLoading(false);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  const handleGoToLogin = () => {
-    router.push('/(auth)/phone' as any);
-  };
-
-  const isGuest = status === 'guest';
+  const quickActions = [
+    {
+      id: 'ghats',
+      title: t('navigation.ghats', 'Ghats'),
+      subtitle: t('home.view_ghats_sub', 'Live water & crowds'),
+      icon: '🌊',
+      onPress: () => router.push('/(app)/ghats' as any),
+    },
+    {
+      id: 'plan',
+      title: t('navigation.plan', 'Plan a Trip'),
+      subtitle: t('planner.add_visit', 'Schedule holy bath'),
+      icon: '🧭',
+      onPress: () => router.push('/(app)/routes' as any),
+    },
+    {
+      id: 'directions',
+      title: t('routes.directions_title', 'Directions'),
+      subtitle: t('routes.traffic_notice', 'Godavari routes & closures'),
+      icon: '🚗',
+      onPress: () => router.push('/(app)/routes' as any),
+    },
+    {
+      id: 'nearby',
+      title: t('places.title', 'Nearby Places'),
+      subtitle: t('places.hotels_and_temples', 'Hotels & Temples'),
+      icon: '🏨',
+      onPress: () => router.push('/(app)/ghats/nearby' as any),
+    },
+    {
+      id: 'issues',
+      title: t('issues.report_title', 'Report Issue'),
+      subtitle: t('issues.category_label', 'Sanitation & Safety'),
+      icon: '📋',
+      onPress: () => router.push('/(app)/issues/report' as any),
+    },
+    {
+      id: 'sos',
+      title: t('sos.emergency_112', 'Emergency 112'),
+      subtitle: t('sos.title', 'SOS Police & Rescue'),
+      icon: '🚨',
+      onPress: () => router.push('/(app)/sos' as any),
+      isEmergency: true,
+    },
+    {
+      id: 'seva',
+      title: t('seva.title', 'Virtual Seva'),
+      subtitle: t('home.seva_booking_sub', 'Volunteering & Annadanam'),
+      icon: '🙏',
+      onPress: () => router.push('/(app)/seva' as any),
+    },
+    {
+      id: 'transport',
+      title: t('transport.title', 'Transport'),
+      subtitle: t('transport.hubs_title', 'Buses & Shuttles'),
+      icon: '🚌',
+      onPress: () => router.push('/(app)/transport' as any),
+    },
+  ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Top Header */}
-        <View style={styles.topHeader}>
+    <ScreenContainer
+      scrollable
+      refreshing={refreshing}
+      onRefresh={handleRefresh}
+      contentContainerStyle={styles.container}
+    >
+      {/* 1. Top Bar with Logo and Language Chip */}
+      <View style={styles.topBar}>
+        <View style={styles.brandRow}>
+          <Text style={styles.brandIcon}>🕉️</Text>
           <View>
-            <Text style={[styles.headerSubtitle, { fontFamily }]}>
-              {t('landing.app_name')}
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.brandTitle, { fontFamily: fontFamilyBold }]}
+            >
+              Smart Pushkaralu
             </Text>
-            <Text style={[styles.headerTitle, { fontFamily: fontFamilyBold }]}>
-              {isGuest
-                ? t('guest.banner_title')
-                : t('home.welcome', { name: user?.name || t('home.pilgrim_id') })}
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.brandSubtitle, { fontFamily }]}
+            >
+              2027 Godavari Maha Pushkaram
             </Text>
           </View>
-
-          {user?.isAdmin && (
-            <View style={styles.adminBadge}>
-              <Text style={styles.adminBadgeText}>ADMIN</Text>
-            </View>
-          )}
         </View>
 
-        {/* Guest Mode Banner if browsing as guest */}
-        {isGuest ? (
-          <View style={styles.guestCard}>
-            <Text style={[styles.guestTitle, { fontFamily: fontFamilyBold }]}>
-              {t('guest.banner_title')}
-            </Text>
-            <Text style={[styles.guestDesc, { fontFamily }]}>
-              {t('guest.banner_desc')}
-            </Text>
-            <TouchableOpacity
-              style={styles.guestLoginButton}
-              onPress={handleGoToLogin}
-              accessibilityRole="button"
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.guestLoginButtonText, { fontFamily: fontFamilyBold }]}>
-                {t('guest.login_prompt')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          /* User Profile & Account Info Card */
-          <View style={styles.profileCard}>
-            <View style={styles.profileHeaderRow}>
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>
-                  {user?.name ? user.name.charAt(0).toUpperCase() : '🙏'}
-                </Text>
-              </View>
-              <View style={styles.profileInfo}>
-                <Text style={[styles.profileName, { fontFamily: fontFamilyBold }]}>
-                  {user?.name || t('home.pilgrim_id')}
-                </Text>
-                <Text style={[styles.profilePhone, { fontFamily }]}>
-                  {user?.phone ? formatPhoneNumberForDisplay(user.phone) : ''}
-                </Text>
-                {user?.isAdmin && (
-                  <Text style={[styles.profileAdminText, { fontFamily }]}>
-                    {t('home.role_admin')}
-                  </Text>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.metaRow}>
-              <Text style={[styles.metaLabel, { fontFamily }]}>Language:</Text>
-              <Text style={[styles.metaValue, { fontFamily: fontFamilyBold }]}>
-                {user?.language === 'te'
-                  ? 'తెలుగు (Telugu)'
-                  : user?.language === 'hi'
-                  ? 'हिन्दी (Hindi)'
-                  : 'English'}
-              </Text>
-            </View>
-            {user?.consentVersion && (
-              <View style={styles.metaRow}>
-                <Text style={[styles.metaLabel, { fontFamily }]}>Advisory Consent:</Text>
-                <Text style={[styles.metaValue, { fontFamily: fontFamilyBold }]}>
-                  {user.consentVersion} (Active)
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Live Urgent Pushkaralu Advisory Banner */}
-        <UrgentNewsBanner />
-
-        {/* Safety Disclaimer Banner */}
-        <ConditionDisclaimerBanner />
-
-        {/* Ghat Search & Quick Actions Section */}
-        <View style={styles.sectionCard}>
-          <Text style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}>
-            🌊 {t('ghats.title', 'Godavari Pushkaralu Ghats')}
-          </Text>
-          <Text style={[styles.sectionDesc, { fontFamily }]}>
-            Official directory of holy bathing sites, real-time crowd density, safety alerts, and aarti timings across AP & Telangana.
-          </Text>
-
-          {/* Find Nearest Ghat Button with GPS */}
-          <TouchableOpacity
-            style={styles.nearestButton}
-            onPress={handleFindNearestGhat}
-            disabled={isFindingNearest}
-            activeOpacity={0.8}
-            accessibilityRole="button"
+        {/* Language selector chip */}
+        <TouchableOpacity
+          onPress={() => setShowLanguageSheet(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Switch language"
+          style={styles.languageChip}
+        >
+          <Text style={styles.langGlobe}>🌐</Text>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.langText, { fontFamily: fontFamilyBold }]}
           >
-            {isFindingNearest ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text style={[styles.nearestButtonText, { fontFamily: fontFamilyBold }]}>
-                🎯 {t('ghats.find_nearest', 'Find Nearest Ghat (GPS)')}
-              </Text>
-            )}
-          </TouchableOpacity>
+            {language === 'te' ? 'తెలుగు' : language === 'hi' ? 'हिन्दी' : 'English'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-          {/* Quick Action Navigation Grid */}
-          <View style={styles.actionGrid}>
-            <TouchableOpacity
-              style={styles.gridBtn}
-              onPress={() => router.navigate('/(app)/ghats' as any)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.gridBtnIcon}>📋</Text>
-              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
-                {t('ghats.view_list', 'All Ghats List')}
-              </Text>
-            </TouchableOpacity>
+      {/* 2. Ghat Search Entry */}
+      <View style={styles.searchSection}>
+        <SearchField
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder={t('ghats.search_placeholder', 'Search holy ghats, towns or districts...')}
+          onClear={() => setSearchQuery('')}
+        />
+        {searchQuery.trim().length > 0 && (
+          <Button
+            title={t('common.search', 'Search')}
+            onPress={handleSearchSubmit}
+            size="sm"
+            style={styles.searchSubmitBtn}
+          />
+        )}
+      </View>
 
-            <TouchableOpacity
-              style={styles.gridBtn}
-              onPress={() => router.navigate('/(app)/ghats/map' as any)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.gridBtnIcon}>🗺️</Text>
-              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
-                {t('ghats.view_map', 'Interactive Map')}
-              </Text>
-            </TouchableOpacity>
+      {/* 3. Live Urgent Advisory Banner */}
+      <UrgentNewsBanner />
 
-            <TouchableOpacity
-              style={[styles.gridBtn, { borderColor: '#E65100', backgroundColor: '#FFF7ED' }]}
-              onPress={() => router.navigate('/(app)/routes' as any)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.gridBtnIcon}>🧭</Text>
-              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold, color: '#C2410C' }]}>
-                Directions & Routes
-              </Text>
-            </TouchableOpacity>
+      {/* 4. Nearest Ghat Status Card (shown if location granted, or prompt button) */}
+      <View style={styles.sectionWrapper}>
+        <Text
+          maxFontSizeMultiplier={typography.maxScale}
+          style={[styles.sectionHeading, { fontFamily: fontFamilyBold }]}
+        >
+          📍 {t('home.ghat_overview', 'Nearest Bathing Ghat')}
+        </Text>
 
-            <TouchableOpacity
-              style={[styles.gridBtn, { borderColor: '#EF4444', backgroundColor: '#FEF2F2' }]}
-              onPress={handleOpenSos}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.gridBtnIcon}>🆘</Text>
-              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold, color: '#DC2626' }]}>
-                {t('sos.title', 'Emergency SOS')}
-              </Text>
-            </TouchableOpacity>
-          </View>
+        {loadingNearest ? (
+          <SkeletonCard height={110} />
+        ) : nearestGhat ? (
+          <Card variant="elevated" style={styles.nearestCard}>
+            <View style={styles.nearestHeader}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  maxFontSizeMultiplier={typography.maxScale}
+                  style={[styles.nearestGhatName, { fontFamily: fontFamilyBold }]}
+                >
+                  {getLocalizedText(nearestGhat.name, language)}
+                </Text>
+                <Text
+                  maxFontSizeMultiplier={typography.maxScale}
+                  style={[styles.nearestDistrict, { fontFamily }]}
+                >
+                  {nearestGhat.district} • {nearestGhat.river || 'Godavari'}
+                  {nearestGhat.distance_km ? ` • ${nearestGhat.distance_km.toFixed(1)} km away` : ''}
+                </Text>
+              </View>
+              <BathingBadge status={nearestGhat.bathing_status} size="sm" />
+            </View>
 
-          {/* Module 2: Route Planner & Highway Corridor Card */}
-          <View style={styles.routePlannerBanner}>
-            <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={[styles.routePlannerTitle, { fontFamily: fontFamilyBold }]}>
-                🧭 Route Planner & Directions
+            <View style={styles.nearestFooter}>
+              <CrowdBadge crowd={nearestGhat.crowd_level} size="sm" />
+              <Button
+                title={t('routes.get_directions', 'Directions')}
+                size="sm"
+                variant="secondary"
+                onPress={() => router.push(`/(app)/ghats/${nearestGhat.id}` as any)}
+              />
+            </View>
+          </Card>
+        ) : (
+          <Card variant="tint" style={styles.locationPromptCard}>
+            <Text style={styles.promptIcon}>🌊</Text>
+            <View style={{ flex: 1 }}>
+              <Text
+                maxFontSizeMultiplier={typography.maxScale}
+                style={[styles.promptTitle, { fontFamily: fontFamilyBold }]}
+              >
+                {t('home.view_ghats', 'Find Nearest Holy Ghat')}
               </Text>
-              <Text style={[styles.routePlannerDesc, { fontFamily }]}>
-                Find pre-computed routes from your origin to ghats, parking points & highway corridor temples with police diversion alerts.
+              <Text
+                maxFontSizeMultiplier={typography.maxScale}
+                style={[styles.promptDesc, { fontFamily }]}
+              >
+                {t('home.view_ghats_sub', 'Check real-time river current and crowd density')}
               </Text>
             </View>
+            <Button
+              title={t('common.enable_location', 'Detect GPS')}
+              size="sm"
+              variant="primary"
+              onPress={handleRequestLocation}
+            />
+          </Card>
+        )}
+      </View>
+
+      {/* 5. Quick Actions Grid */}
+      <View style={styles.sectionWrapper}>
+        <Text
+          maxFontSizeMultiplier={typography.maxScale}
+          style={[styles.sectionHeading, { fontFamily: fontFamilyBold }]}
+        >
+          ⚡ {t('home.quick_actions', 'Quick Services')}
+        </Text>
+
+        <View style={styles.grid}>
+          {quickActions.map((action) => (
             <TouchableOpacity
-              style={styles.btnPlanRoute}
-              onPress={() => router.navigate('/(app)/routes' as any)}
-              activeOpacity={0.8}
+              key={action.id}
+              onPress={action.onPress}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={action.title}
+              style={[
+                styles.gridItem,
+                action.isEmergency ? styles.gridItemEmergency : null,
+              ]}
             >
-              <Text style={[styles.btnPlanRouteText, { fontFamily: fontFamilyBold }]}>
-                Plan Route →
+              <View
+                style={[
+                  styles.gridIconBox,
+                  action.isEmergency ? styles.gridIconBoxEmergency : null,
+                ]}
+              >
+                <Text style={styles.gridIcon}>{action.icon}</Text>
+              </View>
+              <Text
+                maxFontSizeMultiplier={typography.maxScale}
+                style={[
+                  styles.gridTitle,
+                  action.isEmergency ? styles.gridTitleEmergency : null,
+                  { fontFamily: fontFamilyBold },
+                ]}
+                numberOfLines={1}
+              >
+                {action.title}
+              </Text>
+              <Text
+                maxFontSizeMultiplier={typography.maxScale}
+                style={[styles.gridSubtitle, { fontFamily }]}
+                numberOfLines={1}
+              >
+                {action.subtitle}
               </Text>
             </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
-            <TouchableOpacity
-              style={styles.gridBtn}
-              onPress={() => router.push('/(app)/transport' as any)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.gridBtnIcon}>🚌</Text>
-              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
-                {t('transport.title', 'Transport')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.gridBtn}
-              onPress={() => router.push('/(app)/seva' as any)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.gridBtnIcon}>📺</Text>
-              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
-                {t('seva.title', 'Live Seva')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Module 8: Report an Issue Quick Action */}
-          <View style={styles.issueActionRow}>
-            <TouchableOpacity
-              style={styles.reportIssuePrimaryBtn}
-              onPress={() => router.navigate('/(app)/issues/report' as any)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.reportIssueBtnIcon}>🚨</Text>
-              <Text style={[styles.reportIssueBtnText, { fontFamily: fontFamilyBold }]}>
-                {t('issues.title', 'Report Grievance')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.myIssuesSecondaryBtn}
-              onPress={() => router.navigate('/(app)/issues' as any)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.myIssuesBtnIcon}>📋</Text>
-              <Text style={[styles.myIssuesBtnText, { fontFamily: fontFamilyBold }]}>
-                {t('issues.my_reports', 'My Reports')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Popular Ghats Quick List */}
-          <Text style={[styles.subHeading, { fontFamily: fontFamilyBold }]}>
-            Major Godavari Pilgrimage Centers:
+      {/* 6. Latest News & Announcements */}
+      <View style={styles.sectionWrapper}>
+        <View style={styles.newsSectionHeader}>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.sectionHeading, { fontFamily: fontFamilyBold, marginBottom: 0 }]}
+          >
+            📰 {t('news.title', 'Official Updates & Notices')}
           </Text>
-          <View style={styles.ghatPreviewList}>
-            <TouchableOpacity
-              style={styles.ghatItem}
-              onPress={() => router.navigate('/(app)/ghats?district=East%20Godavari&search=Rajahmundry' as any)}
-              activeOpacity={0.7}
+          <TouchableOpacity
+            onPress={() => router.push('/(app)/news' as any)}
+            accessibilityRole="button"
+            style={styles.viewAllBtn}
+          >
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.viewAllText, { fontFamily: fontFamilyBold }]}
             >
-              <Text style={styles.ghatIcon}>🌊</Text>
-              <View style={styles.ghatDetails}>
-                <Text style={[styles.ghatName, { fontFamily: fontFamilyBold }]}>
-                  Rajamahendravaram (Rajahmundry) Ghats
-                </Text>
-                <Text style={[styles.ghatStatus, { fontFamily }]}>
-                  East Godavari, AP • Kotilingala, Pushkar & Saraswati Ghats
-                </Text>
-              </View>
-              <Text style={styles.arrowIcon}>→</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.ghatItem}
-              onPress={() => router.navigate('/(app)/ghats?district=Bhadradri%20Kothagudem&search=Bhadrachalam' as any)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.ghatIcon}>🛕</Text>
-              <View style={styles.ghatDetails}>
-                <Text style={[styles.ghatName, { fontFamily: fontFamilyBold }]}>
-                  Bhadrachalam Sri Rama Ghat
-                </Text>
-                <Text style={[styles.ghatStatus, { fontFamily }]}>
-                  Bhadradri Kothagudem, Telangana • Temple riverfront
-                </Text>
-              </View>
-              <Text style={styles.arrowIcon}>→</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.ghatItem}
-              onPress={() => router.navigate('/(app)/ghats?district=West%20Godavari&search=Kovvur' as any)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.ghatIcon}>🔱</Text>
-              <View style={styles.ghatDetails}>
-                <Text style={[styles.ghatName, { fontFamily: fontFamilyBold }]}>
-                  Kovvur Goshpada Kshetram Ghat
-                </Text>
-                <Text style={[styles.ghatStatus, { fontFamily }]}>
-                  West Godavari, AP • Gautama Teertham
-                </Text>
-              </View>
-              <Text style={styles.arrowIcon}>→</Text>
-            </TouchableOpacity>
-          </View>
+              {t('common.view_all', 'View All')} →
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Action Buttons for Authenticated User */}
-        {!isGuest && (
-          <View style={styles.accountActionsSection}>
-            {isActionLoading ? (
-              <ActivityIndicator size="small" color="#0F52BA" />
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={styles.logoutButton}
-                  onPress={handleLogout}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('home.logout')}
-                  activeOpacity={0.8}
+        {loadingNews ? (
+          <SkeletonCard height={90} />
+        ) : latestNews.length === 0 ? (
+          <Card variant="flat" style={styles.emptyNewsCard}>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.emptyNewsText, { fontFamily }]}
+            >
+              No active advisories right now. All ghat operations normal.
+            </Text>
+          </Card>
+        ) : (
+          latestNews.map((newsItem) => (
+            <Card
+              key={newsItem.id}
+              variant="elevated"
+              onPress={() => router.push(`/(app)/news/${newsItem.id}` as any)}
+              style={styles.newsCard}
+            >
+              <View style={styles.newsHeader}>
+                <Text style={styles.newsCategory}>{newsItem.category.toUpperCase()}</Text>
+                <Text
+                  maxFontSizeMultiplier={typography.maxScale}
+                  style={[styles.newsDate, { fontFamily }]}
                 >
-                  <Text style={[styles.logoutButtonText, { fontFamily: fontFamilyBold }]}>
-                    {t('home.logout')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={handleDeleteAccount}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('home.delete_account')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.deleteButtonText, { fontFamily }]}>
-                    {t('home.delete_account')}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+                  {new Date(newsItem.published_at || newsItem.created_at).toLocaleDateString()}
+                </Text>
+              </View>
+              <Text
+                maxFontSizeMultiplier={typography.maxScale}
+                style={[styles.newsTitle, { fontFamily: fontFamilyBold }]}
+                numberOfLines={2}
+              >
+                {getLocalizedText(newsItem.title, language)}
+              </Text>
+            </Card>
+          ))
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+
+      {/* Language Selection Bottom Sheet */}
+      <BottomSheet
+        visible={showLanguageSheet}
+        onClose={() => setShowLanguageSheet(false)}
+        title="Select Language / భాషను ఎంచుకోండి"
+      >
+        <LanguageSwitcher variant="chips" />
+        <View style={{ marginTop: spacing.md }}>
+          <Button
+            title={t('common.done', 'Done')}
+            onPress={() => setShowLanguageSheet(false)}
+            variant="primary"
+          />
+        </View>
+      </BottomSheet>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F4F8FA',
+  container: {
+    padding: spacing.md,
+    gap: spacing.md,
   },
-  scrollContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 36,
-  },
-  topHeader: {
+  topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingVertical: spacing.xs,
   },
-  headerSubtitle: {
-    fontSize: 13,
-    color: '#0F52BA',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0C2340',
-    marginTop: 2,
-  },
-  adminBadge: {
-    backgroundColor: '#DC2626',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  adminBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  guestCard: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 20,
-  },
-  guestTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1E40AF',
-    marginBottom: 6,
-  },
-  guestDesc: {
-    fontSize: 14,
-    color: '#3B82F6',
-    lineHeight: 20,
-    marginBottom: 14,
-  },
-  guestLoginButton: {
-    backgroundColor: '#0F52BA',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  guestLoginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  profileCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  profileHeaderRow: {
+  brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: spacing.sm,
   },
-  avatarPlaceholder: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#E0F2FE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#0F52BA',
+  brandIcon: {
+    fontSize: 28,
   },
-  avatarText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0F52BA',
+  brandTitle: {
+    fontSize: typography.sizes.h2,
+    fontWeight: '800',
+    color: colors.primary700,
+    letterSpacing: -0.5,
   },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0C2340',
-  },
-  profilePhone: {
-    fontSize: 14,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  profileAdminText: {
+  brandSubtitle: {
     fontSize: 12,
-    color: '#DC2626',
-    fontWeight: '700',
-    marginTop: 2,
+    color: colors.textMuted,
+    fontWeight: '500',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 14,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  metaLabel: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  metaValue: {
-    fontSize: 13,
-    color: '#1E293B',
-    fontWeight: '600',
-  },
-  sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#0C2340',
-    marginBottom: 6,
-  },
-  sectionDesc: {
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 19,
-    marginBottom: 14,
-  },
-  ghatPreviewList: {
-    gap: 10,
-  },
-  ghatItem: {
+  languageChip: {
+    minHeight: touchTargets.minTouch,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    padding: 12,
-    gap: 12,
-  },
-  ghatIcon: {
-    fontSize: 22,
-  },
-  ghatDetails: {
-    flex: 1,
-  },
-  ghatName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  ghatStatus: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  accountActionsSection: {
-    marginTop: 10,
-    gap: 12,
-  },
-  logoutButton: {
-    minHeight: 52,
-    borderRadius: 12,
+    backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#334155',
-  },
-  deleteButton: {
-    minHeight: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  deleteButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#DC2626',
-  },
-  nearestButton: {
-    backgroundColor: '#0F52BA',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    shadowColor: '#0F52BA',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  nearestButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  actionGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  gridBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 8,
-  },
-  gridBtnIcon: {
-    fontSize: 18,
-  },
-  gridBtnText: {
-    fontSize: 13,
-    color: '#1E293B',
-    fontWeight: '700',
-  },
-  subHeading: {
-    fontSize: 13,
-    color: '#475569',
-    fontWeight: '700',
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  issueActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  routePlannerBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF7ED',
-    borderWidth: 1.5,
-    borderColor: '#FDBA74',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-  },
-  routePlannerTitle: {
-    fontSize: 15,
-    color: '#9A3412',
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  routePlannerDesc: {
-    fontSize: 12,
-    color: '#7C2D12',
-    lineHeight: 17,
-  },
-  btnPlanRoute: {
-    backgroundColor: '#EA580C',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
-  },
-  btnPlanRouteText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  reportIssuePrimaryBtn: {
-    flex: 1.2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#DC2626',
-    borderRadius: 10,
-    paddingVertical: 12,
-    gap: 8,
-    shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  reportIssueBtnIcon: {
-    fontSize: 16,
-  },
-  reportIssueBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  myIssuesSecondaryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: colors.borderOrange,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
     gap: 6,
   },
-  myIssuesBtnIcon: {
-    fontSize: 16,
+  langGlobe: {
+    fontSize: 14,
   },
-  myIssuesBtnText: {
-    color: '#334155',
+  langText: {
     fontSize: 13,
+    color: colors.primary700,
     fontWeight: '700',
   },
-  arrowIcon: {
-    fontSize: 16,
-    color: '#94A3B8',
+  searchSection: {
+    gap: spacing.xs,
+  },
+  searchSubmitBtn: {
+    alignSelf: 'flex-end',
+  },
+  sectionWrapper: {
+    gap: spacing.xs,
+  },
+  sectionHeading: {
+    fontSize: typography.sizes.body,
     fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  nearestCard: {
+    gap: spacing.sm,
+  },
+  nearestHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  nearestGhatName: {
+    fontSize: typography.sizes.h3,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  nearestDistrict: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  nearestFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  locationPromptCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  promptIcon: {
+    fontSize: 28,
+  },
+  promptTitle: {
+    fontSize: typography.sizes.body,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  promptDesc: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  gridItem: {
+    width: '48%',
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    minHeight: 104,
+    justifyContent: 'center',
+    ...shadows.card,
+  },
+  gridItemEmergency: {
+    borderColor: colors.dangerBorder,
+    backgroundColor: colors.dangerLight,
+  },
+  gridIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.sm,
+    backgroundColor: colors.primary50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  gridIconBoxEmergency: {
+    backgroundColor: colors.white,
+  },
+  gridIcon: {
+    fontSize: 18,
+  },
+  gridTitle: {
+    fontSize: typography.sizes.bodySm || 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  gridTitleEmergency: {
+    color: colors.danger,
+  },
+  gridSubtitle: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  newsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  viewAllBtn: {
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  viewAllText: {
+    fontSize: 13,
+    color: colors.primary700,
+    fontWeight: '700',
+  },
+  newsCard: {
+    gap: 4,
+    marginVertical: 4,
+  },
+  newsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  newsCategory: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.primary700,
+    letterSpacing: 0.5,
+  },
+  newsDate: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  newsTitle: {
+    fontSize: typography.sizes.bodySm || 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  emptyNewsCard: {
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  emptyNewsText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
 });

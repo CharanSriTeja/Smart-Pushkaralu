@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   SafeAreaView,
   StatusBar,
   Linking,
@@ -16,14 +15,23 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
 import { Ghat, CrowdStatus } from '../types/ghats';
 import { GhatService } from '../services/ghatService';
-import { getLocalizedText } from '../utils/localized';
+import { getLocalizedText, formatVerifiedDate } from '../utils/localized';
+import { colors, radii, spacing, touchTargets, typography, shadows } from '../theme/tokens';
+import {
+  Card,
+  Button,
+  BathingBadge,
+  CrowdBadge,
+  VerificationBadge,
+  SkeletonCard,
+  ErrorState,
+  OfflineBanner,
+} from '../components';
 import { ConditionDisclaimerBanner } from '../components/ConditionDisclaimerBanner';
-import { OfficialTrustBadge } from '../components/OfficialTrustBadge';
-import { BathingStatusBadge } from '../components/BathingStatusBadge';
-import { CrowdStatusComponent } from '../components/CrowdStatusComponent';
 import { FacilitiesGrid } from '../components/FacilitiesGrid';
 import { AartiTimingsList } from '../components/AartiTimingsList';
 import { NoticesBanner } from '../components/NoticesBanner';
+import { CrowdStatusComponent } from '../components/CrowdStatusComponent';
 import { CrowdReportModal } from '../components/CrowdReportModal';
 
 export const GhatDetailScreen: React.FC = () => {
@@ -35,34 +43,35 @@ export const GhatDetailScreen: React.FC = () => {
   const [ghat, setGhat] = useState<Ghat | null>(null);
   const [crowdStatus, setCrowdStatus] = useState<CrowdStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [isReportModalVisible, setIsReportModalVisible] = useState(false);
 
   const loadGhat = useCallback(async () => {
     if (!id) return;
+    setError(null);
     try {
       const res = await GhatService.getGhatById(id);
       setGhat(res.ghat);
       setIsOffline(res.isOffline);
 
       if (res.ghat) {
-        // Load live crowd status
         const cs = await GhatService.getGhatCrowdStatus(id);
         if (cs) setCrowdStatus(cs);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Failed to load ghat detail:', err);
+      setError(err.message || 'Could not load ghat detail');
     } finally {
       setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadGhat();
   }, [loadGhat]);
 
-  const handleOpenNavigation = () => {
+  const handleExternalMaps = () => {
     if (!ghat) return;
     const lat = ghat.lat;
     const lng = ghat.lng;
@@ -75,25 +84,49 @@ export const GhatDetailScreen: React.FC = () => {
     Linking.openURL(url as string).catch(() => {});
   };
 
+  const handleOpenSource = () => {
+    if (ghat?.official_source_url) {
+      Linking.openURL(ghat.official_source_url).catch(() => {});
+    }
+  };
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0F52BA" />
-        <Text style={[styles.loadingText, { fontFamily }]}>{t('common.loading')}</Text>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.topNav}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.navBackBtn}>
+            <Text style={styles.navBackIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={[styles.navTitle, { fontFamily: fontFamilyBold }]}>Loading Ghat...</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={{ padding: spacing.md, gap: spacing.md }}>
+          <SkeletonCard height={140} />
+          <SkeletonCard height={100} />
+          <SkeletonCard height={160} />
+        </View>
       </SafeAreaView>
     );
   }
 
-  if (!ghat) {
+  if (error || !ghat) {
     return (
-      <SafeAreaView style={styles.centerContainer}>
-        <Text style={styles.emptyEmoji}>⚠️</Text>
-        <Text style={[styles.emptyTitle, { fontFamily: fontFamilyBold }]}>Ghat Not Found</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={[styles.backButtonText, { fontFamily: fontFamilyBold }]}>
-            {t('common.back', 'Go Back')}
-          </Text>
-        </TouchableOpacity>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.topNav}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.navBackBtn}>
+            <Text style={styles.navBackIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={[styles.navTitle, { fontFamily: fontFamilyBold }]}>Ghat Details</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <ErrorState
+          title="Ghat Not Found"
+          message={error || 'We could not find details for this holy bathing site.'}
+          onRetry={loadGhat}
+          retryTitle={t('common.retry', 'Retry')}
+        />
       </SafeAreaView>
     );
   }
@@ -101,252 +134,266 @@ export const GhatDetailScreen: React.FC = () => {
   const name = getLocalizedText(ghat.name, language);
   const description = getLocalizedText(ghat.description, language);
   const nearestTown = getLocalizedText(ghat.nearest_town, language);
-  const nearestRailway = getLocalizedText(ghat.nearest_railway_station, language);
-  const nearestBus = getLocalizedText(ghat.nearest_bus_stand, language);
+  const verifiedDate = ghat.verified_at ? formatVerifiedDate(ghat.verified_at, language) : null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Top Navigation Bar */}
+      {/* Top Header Navigation */}
       <View style={styles.topNav}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.navBackBtn}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          style={styles.navBackBtn}
+        >
           <Text style={styles.navBackIcon}>←</Text>
         </TouchableOpacity>
-        <Text numberOfLines={1} style={[styles.navTitle, { fontFamily: fontFamilyBold }]}>
+        <Text
+          numberOfLines={1}
+          maxFontSizeMultiplier={typography.maxScale}
+          style={[styles.navTitle, { fontFamily: fontFamilyBold }]}
+        >
           {name}
         </Text>
-        <TouchableOpacity onPress={handleOpenNavigation} style={styles.navActionBtn}>
-          <Text style={styles.navActionText}>🧭 Navigate</Text>
+        <TouchableOpacity
+          onPress={handleExternalMaps}
+          accessibilityRole="button"
+          accessibilityLabel="Open in external map application"
+          style={styles.navActionBtn}
+        >
+          <Text style={styles.navActionText}>🗺️ Maps</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Prominent Mandatory Safety Disclaimer */}
+      {/* Offline Alert Strip */}
+      {isOffline && <OfflineBanner />}
+
+      {/* Scrollable Content Body */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Safety Disclaimer Banner */}
         <ConditionDisclaimerBanner />
 
-        {/* Ghat Title & Trust Badge Card */}
-        <View style={styles.heroCard}>
+        {/* 1. Header Card with Name, Location, Badges, and Verification Date */}
+        <Card variant="elevated" style={styles.heroCard}>
           <View style={styles.riverTag}>
-            <Text style={styles.riverTagText}>🌊 {ghat.river} River Pushkaralu</Text>
+            <Text style={styles.riverTagText}>🌊 {ghat.river || 'Godavari'} River Maha Pushkaralu</Text>
           </View>
-          <Text style={[styles.heroTitle, { fontFamily: fontFamilyBold }]}>{name}</Text>
-          <Text style={[styles.heroSubtitle, { fontFamily }]}>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.heroTitle, { fontFamily: fontFamilyBold }]}
+          >
+            {name}
+          </Text>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.heroSubtitle, { fontFamily }]}
+          >
             📍 {nearestTown ? `${nearestTown}, ` : ''}{ghat.district}, {ghat.state}
           </Text>
 
-          {/* Official Trust Badge with strict verification check */}
-          <OfficialTrustBadge
-            recordStatus={ghat.record_status}
-            officialSourceUrl={ghat.official_source_url}
-            verifiedAt={ghat.verified_at}
-            showSourceButton={true}
-          />
-
-          {/* Bathing Status Badge */}
-          <View style={styles.bathingStatusWrapper}>
-            <Text style={[styles.badgeLabel, { fontFamily }]}>
-              {t('ghats.bathing_status_label', 'Bathing Status')}:
-            </Text>
-            <BathingStatusBadge status={ghat.bathing_status} size="medium" />
+          {/* Badges row */}
+          <View style={styles.badgesRow}>
+            <BathingBadge status={ghat.bathing_status} size="md" />
+            <CrowdBadge crowd={ghat.crowd_level} size="md" />
           </View>
 
-          {/* Route Planner & Directions Button (Module 2) */}
-          <TouchableOpacity
-            style={{
-              backgroundColor: '#E65100',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingVertical: 12,
-              paddingHorizontal: 16,
-              borderRadius: 10,
-              marginTop: 16,
-              elevation: 2,
-            }}
-            onPress={() =>
-              router.navigate(
-                `/(app)/routes?ghatId=${ghat.id}&ghatName=${encodeURIComponent(name)}&lat=${ghat.lat}&lng=${ghat.lng}` as any
-              )
-            }
-          >
-            <Text style={{ fontSize: 18, marginRight: 8 }}>🧭</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: 'bold' }}>
-              {t('routes.title', 'Route Planner & Directions')} →
-            </Text>
-          </TouchableOpacity>
-        </View>
+          {/* Verification, Source Link and Last Verified Date */}
+          <View style={styles.verificationSection}>
+            <View style={styles.verificationLeft}>
+              <VerificationBadge
+                verified={ghat.record_status === 'officially_listed'}
+                label={ghat.record_status === 'officially_listed' ? 'Official District Registry' : 'Unverified'}
+                size="sm"
+              />
+              {verifiedDate && (
+                <Text
+                  maxFontSizeMultiplier={typography.maxScale}
+                  style={[styles.verifiedDate, { fontFamily }]}
+                >
+                  Verified on: {verifiedDate}
+                </Text>
+              )}
+            </View>
 
-        {/* Active Safety Notices Banner */}
+            {ghat.official_source_url ? (
+              <TouchableOpacity
+                onPress={handleOpenSource}
+                accessibilityRole="link"
+                accessibilityLabel="Open official source URL"
+                style={styles.sourceBtn}
+              >
+                <Text style={styles.sourceBtnText}>Official Source ↗</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </Card>
+
+        {/* 2. Active Safety Notices Section */}
         {ghat.active_notices && ghat.active_notices.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}
+            >
               📢 {t('ghats.sections.notices', 'Safety & Emergency Advisories')}
             </Text>
             <NoticesBanner notices={ghat.active_notices} />
           </View>
         )}
 
-        {/* Live Crowd Status Component */}
+        {/* 3. Live Crowd Status & Report Trigger */}
         <CrowdStatusComponent
           crowdStatus={crowdStatus || ghat.crowd_status}
           fallbackLevel={ghat.crowd_level}
           onOpenReportModal={() => setIsReportModalVisible(true)}
         />
 
-        {/* About Section */}
+        {/* 4. Overview / About Section */}
         {description ? (
-          <View style={styles.sectionCard}>
-            <Text style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}>
+          <Card variant="elevated" style={styles.sectionCard}>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}
+            >
               📖 {t('ghats.sections.about', 'About this Ghat')}
             </Text>
-            <Text style={[styles.bodyText, { fontFamily }]}>{description}</Text>
-          </View>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.bodyText, { fontFamily }]}
+            >
+              {description}
+            </Text>
+          </Card>
         ) : null}
 
-        {/* Aarti Timings */}
-        <View style={styles.sectionCard}>
-          <Text style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}>
+        {/* 5. Aarti Timings Section */}
+        <Card variant="elevated" style={styles.sectionCard}>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}
+          >
             🪔 {t('ghats.sections.aarti', 'Maha Godavari Aarti Timings')}
           </Text>
           <AartiTimingsList timings={ghat.aarti_timings} />
-        </View>
+        </Card>
 
-        {/* On-Site Facilities */}
-        <View style={styles.sectionCard}>
-          <Text style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}>
+        {/* 6. Facilities Section */}
+        <Card variant="elevated" style={styles.sectionCard}>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}
+          >
             🛠️ {t('ghats.sections.facilities', 'On-Site Facilities')}
           </Text>
           <FacilitiesGrid facilities={ghat.facilities} />
-        </View>
+        </Card>
 
-        {/* Transport & Connectivity */}
-        <View style={styles.sectionCard}>
-          <Text style={[styles.sectionTitle, { fontFamily: fontFamilyBold }]}>
-            🚉 {t('ghats.sections.connectivity', 'Transport & Connectivity')}
-          </Text>
-          <View style={styles.connectItem}>
-            <Text style={styles.connectIcon}>🚂</Text>
-            <View style={styles.connectContent}>
-              <Text style={[styles.connectLabel, { fontFamily }]}>
-                {t('ghats.sections.nearest_railway', 'Railway Station')}
-              </Text>
-              <Text style={[styles.connectValue, { fontFamily: fontFamilyBold }]}>
-                {nearestRailway || 'Not specified'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.connectItem}>
-            <Text style={styles.connectIcon}>🚌</Text>
-            <View style={styles.connectContent}>
-              <Text style={[styles.connectLabel, { fontFamily }]}>
-                {t('ghats.sections.nearest_bus', 'Bus Stand')}
-              </Text>
-              <Text style={[styles.connectValue, { fontFamily: fontFamilyBold }]}>
-                {nearestBus || 'Not specified'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.connectItem}>
-            <Text style={styles.connectIcon}>🏙️</Text>
-            <View style={styles.connectContent}>
-              <Text style={[styles.connectLabel, { fontFamily }]}>
-                {t('ghats.sections.nearest_town', 'Nearest Town')}
-              </Text>
-              <Text style={[styles.connectValue, { fontFamily: fontFamilyBold }]}>
-                {nearestTown || 'Not specified'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Nearby Hotels, Temples & Transport (Module 5) */}
-        <View style={styles.sectionCard}>
+        {/* 7. Nearby Hotels & Temples Section */}
+        <Card variant="elevated" style={styles.sectionCard}>
           <View style={styles.nearbyHeaderRow}>
-            <Text style={[styles.sectionTitle, { fontFamily: fontFamilyBold, marginBottom: 0 }]}>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.sectionTitle, { fontFamily: fontFamilyBold, marginBottom: 0 }]}
+            >
               📍 {t('places.title', 'Nearby Hotels & Temples')}
             </Text>
             <TouchableOpacity
-              style={styles.exploreNearbyBadge}
               onPress={() =>
                 router.push({
                   pathname: '/(app)/ghats/nearby',
                   params: { id: ghat.id, ghatName: name },
                 })
               }
+              accessibilityRole="button"
+              style={styles.exploreNearbyBadge}
             >
-              <Text style={[styles.exploreNearbyBadgeText, { fontFamily: fontFamilyBold }]}>
+              <Text
+                maxFontSizeMultiplier={typography.maxScale}
+                style={[styles.exploreNearbyText, { fontFamily: fontFamilyBold }]}
+              >
                 {t('places.view_all', 'Explore All →')}
               </Text>
             </TouchableOpacity>
           </View>
-
-          <Text style={[styles.bodyText, { fontFamily, marginTop: 8, marginBottom: 12 }]}>
-            {t(
-              'places.subtitle',
-              'Curated stays, holy shrines, and transit hubs around this ghat with travel estimates.'
-            )}
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.bodyText, { fontFamily, marginTop: 4, marginBottom: 12 }]}
+          >
+            {t('places.subtitle', 'Official accommodations, pilgrimage shrines and transit hubs around this ghat.')}
           </Text>
 
-          <View style={styles.nearbyQuickLinks}>
-            <TouchableOpacity
-              style={styles.nearbyQuickBtn}
+          <View style={styles.nearbyButtonsRow}>
+            <Button
+              title="🛕 Temples"
+              variant="outline"
+              size="sm"
               onPress={() =>
                 router.push({
                   pathname: '/(app)/ghats/nearby',
                   params: { id: ghat.id, ghatName: name, type: 'temple' },
                 })
               }
-            >
-              <Text style={styles.quickBtnIcon}>🛕</Text>
-              <Text style={[styles.quickBtnText, { fontFamily: fontFamilyBold }]}>
-                {t('places.categories.temple', 'Temples')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.nearbyQuickBtn}
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="🏨 Hotels"
+              variant="outline"
+              size="sm"
               onPress={() =>
                 router.push({
                   pathname: '/(app)/ghats/nearby',
                   params: { id: ghat.id, ghatName: name, type: 'hotel' },
                 })
               }
-            >
-              <Text style={styles.quickBtnIcon}>🏨</Text>
-              <Text style={[styles.quickBtnText, { fontFamily: fontFamilyBold }]}>
-                {t('places.categories.hotel', 'Hotels & Stays')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.nearbyQuickBtn}
-              onPress={() =>
-                router.push({
-                  pathname: '/(app)/ghats/transport',
-                  params: { id: ghat.id, ghatName: name },
-                })
-              }
-            >
-              <Text style={styles.quickBtnIcon}>🚌</Text>
-              <Text style={[styles.quickBtnText, { fontFamily: fontFamilyBold }]}>
-                {t('places.categories.transport_hub', 'Transit Hubs')}
-              </Text>
-            </TouchableOpacity>
+              style={{ flex: 1 }}
+            />
           </View>
-        </View>
+        </Card>
+
+        {/* Bottom padding to ensure content is never obscured by the sticky action bar */}
+        <View style={{ height: 96 }} />
       </ScrollView>
 
-      {/* Crowd Report Modal with GPS Proximity Check */}
+      {/* Sticky Bottom Action Bar with Directions and Plan a Trip */}
+      <View style={styles.stickyBottomBar}>
+        <Button
+          title={t('routes.get_directions', 'Directions')}
+          variant="secondary"
+          size="md"
+          icon={<Text style={{ fontSize: 16 }}>🚗</Text>}
+          onPress={() =>
+            router.navigate(
+              `/(app)/routes?ghatId=${ghat.id}&ghatName=${encodeURIComponent(name)}&lat=${ghat.lat}&lng=${ghat.lng}&mode=directions` as any
+            )
+          }
+          style={styles.bottomBarButton}
+        />
+        <Button
+          title={t('navigation.plan', 'Plan a Trip')}
+          variant="primary"
+          size="md"
+          icon={<Text style={{ fontSize: 16 }}>🧭</Text>}
+          onPress={() =>
+            router.navigate(
+              `/(app)/routes?destination=${ghat.id}&ghatName=${encodeURIComponent(name)}&lat=${ghat.lat}&lng=${ghat.lng}&mode=plan` as any
+            )
+          }
+          style={styles.bottomBarButton}
+        />
+      </View>
+
+      {/* Crowd Report Modal */}
       <CrowdReportModal
         visible={isReportModalVisible}
         ghatId={ghat.id}
         ghatName={name}
         onClose={() => setIsReportModalVisible(false)}
         onSuccess={() => {
-          // Refresh crowd status
           GhatService.getGhatCrowdStatus(ghat.id).then((cs) => {
             if (cs) setCrowdStatus(cs);
           });
@@ -359,217 +406,164 @@ export const GhatDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   topNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
+    minHeight: 56,
   },
   navBackBtn: {
-    padding: 6,
+    minWidth: touchTargets.minTouch,
+    minHeight: touchTargets.minTouch,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   navBackIcon: {
     fontSize: 22,
-    color: '#0F52BA',
+    color: colors.primary700,
     fontWeight: '700',
   },
   navTitle: {
     flex: 1,
-    fontSize: 16,
-    color: '#0F172A',
-    fontWeight: '800',
-    marginHorizontal: 10,
+    fontSize: typography.sizes.h3,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginHorizontal: spacing.sm,
   },
   navActionBtn: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    minHeight: 38,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.primary50,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.borderOrange,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   navActionText: {
     fontSize: 13,
-    color: '#0F52BA',
     fontWeight: '700',
+    color: colors.primary700,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-    gap: 14,
+    padding: spacing.md,
+    gap: spacing.md,
   },
   heroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    gap: spacing.sm,
   },
   riverTag: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E0F2FE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 8,
+    backgroundColor: colors.primary50,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.borderOrange,
   },
   riverTagText: {
-    color: '#0369A1',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary700,
   },
   heroTitle: {
-    fontSize: 22,
+    fontSize: typography.sizes.h1,
     fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 4,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
   },
   heroSubtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 10,
+    fontSize: typography.sizes.caption,
+    color: colors.textMuted,
   },
-  bathingStatusWrapper: {
+  badgesRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    gap: spacing.sm,
+    marginVertical: spacing.xs,
   },
-  badgeLabel: {
-    fontSize: 13,
-    color: '#475569',
-    fontWeight: '600',
+  verificationSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  verificationLeft: {
+    gap: 4,
+  },
+  verifiedDate: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  sourceBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  sourceBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary700,
   },
   section: {
-    marginVertical: 4,
+    gap: spacing.xs,
   },
   sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    gap: spacing.sm,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: typography.sizes.h3,
     fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 10,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
   },
   bodyText: {
-    fontSize: 14,
-    color: '#334155',
+    fontSize: typography.sizes.bodySm || 14,
+    color: colors.textPrimary,
     lineHeight: 22,
-  },
-  connectItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  connectIcon: {
-    fontSize: 22,
-  },
-  connectContent: {
-    flex: 1,
-  },
-  connectLabel: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  connectValue: {
-    fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '600',
-    marginTop: 1,
   },
   nearbyHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   exploreNearbyBadge: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  exploreNearbyBadgeText: {
-    fontSize: 12,
-    color: '#1D4ED8',
-    fontWeight: 'bold',
-  },
-  nearbyQuickLinks: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  nearbyQuickBtn: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  quickBtnIcon: {
-    fontSize: 20,
-    marginBottom: 4,
-  },
-  quickBtnText: {
-    fontSize: 11,
-    color: '#1E293B',
-    textAlign: 'center',
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: 'center',
+    minHeight: 36,
     justifyContent: 'center',
-    padding: 24,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#64748B',
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    color: '#0F172A',
+  exploreNearbyText: {
+    fontSize: 13,
+    color: colors.primary700,
     fontWeight: '700',
-    marginBottom: 16,
   },
-  backButton: {
-    backgroundColor: '#0F52BA',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+  nearbyButtonsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
   },
-  backButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+  stickyBottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.white,
+    borderTopWidth: 1.5,
+    borderTopColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    flexDirection: 'row',
+    gap: spacing.md,
+    ...shadows.elevated,
+  },
+  bottomBarButton: {
+    flex: 1,
   },
 });
-

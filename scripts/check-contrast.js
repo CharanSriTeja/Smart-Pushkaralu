@@ -134,3 +134,4 @@ if (failed > 0) {
   console.log('\nAll token contrast checks passed WCAG AA requirements.');
   process.exit(0);
 }
+

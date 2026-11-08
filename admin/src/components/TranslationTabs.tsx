@@ -80,3 +80,4 @@ export const TranslationTabs: React.FC<TranslationTabsProps> = ({
     </div>
   );
 };
+

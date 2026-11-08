@@ -108,15 +108,44 @@
     }
   },
   "sos": {
-    "sos_button": "EMERGENCY SOS",
-    "emergency_assistance": "Pushkaralu Emergency Help",
-    "calling_police": "Police Helpline (100)",
-    "calling_ambulance": "Ambulance (108)",
-    "share_location": "Share Live GPS Location",
-    "safety_warning": "Call for immediate police, medical rescue, or river emergency assistance.",
-    "medical_help": "Medical First Aid Post",
-    "lost_found": "Lost & Found Helpline",
-    "confirm_emergency": "Are you sure you want to trigger emergency alert?"
+    "_comment": "NOTE: Emergency and safety strings. Review by native speaker required before production deployment.",
+    "official_disclaimer": "This app assists pushkaralu volunteers and command control. It supplements and NEVER replaces official emergency 112.",
+    "call_112_banner": "Emergency? Call 112 immediately",
+    "call_112_button": "Dial 112 Now",
+    "title": "Emergency SOS",
+    "subtitle": "Select emergency category. Countdown will trigger alert.",
+    "countdown_msg": "Sending {{type}} alert in {{seconds}}s...",
+    "cancel_countdown": "Cancel",
+    "send_now": "Send Now",
+    "gps_privacy_notice": "Your location is acquired only when you trigger an emergency SOS alert, used exclusively to dispatch help.",
+    "categories": {
+      "medical": "Medical Emergency",
+      "medical_desc": "Heart attack, drowning, injury, breathing trouble",
+      "police": "Police Assistance",
+      "police_desc": "Stampede risk, theft, physical danger, assault",
+      "fire": "Fire & Rescue",
+      "fire_desc": "Fire outbreak, cylinder leak, structural collapse",
+      "lost_person": "Lost Person / Child",
+      "lost_person_desc": "Separated child, missing elder in crowd",
+      "general": "General Emergency",
+      "general_desc": "Urgent assistance required at this location"
+    },
+    "status": {
+      "title": "SOS Alert Status",
+      "new": "Alert Logged",
+      "acknowledged": "Acknowledged & Assigned",
+      "dispatched": "Rescue Team Dispatched",
+      "resolved": "Emergency Resolved",
+      "false_alarm": "Alert Cancelled"
+    },
+    "actions": {
+      "cancel_alert": "Cancel Alert (False Alarm)",
+      "send_sms": "Send SOS by SMS",
+      "emergency_contacts": "Emergency Helplines",
+      "call_control_room": "Call Control Room"
+    },
+    "offline_queued": "Network unavailable. Alert queued and will sync automatically.",
+    "zone_detected": "Attached to Zone: {{zone}}"
   },
   "issues": {
     "title": "Report an Issue",
@@ -377,93 +406,6 @@
       "desc": "No places found within {{radius}} km. Try selecting a wider search radius."
     }
   },
-  "places": {
-    "title": "Nearby Hotels, Temples & Transport",
-    "subtitle": "Curated stays, holy shrines, and transit hubs around this ghat",
-    "view_all": "Explore All Nearby Places",
-    "disclaimer_notice": "Notice: During Godavari Pushkaralu, temple queues, road diversions, ghat security cordons, and parking regulations may affect real-time accessibility and timings. Conditions can change suddenly.",
-    "categories": {
-      "all": "🌟 All",
-      "temple": "🛕 Temples",
-      "hotel": "🏨 Hotels & Stays",
-      "transport_hub": "🚌 Transport Hubs"
-    },
-    "radii": {
-      "r1": "1 km",
-      "r3": "3 km",
-      "r5": "5 km",
-      "r10": "10 km"
-    },
-    "badges": {
-      "curated": "🛡️ Curated / Official",
-      "third_party": "🌐 Places Directory",
-      "verified": "Verified Record"
-    },
-    "actions": {
-      "call": "Call",
-      "map": "View Pin",
-      "directions": "Directions",
-      "view_all": "View All ({{count}})"
-    },
-    "details": {
-      "deity": "Main Deity",
-      "darshan": "Darshan Timings",
-      "special_entry": "Special Pushkaralu Entry",
-      "room_types": "Accommodation Types",
-      "price_range": "Category",
-      "price_free": "Free Seva / Pilgrim Shed",
-      "price_dharamshala": "Pilgrim Choultry / Dharamshala",
-      "price_budget": "Budget Friendly",
-      "price_mid_range": "Mid-Range Comfort",
-      "price_luxury": "Luxury Resort",
-      "hub_type": "Transit Facility",
-      "operating_hours": "Operating Hours"
-    },
-    "empty": {
-      "title": "No Places Found Nearby",
-      "desc": "No places found within {{radius}} km. Try selecting a wider search radius."
-    }
-  },
-  "sos": {
-    "_comment": "NOTE: Emergency and safety strings. Review by native speaker required before production deployment.",
-    "official_disclaimer": "This app assists pushkaralu volunteers and command control. It supplements and NEVER replaces official emergency 112.",
-    "call_112_banner": "Emergency? Call 112 immediately",
-    "call_112_button": "Dial 112 Now",
-    "title": "Emergency SOS",
-    "subtitle": "Select emergency category. Countdown will trigger alert.",
-    "countdown_msg": "Sending {{type}} alert in {{seconds}}s...",
-    "cancel_countdown": "Cancel",
-    "send_now": "Send Now",
-    "gps_privacy_notice": "Your location is acquired only when you trigger an emergency SOS alert, used exclusively to dispatch help.",
-    "categories": {
-      "medical": "Medical Emergency",
-      "medical_desc": "Heart attack, drowning, injury, breathing trouble",
-      "police": "Police Assistance",
-      "police_desc": "Stampede risk, theft, physical danger, assault",
-      "fire": "Fire & Rescue",
-      "fire_desc": "Fire outbreak, cylinder leak, structural collapse",
-      "lost_person": "Lost Person / Child",
-      "lost_person_desc": "Separated child, missing elder in crowd",
-      "general": "General Emergency",
-      "general_desc": "Urgent assistance required at this location"
-    },
-    "status": {
-      "title": "SOS Alert Status",
-      "new": "Alert Logged",
-      "acknowledged": "Acknowledged & Assigned",
-      "dispatched": "Rescue Team Dispatched",
-      "resolved": "Emergency Resolved",
-      "false_alarm": "Alert Cancelled"
-    },
-    "actions": {
-      "cancel_alert": "Cancel Alert (False Alarm)",
-      "send_sms": "Send SOS by SMS",
-      "emergency_contacts": "Emergency Helplines",
-      "call_control_room": "Call Control Room"
-    },
-    "offline_queued": "Network unavailable. Alert queued and will sync automatically.",
-    "zone_detected": "Attached to Zone: {{zone}}"
-  },
   "routes": {
     "title": "Route Planner",
     "origin_label": "Starting Point",
@@ -503,6 +445,13 @@
       "approximate": "Approximate Location",
       "village_centre": "Village Centre"
     }
+  },
+  "navigation": {
+    "home": "Home",
+    "ghats": "Ghats",
+    "plan": "Plan",
+    "news": "News",
+    "more": "More",
+    "sos": "SOS"
   }
 }
-

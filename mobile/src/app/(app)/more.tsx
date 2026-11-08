@@ -1,36 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Alert,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Screen } from '../../components/Screen';
-import { Card } from '../../components/Card';
-import { Button } from '../../components/Button';
-import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useAuth } from '../../context/AuthContext';
 import { clearCache } from '../../storage/cache';
-import { theme } from '../../theme';
 import { useLanguage } from '../../context/LanguageContext';
 import { formatPhoneNumberForDisplay } from '../../utils/validation';
+import { colors, radii, spacing, touchTargets, typography, shadows } from '../../theme/tokens';
+import {
+  ScreenContainer,
+  Card,
+  Button,
+  LanguageSwitcher,
+  ListItem,
+  SectionHeader,
+  BottomSheet,
+} from '../../components';
+import { getBaseV1Url } from '../../services/api';
 
 export default function MoreScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user, status, logout, deleteAccount } = useAuth();
   const { fontFamily, fontFamilyBold } = useLanguage();
+
   const [clearing, setClearing] = useState(false);
+  const [versionTapCount, setVersionTapCount] = useState(0);
+  const [devOptionsUnlocked, setDevOptionsUnlocked] = useState(false);
+  const [activeModal, setActiveModal] = useState<'terms' | 'privacy' | 'faqs' | 'about' | 'dev' | null>(null);
 
   const isGuest = status === 'guest';
+  const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
+
+  const handleVersionTap = () => {
+    if (!isDev) return;
+    const next = versionTapCount + 1;
+    setVersionTapCount(next);
+    if (next >= 7) {
+      setDevOptionsUnlocked(true);
+      Alert.alert('🛠️ Developer Options', 'Developer options unlocked for development build.');
+    } else if (next >= 3) {
+      Alert.alert('Developer Mode', `${7 - next} more taps to unlock developer options.`);
+    }
+  };
 
   const handleClearCache = async () => {
     setClearing(true);
     try {
       await clearCache();
-      Alert.alert(t('common.done'), 'Offline cache cleared successfully.');
+      Alert.alert(t('common.done', 'Done'), 'Offline cache cleared successfully.');
     } finally {
       setClearing(false);
     }
@@ -38,12 +64,12 @@ export default function MoreScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      t('auth.logout'),
-      t('home.confirm_logout'),
+      t('auth.logout', 'Log Out'),
+      t('home.confirm_logout', 'Are you sure you want to log out?'),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         {
-          text: t('auth.logout'),
+          text: t('auth.logout', 'Log Out'),
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -56,19 +82,19 @@ export default function MoreScreen() {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      t('auth.delete_account'),
-      t('home.confirm_delete'),
+      t('auth.delete_account', 'Delete Account'),
+      t('home.confirm_delete', 'Delete your account and all associated data permanently?'),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         {
-          text: t('auth.delete_account'),
+          text: t('auth.delete_account', 'Delete Account'),
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteAccount();
               router.replace('/(auth)/landing' as any);
             } catch (err: any) {
-              Alert.alert(t('common.error'), err.message || 'Failed to delete account');
+              Alert.alert(t('common.error', 'Error'), err.message || 'Failed to delete account');
             }
           },
         },
@@ -77,179 +103,349 @@ export default function MoreScreen() {
   };
 
   return (
-    <Screen scrollable style={styles.screen}>
-      <Text style={[styles.title, { fontFamily: fontFamilyBold }]}>
-        {t('settings.title')}
-      </Text>
-
-      {/* User profile card */}
-      <Card style={styles.card}>
-        <Text style={[styles.cardHeader, { fontFamily: fontFamilyBold }]}>
-          👤 Pilgrim Profile
+    <ScreenContainer scrollable contentContainerStyle={styles.container}>
+      {/* 1. Header */}
+      <View style={styles.header}>
+        <Text
+          maxFontSizeMultiplier={typography.maxScale}
+          style={[styles.title, { fontFamily: fontFamilyBold }]}
+        >
+          {t('settings.title', 'Settings & Support')}
         </Text>
+      </View>
+
+      {/* 2. Pilgrim Profile Card */}
+      <Card variant="elevated" style={styles.card}>
+        <SectionHeader title="👤 Pilgrim Profile" />
         {isGuest ? (
-          <View>
-            <Text style={[styles.profileText, { fontFamily }]}>
-              {t('guest.banner_title')}
+          <View style={styles.guestContent}>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.bodyText, { fontFamily }]}
+            >
+              Browsing as Guest. Sign in with your mobile number to view personalized trip itineraries and track reported issues.
             </Text>
             <Button
-              title="Log In for Personalized Alerts"
+              title="Sign In with Mobile OTP"
               onPress={() => router.push('/(auth)/phone' as any)}
-              variant="outline"
-              size="small"
-              style={styles.profileBtn}
+              variant="primary"
+              size="sm"
+              style={{ marginTop: spacing.sm }}
             />
           </View>
         ) : (
-          <View>
-            <Text style={[styles.userName, { fontFamily: fontFamilyBold }]}>
+          <View style={styles.profileContent}>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.profileName, { fontFamily: fontFamilyBold }]}
+            >
               {user?.name || 'Pilgrim'}
             </Text>
-            <Text style={[styles.userPhone, { fontFamily }]}>
+            <Text
+              maxFontSizeMultiplier={typography.maxScale}
+              style={[styles.profilePhone, { fontFamily }]}
+            >
               📱 {user?.phone ? formatPhoneNumberForDisplay(user.phone) : ''}
             </Text>
+
+            <View style={styles.profileLinks}>
+              <ListItem
+                title="My Reported Grievances"
+                subtitle="Track status and updates of submitted issues"
+                showChevron
+                onPress={() => router.push('/(app)/issues' as any)}
+              />
+              <ListItem
+                title="Yatra Trip Plans"
+                subtitle="Review saved pilgrimage schedules"
+                showChevron
+                onPress={() => router.push('/(app)/routes' as any)}
+              />
+            </View>
           </View>
         )}
       </Card>
 
-      {/* Language Selection */}
-      <Card style={styles.card}>
-        <Text style={[styles.cardHeader, { fontFamily: fontFamilyBold }]}>
-          🌐 {t('settings.language_selection')}
-        </Text>
-        <LanguageSwitcher style={styles.langSwitcher} />
+      {/* 3. Language Switcher Card */}
+      <Card variant="elevated" style={styles.card}>
+        <SectionHeader title={`🌐 ${t('settings.language_selection', 'Language / భాష')}`} />
+        <LanguageSwitcher variant="chips" />
       </Card>
 
-      {/* Emergency SOS Quick Link */}
-      <Card style={[styles.card, { borderColor: '#EF4444', borderWidth: 1.5, backgroundColor: '#FEF2F2' }]}>
-        <Text style={[styles.cardHeader, { fontFamily: fontFamilyBold, color: '#991B1B' }]}>
-          🆘 Emergency Assistance & Helpline
+      {/* 4. Offline Data Sync & Storage */}
+      <Card variant="elevated" style={styles.card}>
+        <SectionHeader title={`💾 ${t('settings.offline_cache', 'Offline Data & Sync')}`} />
+        <Text
+          maxFontSizeMultiplier={typography.maxScale}
+          style={[styles.bodyText, { fontFamily }]}
+        >
+          Ghat statuses, holy water guidelines, and route advisories are stored locally so you can access them in high-density areas with weak network connectivity.
         </Text>
-        <Text style={[styles.bodyText, { fontFamily, color: '#7F1D1D', marginBottom: 10 }]}>
-          Direct dispatch to Control Room, Police, NDRF boat teams, and medical emergency helpline 112.
-        </Text>
-        <Button
-          title="Open Emergency SOS 🚨"
-          onPress={() => router.push('/(app)/sos' as any)}
-          variant="danger"
-          size="small"
+        <View style={styles.cacheActions}>
+          <Button
+            title={clearing ? 'Clearing...' : t('settings.clear_cache', 'Clear Local Cache')}
+            onPress={handleClearCache}
+            loading={clearing}
+            variant="outline"
+            size="sm"
+          />
+        </View>
+      </Card>
+
+      {/* 5. Platform Support Section */}
+      <Card variant="elevated" style={styles.card}>
+        <SectionHeader title="🏛️ Platform Support & Guidelines" />
+        <ListItem
+          title="About Smart Pushkaralu 2027"
+          subtitle="Official Godavari Pushkaram civic portal"
+          showChevron
+          onPress={() => setActiveModal('about')}
+        />
+        <ListItem
+          title="Frequently Asked Questions (FAQs)"
+          subtitle="Ghat safety, Aarti times, and transit FAQs"
+          showChevron
+          onPress={() => setActiveModal('faqs')}
+        />
+        <ListItem
+          title="Terms of Service & Pilgrimage Guidelines"
+          subtitle="District Administration compliance rules"
+          showChevron
+          onPress={() => setActiveModal('terms')}
+        />
+        <ListItem
+          title="Privacy Policy & Data Security"
+          subtitle="Zero third-party trackers, end-to-end encryption"
+          showChevron
+          onPress={() => setActiveModal('privacy')}
         />
       </Card>
 
-      {/* Offline Storage Cache */}
-      <Card style={styles.card}>
-        <Text style={[styles.cardHeader, { fontFamily: fontFamilyBold }]}>
-          💾 {t('settings.offline_cache')}
-        </Text>
-        <Text style={[styles.bodyText, { fontFamily }]}>
-          Ghat conditions and schedules are cached locally on your device for weak network areas.
-        </Text>
-        <Button
-          title={clearing ? 'Clearing...' : t('settings.clear_cache')}
-          onPress={handleClearCache}
-          loading={clearing}
-          variant="outline"
-          size="small"
-          style={styles.cacheBtn}
-        />
-      </Card>
+      {/* 6. Version Info & Dev Options Trigger (7 Taps) */}
+      <View style={styles.versionContainer}>
+        <TouchableOpacity
+          onPress={handleVersionTap}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="App version information"
+        >
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.versionText, { fontFamily }]}
+          >
+            Smart Pushkaralu 2027 • v1.0.0 (Build 2027.1)
+          </Text>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.subVersionText, { fontFamily }]}
+          >
+            Government of Andhra Pradesh & Telangana Pushkaram Authority
+          </Text>
+        </TouchableOpacity>
 
-      {/* App Info */}
-      <Card style={styles.card}>
-        <Text style={[styles.cardHeader, { fontFamily: fontFamilyBold }]}>
-          ℹ️ {t('settings.about')}
-        </Text>
-        <Text style={[styles.bodyText, { fontFamily }]}>
-          Smart Pushkaralu 2027 • Official Pilgrim Portal
-        </Text>
-        <Text style={[styles.versionText, { fontFamily }]}>
-          {t('settings.app_version')}: 1.0.0 (Build 2027.1)
-        </Text>
-      </Card>
+        {devOptionsUnlocked && isDev && (
+          <Button
+            title="🛠️ Open Developer Options"
+            variant="secondary"
+            size="sm"
+            onPress={() => setActiveModal('dev')}
+            style={styles.devBtn}
+          />
+        )}
+      </View>
 
-      {/* Account actions */}
+      {/* 7. Sign Out / Account Deletion for Logged-In Pilgrims */}
       {!isGuest && (
         <View style={styles.accountActions}>
           <Button
-            title={t('auth.logout')}
+            title={t('auth.logout', 'Log Out')}
             onPress={handleLogout}
             variant="outline"
-            style={styles.logoutBtn}
+            size="md"
           />
           <Button
-            title={t('auth.delete_account')}
+            title={t('auth.delete_account', 'Delete Account Permanently')}
             onPress={handleDeleteAccount}
             variant="danger"
-            style={styles.deleteBtn}
+            size="md"
           />
         </View>
       )}
-    </Screen>
+
+      {/* Modals for Support / Legal / Dev Options */}
+      <BottomSheet
+        visible={activeModal !== null}
+        onClose={() => setActiveModal(null)}
+        title={
+          activeModal === 'about'
+            ? 'About Smart Pushkaralu'
+            : activeModal === 'faqs'
+            ? 'Pushkaralu FAQs'
+            : activeModal === 'terms'
+            ? 'Terms & Guidelines'
+            : activeModal === 'privacy'
+            ? 'Privacy & Security'
+            : 'Developer Options'
+        }
+      >
+        <ScrollView style={styles.modalScroll}>
+          {activeModal === 'about' && (
+            <View style={styles.modalContent}>
+              <Text style={styles.modalPara}>
+                Smart Pushkaralu 2027 is the official civic technology platform for the 2027 Godavari Maha Pushkaram, coordinating holy bathing ghats across Rajahmundry, Bhadrachalam, and all Godavari riparian districts.
+              </Text>
+              <Text style={styles.modalPara}>
+                Built under strict governance guidelines to ensure zero dummy data, WCAG AA contrast compliance, real-time emergency SOS dispatch, and verified bathing statuses.
+              </Text>
+            </View>
+          )}
+
+          {activeModal === 'faqs' && (
+            <View style={styles.modalContent}>
+              <Text style={styles.faqQ}>Q: When is the auspicious time for Pushkaram Snanam?</Text>
+              <Text style={styles.faqA}>A: Traditional holy snanam is observed from sunrise to sunset. Check live crowd levels on the Ghats tab before proceeding.</Text>
+
+              <Text style={styles.faqQ}>Q: How do I report a missing person or sanitation issue?</Text>
+              <Text style={styles.faqA}>A: Use the Report Issue screen or tap the persistent red SOS button for immediate police and medical response.</Text>
+
+              <Text style={styles.faqQ}>Q: Does the app work without internet?</Text>
+              <Text style={styles.faqA}>A: Yes, offline mode caches ghat listings and emergency instructions so you can access them even in heavy crowd congestion.</Text>
+            </View>
+          )}
+
+          {activeModal === 'terms' && (
+            <View style={styles.modalContent}>
+              <Text style={styles.modalPara}>
+                1. Holy river bathing is subject to real-time current conditions. Always obey police safety cordons and lifeguard directions.
+              </Text>
+              <Text style={styles.modalPara}>
+                2. Do not venture into deep waters beyond safety barricades.
+              </Text>
+              <Text style={styles.modalPara}>
+                3. Misuse of the Emergency SOS feature is punishable under relevant disaster management and public safety regulations.
+              </Text>
+            </View>
+          )}
+
+          {activeModal === 'privacy' && (
+            <View style={styles.modalContent}>
+              <Text style={styles.modalPara}>
+                Your privacy is paramount. Phone authentication is strictly used for emergency identity verification. Location is acquired solely on-demand to compute nearest safe ghats or dispatch emergency rescue.
+              </Text>
+              <Text style={styles.modalPara}>
+                No personal data is shared with commercial advertising brokers.
+              </Text>
+            </View>
+          )}
+
+          {activeModal === 'dev' && (
+            <View style={styles.modalContent}>
+              <Text style={styles.faqQ}>API Base URL:</Text>
+              <Text style={styles.faqA}>{getBaseV1Url()}</Text>
+
+              <Text style={styles.faqQ}>Environment:</Text>
+              <Text style={styles.faqA}>{isDev ? 'Development / Staging' : 'Production'}</Text>
+
+              <Text style={styles.faqQ}>Active User Role:</Text>
+              <Text style={styles.faqA}>{user?.isAdmin ? 'Admin / Coordinator' : 'Pilgrim'}</Text>
+
+              <Text style={styles.faqQ}>Platform:</Text>
+              <Text style={styles.faqA}>React Native / Expo 58</Text>
+            </View>
+          )}
+        </ScrollView>
+      </BottomSheet>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    paddingHorizontal: theme.spacing.md,
+  container: {
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  header: {
+    marginBottom: spacing.xs,
   },
   title: {
-    fontSize: theme.typography.sizes.h1,
-    color: theme.colors.textPrimary,
-    marginTop: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
+    fontSize: typography.sizes.h1,
+    fontWeight: '800',
+    color: colors.primary700,
   },
   card: {
-    marginBottom: theme.spacing.md,
+    gap: spacing.sm,
   },
-  cardHeader: {
-    fontSize: theme.typography.sizes.h3,
-    color: theme.colors.textPrimary,
-    marginBottom: 8,
+  guestContent: {
+    gap: spacing.xs,
   },
-  profileText: {
-    fontSize: theme.typography.sizes.bodySm,
-    color: theme.colors.textSecondary,
-    marginBottom: 10,
+  profileContent: {
+    gap: spacing.xs,
   },
-  userName: {
-    fontSize: theme.typography.sizes.body,
-    color: theme.colors.textPrimary,
+  profileName: {
+    fontSize: typography.sizes.h3,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
-  userPhone: {
-    fontSize: theme.typography.sizes.bodySm,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
+  profilePhone: {
+    fontSize: typography.sizes.bodySm || 14,
+    color: colors.textMuted,
   },
-  profileBtn: {
-    marginTop: 6,
-  },
-  langSwitcher: {
-    marginTop: 6,
+  profileLinks: {
+    marginTop: spacing.sm,
   },
   bodyText: {
-    fontSize: theme.typography.sizes.bodySm,
-    color: theme.colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 10,
+    fontSize: typography.sizes.bodySm || 14,
+    color: colors.textPrimary,
+    lineHeight: 22,
   },
-  cacheBtn: {
-    alignSelf: 'flex-start',
+  cacheActions: {
+    marginTop: spacing.xs,
+    alignItems: 'flex-start',
+  },
+  versionContainer: {
+    alignItems: 'center',
+    marginVertical: spacing.md,
+    gap: spacing.xs,
   },
   versionText: {
-    fontSize: 12,
-    color: theme.colors.textMuted,
-    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  subVersionText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  devBtn: {
+    marginTop: spacing.sm,
   },
   accountActions: {
-    marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.xxl,
-    gap: theme.spacing.md,
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
-  logoutBtn: {
-    width: '100%',
+  modalScroll: {
+    maxHeight: 400,
   },
-  deleteBtn: {
-    width: '100%',
+  modalContent: {
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  modalPara: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    lineHeight: 22,
+  },
+  faqQ: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary700,
+  },
+  faqA: {
+    fontSize: 13,
+    color: colors.textPrimary,
+    lineHeight: 20,
+    marginBottom: spacing.xs,
   },
 });
-

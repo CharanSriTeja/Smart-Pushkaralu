@@ -5,7 +5,6 @@ import { LanguageProvider, useLanguage } from '../context/LanguageContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { GlobalErrorBoundary } from '../components/ErrorBoundary';
 import { initMobileSentry } from '../services/sentry';
-import { requestLocationOnStartup } from '../utils/location';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -15,11 +14,6 @@ initMobileSentry();
 function RootContent() {
   const { isLanguageReady } = useLanguage();
   const { status } = useAuth();
-
-  useEffect(() => {
-    // Request location immediately upon opening the site / app
-    requestLocationOnStartup().catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (isLanguageReady && status !== 'loading') {

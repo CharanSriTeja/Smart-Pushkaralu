@@ -1,14 +1,18 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useTranslation } from 'react-i18next';
-import { theme } from '../theme';
+import { useRouter, usePathname } from 'expo-router';
+import { colors, radii, shadows, touchTargets } from '../theme/tokens';
 import { useLanguage } from '../context/LanguageContext';
 
 export const SOSFloatingButton: React.FC = () => {
   const router = useRouter();
-  const { t } = useTranslation();
+  const pathname = usePathname();
   const { fontFamilyBold } = useLanguage();
+
+  // Hide the floating SOS button when inside the SOS flow itself
+  if (pathname && (pathname.includes('/sos') || pathname === '/sos')) {
+    return null;
+  }
 
   const handlePress = () => {
     try {
@@ -54,20 +58,20 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: theme.colors.danger,
+    backgroundColor: colors.danger, // High contrast red #B91C1C
     borderWidth: 2.5,
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
-    ...theme.shadows.floating,
+    ...shadows.floating,
   },
   icon: {
     fontSize: 20,
     marginTop: -2,
   },
   label: {
-    color: theme.colors.white,
+    color: colors.white,
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
