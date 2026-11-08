@@ -398,7 +398,7 @@ export const AdminApi = {
     return json;
   },
 
-  async createTransportHub(payload: any): Promise<any> {
+  async createPlaceTransportHub(payload: any): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/admin/places/transport-hubs`, {
       method: 'POST',
       headers: authHeaders(),
@@ -409,7 +409,7 @@ export const AdminApi = {
     return json.data;
   },
 
-  async updateTransportHub(id: string, payload: any): Promise<any> {
+  async updatePlaceTransportHub(id: string, payload: any): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/admin/places/transport-hubs/${id}`, {
       method: 'PATCH',
       headers: authHeaders(),
@@ -420,7 +420,7 @@ export const AdminApi = {
     return json.data;
   },
 
-  async deleteTransportHub(id: string, reason: string): Promise<any> {
+  async deletePlaceTransportHub(id: string, reason: string): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/admin/places/transport-hubs/${id}`, {
       method: 'DELETE',
       headers: authHeaders(),
@@ -625,6 +625,159 @@ export const AdminApi = {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error?.message || 'Failed to deactivate contact');
     return json;
+  },
+
+  // ==========================================
+  // MODULE 2: ROUTING & TRIP PLANNER ADMIN API
+  // ==========================================
+
+  async getRouteOrigins(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/origins`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch route origins');
+    const json = await res.json();
+    return json.origins || [];
+  },
+
+  async createRouteOrigin(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/origins`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create origin');
+    return json.origin;
+  },
+
+  async updateRouteOrigin(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/origins/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update origin');
+    return json.origin;
+  },
+
+  async deleteRouteOrigin(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/origins/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete origin');
+    return json;
+  },
+
+  async getGhatAccessPoints(ghatId: string): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/access-points/${ghatId}`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch access points');
+    const json = await res.json();
+    return json.access_points || [];
+  },
+
+  async createGhatAccessPoint(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/access-points`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create access point');
+    return json.access_point;
+  },
+
+  async updateGhatAccessPoint(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/access-points/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update access point');
+    return json.access_point;
+  },
+
+  async getRouteClosures(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/closures`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch route closures');
+    const json = await res.json();
+    return json.closures || [];
+  },
+
+  async createRouteClosure(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/closures`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create closure');
+    return json.closure;
+  },
+
+  async deleteRouteClosure(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/closures/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete closure');
+    return json;
+  },
+
+  async getDelayFactors(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/delay-factors`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch delay factors');
+    const json = await res.json();
+    return json.delay_factors || [];
+  },
+
+  async createDelayFactor(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/delay-factors`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create delay factor');
+    return json.delay_factor;
+  },
+
+  async deleteDelayFactor(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/delay-factors/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete delay factor');
+    return json;
+  },
+
+  async getAdminTemples(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/temples`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch temples');
+    const json = await res.json();
+    return json.temples || [];
+  },
+
+  async updateAdminTemple(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/temples/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update temple');
+    return json.temple;
+  },
+
+  async getRoutingOperations(): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/operations`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch routing operations');
+    const json = await res.json();
+    return json.operations;
   },
 
   // ==========================================
@@ -1099,6 +1252,9 @@ export const AdminApi = {
     return json;
   },
 };
+
+export const adminApi = AdminApi;
+export default AdminApi;
 
 
 

@@ -22,6 +22,7 @@ import { icccRouter } from './routes/v1/iccc.js';
 import { ghatsRouter, crowdReportRouter } from './routes/v1/ghats.routes.js';
 import { newsRouter } from './routes/v1/news.routes.js';
 import { issuesRouter } from './routes/v1/issues.routes.js';
+import { routesRouter } from './routes/v1/routes.routes.js';
 import { adminRouter } from './routes/v1/admin.routes.js';
 import { sosRouter } from './routes/v1/sos.routes.js';
 import { adminSosRouter } from './routes/v1/admin-sos.routes.js';

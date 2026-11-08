@@ -119,7 +119,7 @@ export const NearbyPlacesAdminPage: React.FC = () => {
           reason: formData.reason,
         });
       } else {
-        await AdminApi.createTransportHub({
+        await AdminApi.createPlaceTransportHub({
           name,
           address,
           phone: formData.phone || undefined,
@@ -150,7 +150,7 @@ export const NearbyPlacesAdminPage: React.FC = () => {
       } else if (type === 'temple') {
         await AdminApi.updateTemple(place.id, { is_hidden: !place.is_hidden, reason });
       } else {
-        await AdminApi.updateTransportHub(place.id, { is_hidden: !place.is_hidden, reason });
+        await AdminApi.updatePlaceTransportHub(place.id, { is_hidden: !place.is_hidden, reason });
       }
       fetchData();
     } catch (err: any) {
@@ -165,7 +165,7 @@ export const NearbyPlacesAdminPage: React.FC = () => {
     try {
       if (type === 'hotel') await AdminApi.deleteHotel(id, reason);
       else if (type === 'temple') await AdminApi.deleteTemple(id, reason);
-      else await AdminApi.deleteTransportHub(id, reason);
+      else await AdminApi.deletePlaceTransportHub(id, reason);
       fetchData();
     } catch (err: any) {
       alert(err.message || 'Delete failed');
