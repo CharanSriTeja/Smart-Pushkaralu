@@ -219,44 +219,24 @@ export const GhatsPage: React.FC = () => {
     setEditingGhatId(null);
     setFormName({ en: '', te: '', hi: '' });
     setFormRiver('Godavari');
-    setFormDistrict('East Godavari');
+    setFormDistrict('');
     setFormState('Andhra Pradesh');
-    setFormLat('17.0048');
-    setFormLng('81.7762');
-    setFormTown({ en: 'Rajahmundry', te: 'రాజమండ్రి', hi: 'राजमुंदरी' });
+    setFormLat('');
+    setFormLng('');
+    setFormTown({ en: '', te: '', hi: '' });
     setFormRailway({ en: '', te: '', hi: '' });
     setFormBusStand({ en: '', te: '', hi: '' });
-    setFormOfficialUrl('https://eastgodavari.ap.gov.in/pushkaralu');
+    setFormOfficialUrl('');
     setFormVerifiedAt(new Date().toISOString());
     setFormRecordStatus('officially_listed');
     setFormBathingStatus('allowed');
-    setFormCrowdLevel('medium');
-    setFormPublishStatus('published');
+    setFormCrowdLevel('low');
+    setFormPublishStatus('draft');
     setFormDesc({ en: '', te: '', hi: '' });
-    setFormMaxCapacity('30000');
-    setFormFacilities([
-      {
-        facility_type: 'changing_rooms',
-        is_operational: true,
-        count: 10,
-        details: { en: 'Separate enclosures for men and women', te: 'స్త్రీలు మరియు పురుషులకు ప్రత్యేక గదులు', hi: 'महिला एवं पुरुष हेतु पृथक कक्ष' },
-      },
-      {
-        facility_type: 'drinking_water',
-        is_operational: true,
-        count: 4,
-        details: { en: 'RO Purified water counters', te: 'RO శుద్ధి చేసిన తాగునీటి కేంద్రాలు', hi: 'RO शुद्ध पेयजल केंद्र' },
-      },
-    ]);
-    setFormAartiTimings([
-      {
-        aarti_name: { en: 'Godavari Harathi', te: 'గోదావరి హారతి', hi: 'गोदावरी आरती' },
-        time: '19:00',
-        days: 'everyday',
-        description: { en: 'Evening river bank aarti', te: 'సాయంత్రం నదీ హారతి', hi: 'संध्या आरती' },
-      },
-    ]);
-    setFormAuditReason('Adding new officially surveyed Pushkaralu ghat');
+    setFormMaxCapacity('');
+    setFormFacilities([]);
+    setFormAartiTimings([]);
+    setFormAuditReason('');
     setEditModalOpen(true);
   };
 

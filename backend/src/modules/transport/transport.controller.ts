@@ -120,7 +120,7 @@ export class TransportController {
 
   updateAdminHub = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getHubById(id);
       if (!existing) {
@@ -148,7 +148,7 @@ export class TransportController {
 
   deleteAdminHub = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getHubById(id);
       if (!existing) {
@@ -205,7 +205,7 @@ export class TransportController {
 
   updateAdminBusRoute = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getBusRouteById(id);
       if (!existing) {
@@ -233,7 +233,7 @@ export class TransportController {
 
   deleteAdminBusRoute = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getBusRouteById(id);
       if (!existing) {
@@ -289,7 +289,7 @@ export class TransportController {
 
   updateAdminSpecialService = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getSpecialServiceById(id);
       if (!existing) {
@@ -317,7 +317,7 @@ export class TransportController {
 
   deleteAdminSpecialService = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getSpecialServiceById(id);
       if (!existing) {
@@ -373,7 +373,7 @@ export class TransportController {
 
   updateAdminRailStation = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getRailStationById(id);
       if (!existing) {
@@ -401,7 +401,7 @@ export class TransportController {
 
   deleteAdminRailStation = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getRailStationById(id);
       if (!existing) {
@@ -458,7 +458,7 @@ export class TransportController {
 
   updateAdminShuttleRoute = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getShuttleRouteById(id);
       if (!existing) {
@@ -486,7 +486,7 @@ export class TransportController {
 
   deleteAdminShuttleRoute = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getShuttleRouteById(id);
       if (!existing) {
@@ -514,7 +514,7 @@ export class TransportController {
 
   addAdminShuttleStop = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const stop = await this.service.getRepo().addShuttleStop(id, req.body);
 
@@ -544,7 +544,7 @@ export class TransportController {
 
   updateAdminExternalLink = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const adminId = (req as any).user?.id || (req as any).user?.userId || null;
       const existing = await this.service.getRepo().getExternalLinkById(id);
       if (!existing) {

@@ -99,8 +99,11 @@ const AuthContext = createContext<AuthContextType>({
   hasPermission: () => true,
 });
 
+export const isDevAuth = Boolean(import.meta.env.DEV || import.meta.env.VITE_MOCK_MODE === 'true');
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mockRole, setRoleState] = useState<MockRole>(() => {
+    if (!isDevAuth) return 'guest';
     const saved = localStorage.getItem('sp_admin_role');
     return (saved as MockRole) || 'super_admin';
   });
@@ -109,14 +112,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return localStorage.getItem('sp_admin_token') || null;
   });
 
-  const [user, setUser] = useState<AdminUser>(() => MOCK_USERS[mockRole]);
+  const [user, setUser] = useState<AdminUser>(() => {
+    if (!isDevAuth && !token) {
+      return MOCK_USERS.guest;
+    }
+    return MOCK_USERS[mockRole];
+  });
 
   useEffect(() => {
+    if (token) {
+      // Decode JWT token user
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          setUser({
+            id: payload.userId || 'admin-real',
+            phone: payload.phone || '',
+            name: payload.name || 'Verified Admin',
+            role: payload.isAdmin ? 'super_admin' : 'viewer',
+            permissions: payload.isAdmin ? ROLE_PERMISSIONS.super_admin : ['audit.read'],
+            isSuperAdmin: Boolean(payload.isAdmin),
+            token,
+          });
+          return;
+        }
+      } catch {
+        // invalid token
+      }
+    }
+
+    if (!isDevAuth) {
+      setUser(MOCK_USERS.guest);
+      return;
+    }
+
     setUser(MOCK_USERS[mockRole]);
     localStorage.setItem('sp_admin_role', mockRole);
-  }, [mockRole]);
+  }, [mockRole, token]);
 
   const setMockRole = (role: MockRole) => {
+    if (!isDevAuth) {
+      console.warn('Mock role switcher is disabled in production builds.');
+      return;
+    }
     setRoleState(role);
   };
 

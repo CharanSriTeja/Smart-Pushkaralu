@@ -24,7 +24,7 @@ export class RoutingService {
   private primaryProvider: IRoutingProvider;
   private mockProvider: MockRoutingProvider;
   private cache = new Map<string, CachedRoute>();
-  private inFlight = new Map<string, Promise<RouteResult>>();
+  private inFlight = new Map<string, Promise<RouteResult | DegradedRouteResult>>();
 
   constructor() {
     this.mockProvider = new MockRoutingProvider();
@@ -41,7 +41,10 @@ export class RoutingService {
       if (hasOrsKey) {
         this.primaryProvider = new OrsRoutingProvider();
       } else {
-        console.warn('[Routing] No ORS_API_KEY found. Falling back to MockRoutingProvider.');
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('[Routing] In production, ORS_API_KEY or OPENROUTESERVICE_API is required. Mock provider is forbidden.');
+        }
+        console.warn('[Routing] No ORS_API_KEY found. Falling back to MockRoutingProvider in development.');
         this.primaryProvider = this.mockProvider;
       }
     }
@@ -204,7 +207,7 @@ export class RoutingService {
       }
 
       // 5. Apply active delay factor
-      let delayInfo = { factor: 1.0, label: undefined as any };
+      let delayInfo: { factor: number; label?: any } = { factor: 1.0, label: undefined };
       if (process.env.NODE_ENV !== 'test') {
         try {
           delayInfo = await getActiveDelayFactor(ghatId);

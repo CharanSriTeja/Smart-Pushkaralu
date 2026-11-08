@@ -33,13 +33,12 @@ export class AuditService {
 
     const { rows } = await query<AuditLog>(
       `INSERT INTO audit_logs (
-        admin_id, admin_email, action, entity_type, entity_id,
-        old_values, new_values, source_url, reason, ip_address, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
+        admin_id, action, entity_type, entity_id,
+        old_value, new_value, source_url, reason, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
         params.adminId || null,
-        params.adminEmail || 'admin',
         params.action,
         params.entityType,
         params.entityId || null,
@@ -47,7 +46,6 @@ export class AuditService {
         resolvedNew ? JSON.stringify(resolvedNew) : null,
         params.sourceUrl || null,
         params.reason || null,
-        params.ipAddress || null,
       ]
     );
 

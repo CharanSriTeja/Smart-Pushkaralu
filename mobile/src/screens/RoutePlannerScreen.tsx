@@ -52,65 +52,6 @@ import {
 import { decodePolylineCoordinates } from '../utils/polyline';
 import { WebLeafletMap, MapMarkerItem } from '../components/WebLeafletMap';
 
-const POPULAR_DESTINATIONS = [
-  {
-    id: 'kotilingala-ghat',
-    name: { en: 'Kotilingala Ghat (Rajahmundry)', te: 'కోటిలింగాల ఘాట్ (రాజమండ్రి)', hi: 'कोटिश्र्वर घाट (राजमुंदरी)' },
-    district: 'East Godavari',
-    lat: 17.0005,
-    lng: 81.7774,
-  },
-  {
-    id: 'pushkar-ghat',
-    name: { en: 'Pushkar Ghat (Rajahmundry)', te: 'పుష్కర ఘాట్ (రాజమండ్రి)', hi: 'पुष्कर घाट (राजमुंदरी)' },
-    district: 'East Godavari',
-    lat: 16.9961,
-    lng: 81.7725,
-  },
-  {
-    id: 'bhadrachalam-ghat',
-    name: { en: 'Sri Rama Ghat (Bhadrachalam)', te: 'శ్రీ రామ ఘాట్ (భద్రాచలం)', hi: 'श्री राम घाट (भद्राचलम)' },
-    district: 'Bhadradri Kothagudem',
-    lat: 17.6687,
-    lng: 80.8936,
-  },
-  {
-    id: 'kovvur-goshpada-ghat',
-    name: { en: 'Goshpada Kshetram (Kovvur)', te: 'గోష్పాద క్షేత్రం (కొవ్వూరు)', hi: 'गोषपद क्षेत्र (कोव्वूर)' },
-    district: 'West Godavari',
-    lat: 17.0142,
-    lng: 81.7289,
-  },
-  {
-    id: 'vip-ghat',
-    name: { en: 'VIP Ghat (Rajahmundry)', te: 'విఐపి ఘాట్ (రాజమండ్రి)', hi: 'वीआईपी घाट (राजमुंदरी)' },
-    district: 'East Godavari',
-    lat: 16.9982,
-    lng: 81.7741,
-  },
-  {
-    id: 'dharmapuri-ghat',
-    name: { en: 'Laxmi Narasimha Ghat (Dharmapuri)', te: 'లక్ష్మీ నరసింహ ఘాట్ (ధర్మపురి)', hi: 'लक्ष्मी नरसिंह घाट (धर्मपुरी)' },
-    district: 'Jagtial',
-    lat: 18.9482,
-    lng: 79.0911,
-  },
-  {
-    id: 'basar-ghat',
-    name: { en: 'Gnana Saraswati Ghat (Basar)', te: 'జ్ఞాన సరస్వతి ఘాట్ (బాసర)', hi: 'ज्ञान सरस्वती घाट (बासर)' },
-    district: 'Nirmal',
-    lat: 18.8776,
-    lng: 77.9542,
-  },
-  {
-    id: 'kaleshwaram-ghat',
-    name: { en: 'Kaleshwaram Triveni Sangam Ghat', te: 'కాళేశ్వరం త్రివేణి సంగమం ఘాట్', hi: 'कालेश्वरम त्रिवेणी संगम घाट' },
-    district: 'Jayashankar Bhupalpally',
-    lat: 18.8142,
-    lng: 79.9073,
-  },
-];
-
 interface RoutePlannerScreenProps {
   initialGhat?: {
     id: string;
@@ -128,7 +69,7 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
   const { t, i18n } = useTranslation();
   const currentLang = (i18n.language || 'en').slice(0, 2) as 'en' | 'te' | 'hi';
 
-  const [currentGhat, setCurrentGhat] = useState<any>(initialGhat || POPULAR_DESTINATIONS[0]);
+  const [currentGhat, setCurrentGhat] = useState<any>(initialGhat || null);
   const [allGhats, setAllGhats] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllPicker, setShowAllPicker] = useState(false);
@@ -174,6 +115,7 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
       .then((res) => {
         if (res?.ghats?.length > 0) {
           setAllGhats(res.ghats);
+          setCurrentGhat((prev: any) => prev || res.ghats[0]);
         }
       })
       .catch(() => {});
@@ -450,24 +392,30 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
             </View>
           )}
 
-          {/* Popular Destinations Chips */}
-          <Text style={styles.popularGhatsLabel}>Popular Pilgrimage Centers:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.originsScroll}>
-            {POPULAR_DESTINATIONS.map((g) => {
-              const isSelected = currentGhat?.id === g.id;
-              return (
-                <TouchableOpacity
-                  key={g.id}
-                  style={[styles.originChip, isSelected && styles.destChipActive]}
-                  onPress={() => setCurrentGhat(g)}
-                >
-                  <Text style={[styles.originChipText, isSelected && styles.originChipTextActive]}>
-                    {getLocalized(g.name)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          {/* Official Ghat Destinations Chips */}
+          <Text style={styles.popularGhatsLabel}>{t('routes.popular_ghats') || 'Pilgrimage Ghats:'}</Text>
+          {allGhats.length === 0 ? (
+            <Text style={{ fontSize: 13, color: '#64748B', paddingVertical: 8, paddingHorizontal: 4 }}>
+              {t('routes.no_ghats_found') || 'Loading ghats from official registry...'}
+            </Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.originsScroll}>
+              {allGhats.slice(0, 10).map((g) => {
+                const isSelected = currentGhat?.id === g.id;
+                return (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={[styles.originChip, isSelected && styles.destChipActive]}
+                    onPress={() => setCurrentGhat(g)}
+                  >
+                    <Text style={[styles.originChipText, isSelected && styles.originChipTextActive]}>
+                      {getLocalized(g.name)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
         </View>
 
         {/* Destination Access Point Selector */}

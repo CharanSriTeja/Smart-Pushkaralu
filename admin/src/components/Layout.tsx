@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, isDevAuth } from '../context/AuthContext';
 import { MockRole } from '../types';
 
 interface NavItem {
@@ -158,26 +158,34 @@ export const Layout: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '0.8125rem', color: '#64748B', fontWeight: 600 }}>Active Role Switcher:</span>
-            <select
-              value={mockRole}
-              onChange={handleRoleChange}
-              style={{
-                padding: '4px 8px',
-                borderRadius: '6px',
-                border: '1.5px solid #CBD5E1',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                color: '#0F172A',
-                backgroundColor: '#F8FAFC',
-                cursor: 'pointer',
-              }}
-            >
-              <option value="super_admin">👑 Super Admin (Full Access)</option>
-              <option value="editor">✍️ Editor (Ghats, News, Seva)</option>
-              <option value="viewer">👁️ Viewer (Audit Read Only)</option>
-              <option value="guest">🔒 Guest (No Access)</option>
-            </select>
+            {isDevAuth ? (
+              <>
+                <span style={{ fontSize: '0.8125rem', color: '#64748B', fontWeight: 600 }}>[DEV] Role Switcher:</span>
+                <select
+                  value={mockRole}
+                  onChange={handleRoleChange}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    border: '1.5px solid #CBD5E1',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                    backgroundColor: '#F8FAFC',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="super_admin">👑 Super Admin (Full Access)</option>
+                  <option value="editor">✍️ Editor (Ghats, News, Seva)</option>
+                  <option value="viewer">👁️ Viewer (Audit Read Only)</option>
+                  <option value="guest">🔒 Guest (No Access)</option>
+                </select>
+              </>
+            ) : (
+              <span style={{ fontSize: '0.8125rem', color: '#0F172A', fontWeight: 700 }}>
+                {user.role === 'guest' ? '🔒 Unauthenticated Session' : `👤 ${user.name} (${user.role})`}
+              </span>
+            )}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

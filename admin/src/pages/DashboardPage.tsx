@@ -1,15 +1,80 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { AdminApi } from '../services/adminApi';
+
+interface DashboardStats {
+  ghats: { total: number; normal: number; busy: number; surge: number };
+  sos: { active: number; critical: number; highPriority: number };
+  devices: { total: number; te: number; en: number; hi: number };
+  quota: { used: number; total: number; percent: number };
+}
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    AdminApi.getDashboardStats()
+      .then((data) => {
+        if (mounted) {
+          setStats(data);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (mounted) {
+          console.error('Failed to load dashboard stats:', err);
+          setError(err.message || 'Failed to load live statistics');
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const cards = [
-    { title: 'Monitored Ghats', count: '18', icon: '🌊', color: '#0284C7', desc: '12 Normal • 4 Busy • 2 High Surge' },
-    { title: 'Live Emergency Alerts', count: '3', icon: '🚨', color: '#DC2626', desc: '1 Critical • 2 High priority' },
-    { title: 'Registered Pilgrim Devices', count: '48,230', icon: '📱', color: '#16A34A', desc: '72% Telugu • 20% English • 8% Hindi' },
-    { title: 'API Quota Used', count: '14.2%', icon: '📈', color: '#D97706', desc: '1,420 of 10,000 monthly free tier' },
+    {
+      title: 'Monitored Ghats',
+      count: loading ? '...' : (stats?.ghats.total ?? 0).toString(),
+      icon: '🌊',
+      color: '#0284C7',
+      desc: loading
+        ? 'Loading ghat statuses...'
+        : `${stats?.ghats.normal ?? 0} Normal • ${stats?.ghats.busy ?? 0} Busy • ${stats?.ghats.surge ?? 0} High Surge`,
+    },
+    {
+      title: 'Live Emergency Alerts',
+      count: loading ? '...' : (stats?.sos.active ?? 0).toString(),
+      icon: '🚨',
+      color: '#DC2626',
+      desc: loading
+        ? 'Querying active alerts...'
+        : `${stats?.sos.critical ?? 0} Critical • ${stats?.sos.highPriority ?? 0} High priority`,
+    },
+    {
+      title: 'Registered Pilgrim Devices',
+      count: loading ? '...' : (stats?.devices.total ?? 0).toLocaleString(),
+      icon: '📱',
+      color: '#16A34A',
+      desc: loading
+        ? 'Syncing device counts...'
+        : `${stats?.devices.te ?? 0} Telugu • ${stats?.devices.en ?? 0} English • ${stats?.devices.hi ?? 0} Hindi`,
+    },
+    {
+      title: 'API Quota Used',
+      count: loading ? '...' : `${stats?.quota.percent ?? 0}%`,
+      icon: '📈',
+      color: '#D97706',
+      desc: loading
+        ? 'Calculating usage...'
+        : `${(stats?.quota.used ?? 0).toLocaleString()} of ${(stats?.quota.total ?? 10000).toLocaleString()} monthly quota`,
+    },
   ];
 
   return (

@@ -244,10 +244,11 @@ export async function adminCreateOrigin(req: Request, res: Response): Promise<vo
     );
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'route_origin.create',
-      resourceId: result.rows[0].id,
-      meta: { name, kind, lat, lng },
+      entityType: 'route_origin',
+      entityId: result.rows[0].id,
+      newValue: { name, kind, lat, lng },
     });
 
     res.status(201).json({ success: true, origin: result.rows[0] });
@@ -257,7 +258,7 @@ export async function adminCreateOrigin(req: Request, res: Response): Promise<vo
 }
 
 export async function adminUpdateOrigin(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { name, kind, lat, lng, district, state, sort_order, active } = req.body;
   const adminId = (req as any).user?.id || 'admin';
 
@@ -284,10 +285,11 @@ export async function adminUpdateOrigin(req: Request, res: Response): Promise<vo
     }
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'route_origin.update',
-      resourceId: id,
-      meta: { changes: req.body },
+      entityType: 'route_origin',
+      entityId: id,
+      newValue: { changes: req.body },
     });
 
     res.json({ success: true, origin: result.rows[0] });
@@ -297,16 +299,17 @@ export async function adminUpdateOrigin(req: Request, res: Response): Promise<vo
 }
 
 export async function adminDeleteOrigin(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const adminId = (req as any).user?.id || 'admin';
 
   try {
     await query(`DELETE FROM route_origins WHERE id = $1`, [id]);
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'route_origin.delete',
-      resourceId: id,
+      entityType: 'route_origin',
+      entityId: id,
     });
 
     res.json({ success: true, message: 'Origin deleted successfully.' });
@@ -354,10 +357,11 @@ export async function adminCreateAccessPoint(req: Request, res: Response): Promi
     );
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'access_point.create',
-      resourceId: result.rows[0].id,
-      meta: { ghat_id, kind, name },
+      entityType: 'access_point',
+      entityId: result.rows[0].id,
+      newValue: { ghat_id, kind, name },
     });
 
     res.status(201).json({ success: true, access_point: result.rows[0] });
@@ -367,7 +371,7 @@ export async function adminCreateAccessPoint(req: Request, res: Response): Promi
 }
 
 export async function adminUpdateAccessPoint(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { kind, name, lat, lng, coordinates_precision, notes, is_default, active, source_url } = req.body;
   const adminId = (req as any).user?.id || 'admin';
 
@@ -408,10 +412,11 @@ export async function adminUpdateAccessPoint(req: Request, res: Response): Promi
     );
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'access_point.update',
-      resourceId: id,
-      meta: { changes: req.body },
+      entityType: 'access_point',
+      entityId: id,
+      newValue: { changes: req.body },
     });
 
     res.json({ success: true, access_point: result.rows[0] });
@@ -454,10 +459,11 @@ export async function adminCreateClosure(req: Request, res: Response): Promise<v
     );
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'route_closure.create',
-      resourceId: result.rows[0].id,
-      meta: { title, severity, starts_at, ends_at },
+      entityType: 'route_closure',
+      entityId: result.rows[0].id,
+      newValue: { title, severity, starts_at, ends_at },
     });
 
     res.status(201).json({ success: true, closure: result.rows[0] });
@@ -467,16 +473,17 @@ export async function adminCreateClosure(req: Request, res: Response): Promise<v
 }
 
 export async function adminDeleteClosure(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const adminId = (req as any).user?.id || 'admin';
 
   try {
     await query(`DELETE FROM route_closures WHERE id = $1`, [id]);
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'route_closure.delete',
-      resourceId: id,
+      entityType: 'route_closure',
+      entityId: id,
     });
 
     res.json({ success: true, message: 'Closure removed.' });
@@ -521,10 +528,11 @@ export async function adminCreateDelayFactor(req: Request, res: Response): Promi
     );
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'delay_factor.create',
-      resourceId: result.rows[0].id,
-      meta: { ghat_id, factor, starts_at, ends_at },
+      entityType: 'delay_factor',
+      entityId: result.rows[0].id,
+      newValue: { ghat_id, factor, starts_at, ends_at },
     });
 
     res.status(201).json({ success: true, delay_factor: result.rows[0] });
@@ -534,16 +542,17 @@ export async function adminCreateDelayFactor(req: Request, res: Response): Promi
 }
 
 export async function adminDeleteDelayFactor(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const adminId = (req as any).user?.id || 'admin';
 
   try {
     await query(`DELETE FROM ghat_delay_factors WHERE id = $1`, [id]);
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'delay_factor.delete',
-      resourceId: id,
+      entityType: 'delay_factor',
+      entityId: id,
     });
 
     res.json({ success: true, message: 'Delay factor removed.' });
@@ -576,7 +585,7 @@ export async function adminGetTemples(req: Request, res: Response): Promise<void
 }
 
 export async function adminUpdateTemple(req: Request, res: Response): Promise<void> {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { name, lat, lng, district, state, coordinates_precision, verified, active } = req.body;
   const adminId = (req as any).user?.id || 'admin';
 
@@ -600,10 +609,11 @@ export async function adminUpdateTemple(req: Request, res: Response): Promise<vo
     );
 
     await writeAudit({
-      userId: adminId,
+      adminId,
       action: 'temple.update',
-      resourceId: id,
-      meta: { changes: req.body },
+      entityType: 'temple',
+      entityId: id,
+      newValue: { changes: req.body },
     });
 
     res.json({ success: true, temple: result.rows[0] });
