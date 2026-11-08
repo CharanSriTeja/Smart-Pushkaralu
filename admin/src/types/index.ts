@@ -234,4 +234,162 @@ export interface ClusterNotification {
   recentAlertIds: string[];
 }
 
+// Module 6: Transport and Shuttles Admin Types
+export interface AdminTransportHub {
+  id: string;
+  name: LocalizedText;
+  description?: LocalizedText | null;
+  hub_type: 'railway_station' | 'bus_stand' | 'airport' | 'boat_point' | 'auto_stand' | 'parking';
+  operator?: string | null;
+  code?: string | null;
+  address?: LocalizedText | null;
+  phone?: string | null;
+  lat: number;
+  lng: number;
+  operating_hours?: any;
+  is_hidden: boolean;
+  is_active: boolean;
+  source_url?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AdminBusRoute {
+  id: string;
+  route_number: string;
+  operator: 'APSRTC' | 'TGSRTC' | 'CITY_BUS' | 'SPECIAL_RTC' | 'OTHER';
+  origin: LocalizedText;
+  destination: LocalizedText;
+  origin_hub_id?: string | null;
+  destination_hub_id?: string | null;
+  via_stops: any[];
+  first_bus_time?: string | null;
+  last_bus_time?: string | null;
+  frequency_minutes?: number | null;
+  fare_range?: { min: number; max: number; currency: string } | null;
+  bus_type: 'ordinary' | 'express' | 'deluxe' | 'super_luxury' | 'ac' | 'electric';
+  connected_ghat_ids?: string[];
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AdminBusSpecialService {
+  id: string;
+  service_code: string;
+  service_title: LocalizedText;
+  operator: 'APSRTC' | 'TGSRTC' | 'JOINT_RTC';
+  origin_city: LocalizedText;
+  destination_ghat_id?: string | null;
+  destination_town: LocalizedText;
+  operating_dates: { start_date: string; end_date: string };
+  timings_description?: LocalizedText | null;
+  booking_url?: string | null;
+  emergency_helpline?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AdminRailStation {
+  id: string;
+  hub_id?: string | null;
+  station_code: string;
+  station_name: LocalizedText;
+  division?: string | null;
+  zone: string;
+  total_platforms: number;
+  has_pushkaralu_special_trains: boolean;
+  helpdesk_phone?: string | null;
+  official_enquiry_url?: string | null;
+  lat: number;
+  lng: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AdminShuttleStop {
+  id: string;
+  shuttle_route_id: string;
+  stop_order: number;
+  stop_name: LocalizedText;
+  landmark?: LocalizedText | null;
+  lat: number;
+  lng: number;
+  is_major_boarding_point: boolean;
+  created_at?: string;
+}
+
+export interface AdminShuttleRoute {
+  id: string;
+  route_code: string;
+  route_name: LocalizedText;
+  origin_hub_id?: string | null;
+  origin_name: LocalizedText;
+  destination_ghat_id?: string | null;
+  destination_name: LocalizedText;
+  shuttle_type: 'free' | 'nominal' | 'electric_cart' | 'battery_rickshaw' | 'feeder_bus';
+  fare: number;
+  frequency_minutes: number;
+  operating_hours: { start: string; end: string; frequency_peak_mins?: number };
+  accessible_for_elderly_disabled: boolean;
+  color_code: string;
+  is_active: boolean;
+  stops?: AdminShuttleStop[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AdminExternalLink {
+  id: string;
+  category: 'bus' | 'rail' | 'shuttle' | 'emergency' | 'traffic';
+  key: string;
+  title: LocalizedText;
+  description?: LocalizedText | null;
+  url: string;
+  official_authority: string;
+  is_verified: boolean;
+  last_verified_at: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type SevaCategory =
+  | 'aarthi'
+  | 'pooja'
+  | 'cultural'
+  | 'snanam'
+  | 'live_darshan'
+  | 'general';
+
+export interface AdminSevaVideo {
+  id: string;
+  youtube_id: string;
+  youtube_url: string;
+  title_en: string;
+  title_te: string;
+  title_hi?: string | null;
+  description_en?: string | null;
+  description_te?: string | null;
+  description_hi?: string | null;
+  title?: LocalizedText;
+  description?: LocalizedText;
+  category: SevaCategory;
+  ghat_id?: string | null;
+  ghat_name?: LocalizedText | null;
+  event_date: string;
+  is_live: boolean;
+  published: boolean;
+  sort_order: number;
+  thumbnail_url: string;
+  view_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+
+
 

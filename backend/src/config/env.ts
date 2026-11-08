@@ -11,7 +11,12 @@ const envSchema = z.object({
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional(),
   ADMIN_PHONES: z.string().default(''),
   CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:8081,http://localhost:3000'),
-  ICCC_ENABLED: z.coerce.boolean().default(false),
+  ICCC_ENABLED: z
+    .preprocess((val) => {
+      if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
+      return Boolean(val);
+    }, z.boolean())
+    .default(false),
   MONTHLY_API_FREE_QUOTA: z.coerce.number().default(10000),
   SENTRY_DSN: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),

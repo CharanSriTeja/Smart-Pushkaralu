@@ -8,6 +8,8 @@
     "dev": "tsx watch src/index.ts",
     "migrate": "tsx src/db/migrate.ts",
     "seed:ghats": "tsx src/db/seeds/001_seed_ghats.ts",
+    "seed:transport": "tsx src/db/seeds/006_seed_transport.ts",
+    "seed:seva": "tsx src/db/seeds/008_seed_seva.ts",
     "smoke": "tsx scripts/smoke.ts",
     "test": "vitest run"
   },

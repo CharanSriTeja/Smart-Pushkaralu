@@ -329,6 +329,28 @@ export default function AppHomeScreen() {
                 Plan Route →
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.gridBtn}
+              onPress={() => router.push('/(app)/transport' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.gridBtnIcon}>🚌</Text>
+              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('transport.title', 'Transport')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.gridBtn}
+              onPress={() => router.push('/(app)/seva' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.gridBtnIcon}>📺</Text>
+              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
+                {t('seva.title', 'Live Seva')}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Module 8: Report an Issue Quick Action */}
