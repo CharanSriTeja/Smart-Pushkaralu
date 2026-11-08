@@ -126,3 +126,4 @@ console.log(`\n======================================================`);
 console.log(`🎉 ALL VERIFICATION CHECKS PASSED (${passedSteps}/${totalSteps})`);
 console.log(`======================================================\n`);
 process.exit(0);
+

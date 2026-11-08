@@ -217,3 +217,4 @@ EXPO_PUBLIC_DEFAULT_LNG=81.7800
 - [ ] Execute `npm run purge:demo` against the production database to verify no `is_demo=true` records exist.
 - [ ] Verify `ADMIN_PHONES` contains authorized emergency nodal officers.
 - [ ] Perform hardware smoke tests using `docs/MANUAL_TESTING.md` (Physical device GPS, Firebase SMS OTP, and offline SMS dispatch to 112).
+

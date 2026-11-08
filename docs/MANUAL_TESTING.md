@@ -149,3 +149,4 @@ This document provides step-by-step procedures for testing capabilities that req
 
 ### Expected Result:
 - Clean layout without horizontal overflow; comfortable tap targets; full accessibility compliance.
+
