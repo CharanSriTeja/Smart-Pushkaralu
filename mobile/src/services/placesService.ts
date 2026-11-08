@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 import { NearbyPlace, NearbyPlacesResponse, QueryPlaceType } from '../types/places';
 import { API_V1_URL as API_BASE_URL } from './api';
 const PLACES_CACHE_PREFIX = 'offline_cached_nearby_places_';
@@ -28,7 +28,7 @@ export class PlacesService {
         const responseData: NearbyPlacesResponse = json.data;
 
         // Save to offline storage
-        SecureStore.setItemAsync(cacheKey, JSON.stringify(responseData)).catch(() => {});
+        storage.setItem(cacheKey, JSON.stringify(responseData)).catch(() => {});
 
         return { data: responseData, isOffline: false };
       }
@@ -38,7 +38,7 @@ export class PlacesService {
 
     // Attempt offline fallback
     try {
-      const cached = await SecureStore.getItemAsync(cacheKey);
+      const cached = await storage.getItem(cacheKey);
       if (cached) {
         const data = JSON.parse(cached) as NearbyPlacesResponse;
         return { data, isOffline: true };

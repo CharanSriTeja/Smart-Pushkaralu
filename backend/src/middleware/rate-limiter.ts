@@ -76,7 +76,7 @@ export const sosLimiter = rateLimit({
   max: env.SOS_RATE_LIMIT_PER_HOUR || 30, // Configurable rate limit per IP per hour
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => env.NODE_ENV === 'test',
+  skip: () => env.NODE_ENV !== 'production', // Skip rate limit during development and automated tests
   message: {
     error: {
       code: 'TOO_MANY_REQUESTS',

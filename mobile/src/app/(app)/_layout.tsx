@@ -44,17 +44,19 @@ export default function AppLayout() {
           }}
         />
         <Tabs.Screen
+          name="sos"
+          options={{
+            title: 'SOS',
+            tabBarIcon: () => <Text style={{ fontSize: 20 }}>🚨</Text>,
+            tabBarActiveTintColor: '#DC2626',
+            tabBarLabelStyle: [styles.tabBarLabel, { fontFamily: fontFamilyBold, color: '#DC2626', fontWeight: '900' }],
+          }}
+        />
+        <Tabs.Screen
           name="news"
           options={{
             title: 'News',
             tabBarIcon: () => <Text style={styles.icon}>📰</Text>,
-          }}
-        />
-        <Tabs.Screen
-          name="seva"
-          options={{
-            title: 'Seva',
-            tabBarIcon: () => <Text style={styles.icon}>🙏</Text>,
           }}
         />
         <Tabs.Screen
@@ -65,9 +67,15 @@ export default function AppLayout() {
           }}
         />
         <Tabs.Screen
-          name="sos"
+          name="seva"
           options={{
-            href: null, // Hidden from bottom bar tabs, triggered via floating SOS button
+            href: null, // Secondary feature, accessible via More screen
+          }}
+        />
+        <Tabs.Screen
+          name="routes"
+          options={{
+            href: null, // Sub-navigation screen for Route Planner & Directions
           }}
         />
         <Tabs.Screen

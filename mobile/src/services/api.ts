@@ -1,10 +1,14 @@
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 import { Platform } from 'react-native';
 
 const REFRESH_TOKEN_KEY = 'sp_refresh_token';
 const USER_CACHE_KEY = 'sp_user_cache';
 
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.hostname) {
+    const host = window.location.hostname;
+    return `http://${host}:4000`;
+  }
   if (Platform.OS === 'android') {
     if (process.env.EXPO_PUBLIC_API_URL && !process.env.EXPO_PUBLIC_API_URL.includes('localhost') && !process.env.EXPO_PUBLIC_API_URL.includes('127.0.0.1')) {
       return process.env.EXPO_PUBLIC_API_URL;
@@ -18,14 +22,15 @@ function getApiBaseUrl(): string {
   return 'http://localhost:4000';
 }
 
-export const API_BASE_URL = getApiBaseUrl();
-export const API_V1_URL = API_BASE_URL.endsWith('/v1')
-  ? API_BASE_URL
-  : `${API_BASE_URL.replace(/\/+$/, '')}/v1`;
-
 export function getBaseV1Url(): string {
-  return API_V1_URL;
+  const base = getApiBaseUrl();
+  return base.endsWith('/v1')
+    ? base
+    : `${base.replace(/\/+$/, '')}/v1`;
 }
+
+export const API_BASE_URL = getApiBaseUrl();
+export const API_V1_URL = getBaseV1Url();
 
 let inMemoryAccessToken: string | null = null;
 let logoutCallback: (() => void) | null = null;
@@ -45,7 +50,7 @@ export function setLogoutHandler(callback: () => void) {
 
 export async function getStoredRefreshToken(): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    return await storage.getItem(REFRESH_TOKEN_KEY);
   } catch (err) {
     console.warn('[Storage] Error reading refresh token:', err);
     return null;
@@ -55,9 +60,9 @@ export async function getStoredRefreshToken(): Promise<string | null> {
 export async function setStoredRefreshToken(token: string | null): Promise<void> {
   try {
     if (token) {
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
+      await storage.setItem(REFRESH_TOKEN_KEY, token);
     } else {
-      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+      await storage.deleteItem(REFRESH_TOKEN_KEY);
     }
   } catch (err) {
     console.warn('[Storage] Error writing refresh token:', err);
@@ -66,7 +71,7 @@ export async function setStoredRefreshToken(token: string | null): Promise<void>
 
 export async function getCachedUser(): Promise<any | null> {
   try {
-    const raw = await SecureStore.getItemAsync(USER_CACHE_KEY);
+    const raw = await storage.getItem(USER_CACHE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -76,9 +81,9 @@ export async function getCachedUser(): Promise<any | null> {
 export async function setCachedUser(user: any | null): Promise<void> {
   try {
     if (user) {
-      await SecureStore.setItemAsync(USER_CACHE_KEY, JSON.stringify(user));
+      await storage.setItem(USER_CACHE_KEY, JSON.stringify(user));
     } else {
-      await SecureStore.deleteItemAsync(USER_CACHE_KEY);
+      await storage.deleteItem(USER_CACHE_KEY);
     }
   } catch (err) {
     console.warn('[Storage] Error caching user:', err);
@@ -138,7 +143,8 @@ export async function apiRequest<T = any>(
   path: string,
   options: ApiRequestOptions = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),

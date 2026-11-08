@@ -1,6 +1,14 @@
-import * as SecureStore from 'expo-secure-store';
-import NetInfo from '@react-native-community/netinfo';
+import { Platform } from 'react-native';
+import { storage } from '../utils/storage';
 import { apiRequest } from './api';
+
+// NetInfo is conditionally loaded — it uses native modules not available on web
+let NetInfo: any = null;
+try {
+  NetInfo = require('@react-native-community/netinfo').default;
+} catch {
+  // Web / SSR — NetInfo not available; we fall back to window online/offline events
+}
 
 export type SosType = 'medical' | 'police' | 'fire' | 'lost_person' | 'general' | 'other';
 export type SosChannel = 'app' | 'sms' | 'qr' | 'call';
@@ -59,7 +67,7 @@ export class SosService {
    */
   static async getOfflineQueue(): Promise<QueuedAlert[]> {
     try {
-      const raw = await SecureStore.getItemAsync(QUEUE_KEY);
+      const raw = await storage.getItem(QUEUE_KEY);
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -78,7 +86,7 @@ export class SosService {
       queuedAt: new Date().toISOString(),
     };
     queue.push(queuedItem);
-    await SecureStore.setItemAsync(QUEUE_KEY, JSON.stringify(queue));
+    await storage.setItem(QUEUE_KEY, JSON.stringify(queue));
     return queuedItem;
   }
 
@@ -88,7 +96,7 @@ export class SosService {
   static async removeFromOfflineQueue(tempId: string): Promise<void> {
     const queue = await this.getOfflineQueue();
     const filtered = queue.filter((item) => item.tempId !== tempId);
-    await SecureStore.setItemAsync(QUEUE_KEY, JSON.stringify(filtered));
+    await storage.setItem(QUEUE_KEY, JSON.stringify(filtered));
   }
 
   /**
@@ -158,7 +166,9 @@ export class SosService {
           ...params,
           idempotencyKey,
         }),
-        skipAuth: false,
+        // SOS is a public endpoint (optionalAuth) — always skip auth so an
+        // expired token does NOT throw "Session expired" and block the emergency alert
+        skipAuth: true,
       });
 
       if (response && response.data) {
@@ -174,10 +184,25 @@ export class SosService {
         await this.saveActiveAlert(activeAlert);
         return { alert: activeAlert, queued: false };
       }
-    } catch (err) {
-      // Network failure or offline -> Queue locally
-      const queuedItem = await this.addToOfflineQueue(params);
-      return { queued: true, tempId: queuedItem.tempId };
+    } catch (err: any) {
+      console.warn('[SosService] triggerSos failed:', err);
+      // Check if this is a genuine network failure / device is offline
+      const msg = (err?.message || '').toLowerCase();
+      const isNetworkOffline =
+        msg.includes('network request failed') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('networkerror') ||
+        msg.includes('aborted') ||
+        (typeof navigator !== 'undefined' && navigator.onLine === false);
+
+      if (isNetworkOffline) {
+        // Transparently queue locally to sync as soon as connection recovers
+        const queuedItem = await this.addToOfflineQueue(params);
+        return { queued: true, tempId: queuedItem.tempId };
+      }
+
+      // If the server responded with an error (e.g. 400, 429, 500), do NOT swallow it
+      throw err;
     }
 
     const queuedItem = await this.addToOfflineQueue(params);
@@ -189,7 +214,7 @@ export class SosService {
    */
   static async saveActiveAlert(alert: ActiveSosAlert): Promise<void> {
     try {
-      await SecureStore.setItemAsync(ACTIVE_ALERT_KEY, JSON.stringify(alert));
+      await storage.setItem(ACTIVE_ALERT_KEY, JSON.stringify(alert));
     } catch {}
   }
 
@@ -198,7 +223,7 @@ export class SosService {
    */
   static async getActiveAlert(): Promise<ActiveSosAlert | null> {
     try {
-      const raw = await SecureStore.getItemAsync(ACTIVE_ALERT_KEY);
+      const raw = await storage.getItem(ACTIVE_ALERT_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -210,7 +235,7 @@ export class SosService {
    */
   static async clearActiveAlert(): Promise<void> {
     try {
-      await SecureStore.deleteItemAsync(ACTIVE_ALERT_KEY);
+      await storage.deleteItem(ACTIVE_ALERT_KEY);
     } catch {}
   }
 
@@ -303,10 +328,18 @@ export class SosService {
 
 // Auto-sync offline queue when internet connection is restored
 try {
-  NetInfo.addEventListener((state) => {
-    if (state.isConnected && state.isInternetReachable !== false) {
+  if (NetInfo && Platform.OS !== 'web') {
+    // Native: use NetInfo for reliable connectivity events
+    NetInfo.addEventListener((state: any) => {
+      if (state.isConnected && state.isInternetReachable !== false) {
+        SosService.flushOfflineQueue().catch(() => {});
+      }
+    });
+  } else if (typeof window !== 'undefined') {
+    // Web: use standard browser online event
+    window.addEventListener('online', () => {
       SosService.flushOfflineQueue().catch(() => {});
-    }
-  });
+    });
+  }
 } catch {}
 

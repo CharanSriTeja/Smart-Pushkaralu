@@ -120,6 +120,22 @@ export default function MoreScreen() {
         <LanguageSwitcher style={styles.langSwitcher} />
       </Card>
 
+      {/* Emergency SOS Quick Link */}
+      <Card style={[styles.card, { borderColor: '#EF4444', borderWidth: 1.5, backgroundColor: '#FEF2F2' }]}>
+        <Text style={[styles.cardHeader, { fontFamily: fontFamilyBold, color: '#991B1B' }]}>
+          🆘 Emergency Assistance & Helpline
+        </Text>
+        <Text style={[styles.bodyText, { fontFamily, color: '#7F1D1D', marginBottom: 10 }]}>
+          Direct dispatch to Control Room, Police, NDRF boat teams, and medical emergency helpline 112.
+        </Text>
+        <Button
+          title="Open Emergency SOS 🚨"
+          onPress={() => router.push('/(app)/sos' as any)}
+          variant="danger"
+          size="small"
+        />
+      </Card>
+
       {/* Offline Storage Cache */}
       <Card style={styles.card}>
         <Text style={[styles.cardHeader, { fontFamily: fontFamilyBold }]}>

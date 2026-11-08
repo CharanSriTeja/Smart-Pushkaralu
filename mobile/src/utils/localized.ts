@@ -6,10 +6,11 @@ import { SupportedLanguage } from '../i18n';
  * Strictly falls back to English when the selected language string is missing or empty.
  */
 export function getLocalizedText(
-  field?: LocalizedString | null,
+  field?: LocalizedString | string | null,
   lang: SupportedLanguage = 'en'
 ): string {
   if (!field) return '';
+  if (typeof field === 'string') return field;
 
   if (lang === 'te' && field.te && field.te.trim().length > 0) {
     return field.te;
@@ -19,7 +20,7 @@ export function getLocalizedText(
     return field.hi;
   }
 
-  return field.en || '';
+  return field.en || Object.values(field)[0] || '';
 }
 
 /**

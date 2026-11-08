@@ -12,6 +12,11 @@ import { AuditLogsPage } from './pages/AuditLogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { UsagePage } from './pages/UsagePage';
 import { NearbyPlacesAdminPage } from './pages/NearbyPlacesAdminPage';
+import { RouteOriginsPage } from './pages/RouteOriginsPage';
+import { RouteClosuresPage } from './pages/RouteClosuresPage';
+import { TemplesAdminPage } from './pages/TemplesAdminPage';
+import { DelayFactorsPage } from './pages/DelayFactorsPage';
+import { RoutingOperationsPage } from './pages/RoutingOperationsPage';
 
 export const App: React.FC = () => {
   return (
@@ -23,6 +28,11 @@ export const App: React.FC = () => {
             <Route path="sos" element={<SOSDashboardPage />} />
             <Route path="ghats" element={<GhatsPage />} />
             <Route path="places" element={<NearbyPlacesAdminPage />} />
+            <Route path="routes/origins" element={<RouteOriginsPage />} />
+            <Route path="routes/closures" element={<RouteClosuresPage />} />
+            <Route path="routes/temples" element={<TemplesAdminPage />} />
+            <Route path="routes/delay-factors" element={<DelayFactorsPage />} />
+            <Route path="routes/operations" element={<RoutingOperationsPage />} />
             <Route path="news" element={<NewsPage />} />
             <Route path="seva" element={<SevaPage />} />
             <Route path="issues" element={<IssuesPage />} />

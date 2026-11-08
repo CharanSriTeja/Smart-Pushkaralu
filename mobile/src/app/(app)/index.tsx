@@ -9,6 +9,7 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { acquireUserLocation } from '../../utils/location';
@@ -33,24 +34,50 @@ export default function AppHomeScreen() {
     try {
       const locResult = await acquireUserLocation();
       if (!locResult.granted || !locResult.coords) {
-        Alert.alert(
-          'Location Permission Required',
-          'Please grant GPS permission so we can find the nearest safe Pushkaralu ghat for your holy bath.',
-          [
-            { text: 'Browse List Instead', onPress: () => router.push('/(app)/ghats' as any) },
-            { text: 'OK' },
-          ]
-        );
+        const msg = 'Please grant GPS permission in your browser or device settings so we can find the nearest safe Pushkaralu ghat for your holy bath.';
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          const ok = window.confirm(`${msg}\n\nClick OK to browse all ghats list instead.`);
+          if (ok) {
+            router.push('/(app)/ghats' as any);
+          }
+        } else {
+          Alert.alert(
+            'Location Permission Required',
+            msg,
+            [
+              { text: 'Browse List Instead', onPress: () => router.push('/(app)/ghats' as any) },
+              { text: 'OK' },
+            ]
+          );
+        }
         setIsFindingNearest(false);
         return;
       }
 
       router.push(`/(app)/ghats?near=${locResult.coords.latitude},${locResult.coords.longitude}` as any);
     } catch {
-      Alert.alert('Location Error', 'Could not detect GPS coordinates. Opening ghat directory.');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('Could not detect GPS coordinates. Opening ghat directory.');
+      } else {
+        Alert.alert('Location Error', 'Could not detect GPS coordinates. Opening ghat directory.');
+      }
       router.push('/(app)/ghats' as any);
     } finally {
       setIsFindingNearest(false);
+    }
+  };
+
+  const handleOpenSos = () => {
+    try {
+      router.navigate('/(app)/sos' as any);
+    } catch {
+      try {
+        router.push('/(app)/sos' as any);
+      } catch {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/(app)/sos';
+        }
+      }
     }
   };
 
@@ -240,7 +267,7 @@ export default function AppHomeScreen() {
           <View style={styles.actionGrid}>
             <TouchableOpacity
               style={styles.gridBtn}
-              onPress={() => router.push('/(app)/ghats' as any)}
+              onPress={() => router.navigate('/(app)/ghats' as any)}
               activeOpacity={0.8}
             >
               <Text style={styles.gridBtnIcon}>📋</Text>
@@ -251,7 +278,7 @@ export default function AppHomeScreen() {
 
             <TouchableOpacity
               style={styles.gridBtn}
-              onPress={() => router.push('/(app)/ghats/map' as any)}
+              onPress={() => router.navigate('/(app)/ghats/map' as any)}
               activeOpacity={0.8}
             >
               <Text style={styles.gridBtnIcon}>🗺️</Text>
@@ -261,13 +288,45 @@ export default function AppHomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.gridBtn}
-              onPress={() => router.push('/(app)/news' as any)}
+              style={[styles.gridBtn, { borderColor: '#E65100', backgroundColor: '#FFF7ED' }]}
+              onPress={() => router.navigate('/(app)/routes' as any)}
               activeOpacity={0.8}
             >
-              <Text style={styles.gridBtnIcon}>📢</Text>
-              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold }]}>
-                Official News
+              <Text style={styles.gridBtnIcon}>🧭</Text>
+              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold, color: '#C2410C' }]}>
+                Directions & Routes
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.gridBtn, { borderColor: '#EF4444', backgroundColor: '#FEF2F2' }]}
+              onPress={handleOpenSos}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.gridBtnIcon}>🆘</Text>
+              <Text style={[styles.gridBtnText, { fontFamily: fontFamilyBold, color: '#DC2626' }]}>
+                {t('sos.title', 'Emergency SOS')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Module 2: Route Planner & Highway Corridor Card */}
+          <View style={styles.routePlannerBanner}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <Text style={[styles.routePlannerTitle, { fontFamily: fontFamilyBold }]}>
+                🧭 Route Planner & Directions
+              </Text>
+              <Text style={[styles.routePlannerDesc, { fontFamily }]}>
+                Find pre-computed routes from your origin to ghats, parking points & highway corridor temples with police diversion alerts.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.btnPlanRoute}
+              onPress={() => router.navigate('/(app)/routes' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.btnPlanRouteText, { fontFamily: fontFamilyBold }]}>
+                Plan Route →
               </Text>
             </TouchableOpacity>
           </View>
@@ -276,7 +335,7 @@ export default function AppHomeScreen() {
           <View style={styles.issueActionRow}>
             <TouchableOpacity
               style={styles.reportIssuePrimaryBtn}
-              onPress={() => router.push('/(app)/issues/report' as any)}
+              onPress={() => router.navigate('/(app)/issues/report' as any)}
               activeOpacity={0.8}
             >
               <Text style={styles.reportIssueBtnIcon}>🚨</Text>
@@ -287,7 +346,7 @@ export default function AppHomeScreen() {
 
             <TouchableOpacity
               style={styles.myIssuesSecondaryBtn}
-              onPress={() => router.push('/(app)/issues' as any)}
+              onPress={() => router.navigate('/(app)/issues' as any)}
               activeOpacity={0.8}
             >
               <Text style={styles.myIssuesBtnIcon}>📋</Text>
@@ -304,7 +363,7 @@ export default function AppHomeScreen() {
           <View style={styles.ghatPreviewList}>
             <TouchableOpacity
               style={styles.ghatItem}
-              onPress={() => router.push('/(app)/ghats' as any)}
+              onPress={() => router.navigate('/(app)/ghats?district=East%20Godavari&search=Rajahmundry' as any)}
               activeOpacity={0.7}
             >
               <Text style={styles.ghatIcon}>🌊</Text>
@@ -321,7 +380,7 @@ export default function AppHomeScreen() {
 
             <TouchableOpacity
               style={styles.ghatItem}
-              onPress={() => router.push('/(app)/ghats' as any)}
+              onPress={() => router.navigate('/(app)/ghats?district=Bhadradri%20Kothagudem&search=Bhadrachalam' as any)}
               activeOpacity={0.7}
             >
               <Text style={styles.ghatIcon}>🛕</Text>
@@ -338,7 +397,7 @@ export default function AppHomeScreen() {
 
             <TouchableOpacity
               style={styles.ghatItem}
-              onPress={() => router.push('/(app)/ghats' as any)}
+              onPress={() => router.navigate('/(app)/ghats?district=West%20Godavari&search=Kovvur' as any)}
               activeOpacity={0.7}
             >
               <Text style={styles.ghatIcon}>🔱</Text>
@@ -669,6 +728,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginBottom: 16,
+  },
+  routePlannerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1.5,
+    borderColor: '#FDBA74',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  routePlannerTitle: {
+    fontSize: 15,
+    color: '#9A3412',
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  routePlannerDesc: {
+    fontSize: 12,
+    color: '#7C2D12',
+    lineHeight: 17,
+  },
+  btnPlanRoute: {
+    backgroundColor: '#EA580C',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
+  },
+  btnPlanRouteText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
   reportIssuePrimaryBtn: {
     flex: 1.2,

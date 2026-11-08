@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { captureMobileException } from '../services/sentry';
 import { Button } from './Button';
 import { theme } from '../theme';
@@ -25,6 +25,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('*** GLOBAL ERROR BOUNDARY CAUGHT ***:', error, errorInfo);
     captureMobileException(error, { componentStack: errorInfo.componentStack });
   }
 
@@ -43,8 +44,15 @@ export class GlobalErrorBoundary extends Component<Props, State> {
           <Text style={styles.icon}>⚠️</Text>
           <Text style={styles.title}>Something went wrong</Text>
           <Text style={styles.message}>
-            An unexpected error occurred. Please restart this view or try again.
+            {this.state.error?.message || 'An unexpected error occurred. Please restart this view or try again.'}
           </Text>
+          {this.state.error?.stack && (
+            <View style={styles.stackBox}>
+              <Text style={styles.stackText} numberOfLines={8}>
+                {this.state.error.stack}
+              </Text>
+            </View>
+          )}
           <Button
             title="Reload Screen"
             onPress={this.handleReset}
@@ -84,6 +92,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
     lineHeight: 22,
+  },
+  stackBox: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: theme.spacing.md,
+    maxWidth: '90%',
+  },
+  stackText: {
+    fontSize: 11,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: '#991B1B',
   },
   button: {
     width: '100%',

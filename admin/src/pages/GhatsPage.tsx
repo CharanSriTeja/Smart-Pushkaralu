@@ -152,6 +152,15 @@ export const GhatsPage: React.FC = () => {
   const [csvAuditReason, setCsvAuditReason] = useState('Bulk CSV import of Pushkaralu ghats');
   const [csvSubmitting, setCsvSubmitting] = useState(false);
   const [csvError, setCsvError] = useState<string | null>(null);
+  const [csvUploadJob, setCsvUploadJob] = useState<{
+    isRunning: boolean;
+    currentBatch: number;
+    totalBatches: number;
+    processedRecords: number;
+    totalRecords: number;
+    successCount: number;
+    errors: any[];
+  } | null>(null);
 
   // Delete Modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -165,7 +174,7 @@ export const GhatsPage: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const res = await AdminApi.getGhats({ limit: '200' });
+      const res = await AdminApi.getGhats({ limit: '1000' });
       setGhats(res.data);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to load ghats from server');
@@ -716,16 +725,85 @@ export const GhatsPage: React.FC = () => {
       return;
     }
 
+    const BATCH_SIZE = 15; // Small batch size to avoid HTTP 413 Payload Too Large and maintain reliable transactions
+    const totalRecords = csvParsedRecords.length;
+    const totalBatches = Math.ceil(totalRecords / BATCH_SIZE);
+
     setCsvSubmitting(true);
+    setCsvError(null);
+
+    setCsvUploadJob({
+      isRunning: true,
+      currentBatch: 1,
+      totalBatches,
+      processedRecords: 0,
+      totalRecords,
+      successCount: 0,
+      errors: [],
+    });
+
+    let totalImported = 0;
+    const accumulatedErrors: any[] = [];
+
     try {
-      const res = await AdminApi.bulkImportGhats(csvParsedRecords, csvAuditReason.trim());
-      setSuccessMessage(`Successfully imported ${res.count} ghats into database.`);
+      for (let b = 0; b < totalBatches; b++) {
+        const start = b * BATCH_SIZE;
+        const end = Math.min(start + BATCH_SIZE, totalRecords);
+        const batchRecords = csvParsedRecords.slice(start, end);
+        const currentBatch = b + 1;
+
+        setCsvUploadJob({
+          isRunning: true,
+          currentBatch,
+          totalBatches,
+          processedRecords: start,
+          totalRecords,
+          successCount: totalImported,
+          errors: accumulatedErrors,
+        });
+
+        try {
+          const res = await AdminApi.bulkImportGhats(
+            batchRecords,
+            `${csvAuditReason.trim()} (Batch ${currentBatch}/${totalBatches})`
+          );
+          totalImported += res.count || batchRecords.length;
+          if (res.errors && res.errors.length > 0) {
+            accumulatedErrors.push(...res.errors);
+          }
+        } catch (batchErr: any) {
+          accumulatedErrors.push({
+            batch: currentBatch,
+            error: batchErr.message || 'Batch failed to upload',
+          });
+        }
+
+        setCsvUploadJob({
+          isRunning: true,
+          currentBatch,
+          totalBatches,
+          processedRecords: end,
+          totalRecords,
+          successCount: totalImported,
+          errors: accumulatedErrors,
+        });
+
+        // Small interval between batches to allow backend and DB pool to breathe
+        if (b < totalBatches - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+      }
+
+      setSuccessMessage(
+        `Bulk import job completed! Successfully imported ${totalImported} of ${totalRecords} ghats in ${totalBatches} batches.`
+      );
+      setCsvUploadJob(null);
       setCsvModalOpen(false);
       setCsvParsedRecords([]);
       setCsvFileName('');
       await loadGhats();
     } catch (err: any) {
-      alert(`Bulk import failed: ${err.message}`);
+      setCsvError(`Bulk import job encountered an error: ${err.message}`);
     } finally {
       setCsvSubmitting(false);
     }
@@ -944,7 +1022,7 @@ export const GhatsPage: React.FC = () => {
                     </td>
 
                     <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: '0.8rem', color: '#475569' }}>
-                      {g.lat.toFixed(4)}, {g.lng.toFixed(4)}
+                      {g.lat != null ? Number(g.lat).toFixed(4) : '—'}, {g.lng != null ? Number(g.lng).toFixed(4) : '—'}
                     </td>
 
                     <td style={{ padding: '10px 14px' }}>
@@ -1645,6 +1723,36 @@ export const GhatsPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Job Progress Indicator */}
+              {csvUploadJob && (
+                <div style={{ padding: '1rem', background: '#EFF6FF', borderRadius: '8px', border: '1px solid #BFDBFE' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E40AF' }}>
+                      ⏳ Bulk Import Job Running...
+                    </span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E40AF' }}>
+                      {Math.round((csvUploadJob.processedRecords / csvUploadJob.totalRecords) * 100)}%
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div style={{ width: '100%', height: '8px', background: '#DBEAFE', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px' }}>
+                    <div
+                      style={{
+                        width: `${Math.round((csvUploadJob.processedRecords / csvUploadJob.totalRecords) * 100)}%`,
+                        height: '100%',
+                        background: '#2563EB',
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ fontSize: '0.8rem', color: '#1E3A8A' }}>
+                    Processing Batch <strong>{csvUploadJob.currentBatch}</strong> of <strong>{csvUploadJob.totalBatches}</strong> ({csvUploadJob.processedRecords} of {csvUploadJob.totalRecords} records) • <strong>{csvUploadJob.successCount}</strong> imported successfully
+                  </div>
+                </div>
+              )}
+
               {/* Audit Reason */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
@@ -1653,6 +1761,7 @@ export const GhatsPage: React.FC = () => {
                 <input
                   type="text"
                   required
+                  disabled={csvSubmitting}
                   value={csvAuditReason}
                   onChange={(e) => setCsvAuditReason(e.target.value)}
                   placeholder="e.g. Official Pushkaralu ghat directory CSV upload by District Collectorate"
@@ -1664,8 +1773,17 @@ export const GhatsPage: React.FC = () => {
             <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', background: '#F8FAFC' }}>
               <button
                 type="button"
+                disabled={csvSubmitting}
                 onClick={() => setCsvModalOpen(false)}
-                style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#FFFFFF', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #CBD5E1',
+                  background: '#FFFFFF',
+                  color: csvSubmitting ? '#94A3B8' : '#475569',
+                  fontWeight: 600,
+                  cursor: csvSubmitting ? 'not-allowed' : 'pointer',
+                }}
               >
                 Cancel
               </button>
@@ -1680,10 +1798,12 @@ export const GhatsPage: React.FC = () => {
                   background: csvParsedRecords.length === 0 ? '#94A3B8' : '#0F52BA',
                   color: '#FFFFFF',
                   fontWeight: 700,
-                  cursor: csvParsedRecords.length === 0 ? 'not-allowed' : 'pointer',
+                  cursor: csvParsedRecords.length === 0 || csvSubmitting ? 'not-allowed' : 'pointer',
                 }}
               >
-                {csvSubmitting ? 'Importing...' : `Import ${csvParsedRecords.length} Ghats`}
+                {csvSubmitting
+                  ? `Importing Job (${csvUploadJob?.currentBatch || 1}/${csvUploadJob?.totalBatches || 1})...`
+                  : `Import ${csvParsedRecords.length} Ghats (Chunked Job)`}
               </button>
             </div>
           </div>

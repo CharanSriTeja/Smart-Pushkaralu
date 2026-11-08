@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import express from 'express';
 import { requireAuth } from '../../middleware/auth.js';
 import { checkPermission } from '../../middleware/rbac.js';
 import { GhatsController } from '../../modules/ghats/ghats.controller.js';
@@ -17,7 +18,12 @@ adminRouter.use(requireAuth);
 
 // 1. Ghat Management
 // POST /v1/admin/ghats/bulk
-adminRouter.post('/ghats/bulk', checkPermission('ghats.create'), GhatsController.bulkCreateGhats);
+adminRouter.post(
+  '/ghats/bulk',
+  express.json({ limit: '10mb' }),
+  checkPermission('ghats.create'),
+  GhatsController.bulkCreateGhats
+);
 
 // POST /v1/admin/ghats
 adminRouter.post('/ghats', checkPermission('ghats.create'), GhatsController.createGhat);

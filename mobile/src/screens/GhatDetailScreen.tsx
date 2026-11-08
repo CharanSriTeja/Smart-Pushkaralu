@@ -150,6 +150,31 @@ export const GhatDetailScreen: React.FC = () => {
             </Text>
             <BathingStatusBadge status={ghat.bathing_status} size="medium" />
           </View>
+
+          {/* Route Planner & Directions Button (Module 2) */}
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#E65100',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderRadius: 10,
+              marginTop: 16,
+              elevation: 2,
+            }}
+            onPress={() =>
+              router.navigate(
+                `/(app)/routes?ghatId=${ghat.id}&ghatName=${encodeURIComponent(name)}&lat=${ghat.lat}&lng=${ghat.lng}` as any
+              )
+            }
+          >
+            <Text style={{ fontSize: 18, marginRight: 8 }}>🧭</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: 'bold' }}>
+              {t('routes.title', 'Route Planner & Directions')} →
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Active Safety Notices Banner */}

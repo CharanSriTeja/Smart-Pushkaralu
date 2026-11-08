@@ -445,6 +445,46 @@
     },
     "offline_queued": "नेटवर्क उपलब्ध नहीं है। नेटवर्क आते ही अलर्ट स्वतः भेजा जाएगा।",
     "zone_detected": "संबंधित ज़ोन: {{zone}}"
+  },
+  "routes": {
+    "title": "मार्ग योजना (रूट प्लानर)",
+    "origin_label": "प्रस्थान बिंदु",
+    "destination_label": "गंतव्य घाट",
+    "access_point_label": "घाट प्रवेश द्वार / पार्किंग",
+    "use_my_location": "मेरी वर्तमान स्थिति उपयोग करें",
+    "location_prompt": "सर्वश्रेष्ठ मार्ग खोजने के लिए कृपया स्थान अनुमति प्रदान करें।",
+    "select_origin": "शहर या पारगमन केंद्र चुनें",
+    "select_access_point": "प्रवेश द्वार या पार्किंग चुनें",
+    "calculating": "सुरक्षित मार्ग की गणना की जा रही है...",
+    "distance": "दूरी",
+    "est_time": "अनुमानित समय",
+    "modes": {
+      "car": "कार / टैक्सी",
+      "bike": "दोपहिया वाहन",
+      "walk": "पैदल",
+      "bus": "बस",
+      "train": "ट्रेन"
+    },
+    "bike_estimate_notice": "मेला भीड़ के अनुसार दोपहिया समय अनुमानित है।",
+    "transit_title": "सार्वजनिक परिवहन मार्ग",
+    "transit_desc": "बस और ट्रेन का समय एवं कनेक्टिविटी Google Maps में देखें।",
+    "open_google_maps": "Google Maps में खोलें",
+    "temples_corridor_title": "रास्ते में पड़ने वाले मंदिर",
+    "temples_corridor_subtitle": "मार्ग में अधिकतम 3 मंदिरों को स्टॉप के रूप में जोड़ें।",
+    "add_stop": "स्टॉप जोड़ें",
+    "remove_stop": "स्टॉप हटाएं",
+    "update_route_btn": "स्टॉप्स के साथ मार्ग अपडेट करें",
+    "stops_count": "{{count}} / 3 स्टॉप चुने गए",
+    "max_stops_reached": "इस मार्ग पर अधिकतम 3 स्टॉप की अनुमति है।",
+    "closures_title": "पुलिस डायवर्जन एवं मार्ग बंदी",
+    "delay_notice": "समय में भीड़ विलंब कारक ({{factor}}x) सम्मिलित है।",
+    "safety_disclaimer": "मार्ग और समय केवल अनुमान हैं। पुष्करालु के दौरान सड़कें, बंदी और पुलिस डायवर्जन अचानक बदल सकते हैं। आधिकारिक संकेतों और पुलिस कर्मियों के निर्देशों का पालन करें।",
+    "osm_attribution": "© OpenStreetMap contributors | openrouteservice.org by HeiGIT",
+    "precision": {
+      "access_verified": "सत्यापित द्वार",
+      "approximate": "अनुमानित घाट स्थान",
+      "village_centre": "ग्राम केंद्र"
+    }
   }
 }
 

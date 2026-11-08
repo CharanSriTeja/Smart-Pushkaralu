@@ -29,10 +29,11 @@ export const UrgentNewsBanner: React.FC = () => {
   }
 
   const title = urgentPost.localized_title || getLocalizedText(urgentPost.title, language);
+  const contentStr = getLocalizedText(urgentPost.content, language);
   const summary =
     urgentPost.localized_summary ||
     getLocalizedText(urgentPost.summary, language) ||
-    getLocalizedText(urgentPost.content, language).substring(0, 100);
+    (contentStr ? contentStr.substring(0, 100) : '');
 
   return (
     <View style={styles.container}>

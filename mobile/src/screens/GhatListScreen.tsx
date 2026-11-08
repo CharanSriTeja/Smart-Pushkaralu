@@ -11,7 +11,7 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
 import { Ghat, GhatFilters, CrowdLevel, BathingStatus } from '../types/ghats';
@@ -24,6 +24,7 @@ import { ConditionDisclaimerBanner } from '../components/ConditionDisclaimerBann
 
 export const GhatListScreen: React.FC = () => {
   const router = useRouter();
+  const params = useLocalSearchParams<{ near?: string; district?: string; search?: string }>();
   const { t } = useTranslation();
   const { language, fontFamily, fontFamilyBold } = useLanguage();
 
@@ -33,10 +34,15 @@ export const GhatListScreen: React.FC = () => {
   const [isOffline, setIsOffline] = useState(false);
 
   // Filters state
-  const [search, setSearch] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
+  const [search, setSearch] = useState(params.search || '');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>(params.district || 'all');
   const [selectedBathing, setSelectedBathing] = useState<BathingStatus | 'all'>('all');
   const [selectedCrowd, setSelectedCrowd] = useState<CrowdLevel | 'all'>('all');
+
+  useEffect(() => {
+    if (params.district) setSelectedDistrict(params.district);
+    if (params.search) setSearch(params.search);
+  }, [params.district, params.search]);
 
   const districts = [
     { id: 'all', label: t('ghats.all_districts', 'All Districts') },
@@ -56,6 +62,7 @@ export const GhatListScreen: React.FC = () => {
       if (selectedBathing !== 'all') filters.bathingStatus = selectedBathing;
       if (selectedCrowd !== 'all') filters.crowdLevel = selectedCrowd;
       if (search.trim()) filters.search = search.trim();
+      if (params.near) filters.near = params.near;
 
       const res = await GhatService.getGhats(filters);
       setGhats(res.ghats);
@@ -66,7 +73,7 @@ export const GhatListScreen: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedDistrict, selectedBathing, selectedCrowd, search]);
+  }, [selectedDistrict, selectedBathing, selectedCrowd, search, params.near]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

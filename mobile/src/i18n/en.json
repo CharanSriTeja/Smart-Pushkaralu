@@ -445,6 +445,46 @@
     },
     "offline_queued": "Network unavailable. Alert queued and will sync automatically.",
     "zone_detected": "Attached to Zone: {{zone}}"
+  },
+  "routes": {
+    "title": "Route Planner",
+    "origin_label": "Starting Point",
+    "destination_label": "Destination Ghat",
+    "access_point_label": "Ghat Access Point",
+    "use_my_location": "Use My Current Location",
+    "location_prompt": "Allow location access to find best routes from where you are.",
+    "select_origin": "Select Origin Hub or City",
+    "select_access_point": "Select Entry Gate or Parking",
+    "calculating": "Calculating safest route...",
+    "distance": "Distance",
+    "est_time": "Est. Time",
+    "modes": {
+      "car": "Car / Cab",
+      "bike": "Bike / Scooter",
+      "walk": "Walking",
+      "bus": "Bus",
+      "train": "Train"
+    },
+    "bike_estimate_notice": "Bike travel times are estimated for festival conditions.",
+    "transit_title": "Public Transit Route",
+    "transit_desc": "Bus and train schedules with live connections are best viewed in Google Maps.",
+    "open_google_maps": "Open in Google Maps",
+    "temples_corridor_title": "Temples Along the Way",
+    "temples_corridor_subtitle": "Select up to 3 temples to add as stops along your route.",
+    "add_stop": "Add Stop",
+    "remove_stop": "Remove Stop",
+    "update_route_btn": "Update Route with Stops",
+    "stops_count": "{{count}} / 3 stops selected",
+    "max_stops_reached": "Maximum 3 stops allowed on this route.",
+    "closures_title": "Active Diversions & Road Closures",
+    "delay_notice": "Estimated times include crowd delay multiplier ({{factor}}x).",
+    "safety_disclaimer": "Routes and times are estimates. Roads, closures, and police diversions can change suddenly during Pushkaralu. Follow official signs and personnel on the ground.",
+    "osm_attribution": "© OpenStreetMap contributors | openrouteservice.org by HeiGIT",
+    "precision": {
+      "access_verified": "Verified Gate",
+      "approximate": "Approximate Location",
+      "village_centre": "Village Centre"
+    }
   }
 }
 

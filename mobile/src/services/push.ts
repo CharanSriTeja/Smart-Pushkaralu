@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { apiClient } from '../api/client';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 
 const FCM_TOKEN_STORAGE_KEY = 'sp_fcm_device_token';
 
@@ -59,7 +59,7 @@ export async function registerPushNotifications(
     const token = tokenObj.data;
 
     // Cache locally
-    await SecureStore.setItemAsync(FCM_TOKEN_STORAGE_KEY, token);
+    await storage.setItem(FCM_TOKEN_STORAGE_KEY, token);
 
     // Register with backend /v1/devices
     await apiClient.post('/v1/devices', {
@@ -82,7 +82,7 @@ export async function registerPushNotifications(
  */
 export async function updateDeviceLanguage(language: string): Promise<void> {
   try {
-    const token = await SecureStore.getItemAsync(FCM_TOKEN_STORAGE_KEY);
+    const token = await storage.getItem(FCM_TOKEN_STORAGE_KEY);
     if (!token) return;
 
     await apiClient.post('/v1/devices', {

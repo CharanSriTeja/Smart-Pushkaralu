@@ -345,6 +345,10 @@
       <button type="button" class="btn-cancel" onclick="cancelAlert()" id="btnCancel">
         Cancel Alert (False Alarm)
       </button>
+
+      <button type="button" class="btn-cancel" onclick="resetToTrigger()" style="background:#e0e7ff; color:#3730a3; margin-top:8px;">
+        ✕ Dismiss & Start New SOS
+      </button>
     </div>
   </main>
 
@@ -482,33 +486,56 @@
       document.getElementById('deepLinkApp').href = 'smartpushkaralu://sos?zone=' + encodeURIComponent(zoneCode);
     }
 
-    function fetchLocation() {
+    function fetchLocation(onDone) {
       const statusEl = document.getElementById('gpsStatus');
       const t = translations[currentLang] || translations.en;
       if (!navigator.geolocation) {
         statusEl.textContent = t.gpsFailed;
+        if (onDone) onDone();
         return;
       }
       statusEl.textContent = t.gpsWaiting;
+
+      const onSuccess = (pos) => {
+        userCoords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracyM: pos.coords.accuracy
+        };
+        statusEl.textContent = t.gpsSuccess + ' (±' + Math.round(pos.coords.accuracy) + 'm)';
+        statusEl.style.color = '#16a34a';
+        if (onDone) onDone();
+      };
+
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          userCoords = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracyM: pos.coords.accuracy
-          };
-          statusEl.textContent = t.gpsSuccess + ' (±' + Math.round(pos.coords.accuracy) + 'm)';
-          statusEl.style.color = '#16a34a';
-        },
+        onSuccess,
         () => {
-          statusEl.textContent = t.gpsFailed;
-          statusEl.style.color = '#dc2626';
+          // Fallback to low-accuracy network/IP geolocation (works on PC/laptops without GPS hardware)
+          navigator.geolocation.getCurrentPosition(
+            onSuccess,
+            () => {
+              statusEl.textContent = t.gpsFailed;
+              statusEl.style.color = '#dc2626';
+              if (onDone) onDone();
+            },
+            { timeout: 8000, enableHighAccuracy: false }
+          );
         },
-        { timeout: 8000, enableHighAccuracy: true }
+        { timeout: 6000, enableHighAccuracy: true }
       );
     }
 
     async function triggerSos(type) {
+      if (!userCoords && navigator.geolocation) {
+        fetchLocation(async () => {
+          await submitSos(type);
+        });
+        return;
+      }
+      await submitSos(type);
+    }
+
+    async function submitSos(type) {
       const phoneInput = document.getElementById('userPhone').value.trim();
       const payload = {
         channel: 'qr',
@@ -535,11 +562,21 @@
           showStatusView(data.data.status);
           startPolling();
         } else {
-          fallbackToCall();
+          const errDetail = data?.error?.message || data?.message || "Could not register emergency alert.";
+          alert(errDetail + "\n\nFor life-threatening emergencies, dial 112 immediately.");
         }
       } catch (err) {
-        fallbackToCall();
+        alert("Network request failed. Connecting you to emergency helpline 112 directly.");
+        window.location.href = "tel:112";
       }
+    }
+
+    function resetToTrigger() {
+      if (pollInterval) clearInterval(pollInterval);
+      activeAlertId = null;
+      activeStatusToken = null;
+      document.getElementById('statusPanel').style.display = 'none';
+      document.getElementById('triggerPanel').style.display = 'block';
     }
 
     function fallbackToCall() {

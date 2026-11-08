@@ -1,7 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import * as Localization from 'expo-localization';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 
 import en from './en.json';
 import te from './te.json';
@@ -33,7 +33,7 @@ export function detectDeviceLanguage(): SupportedLanguage {
 
 export async function getSavedLanguage(): Promise<SupportedLanguage> {
   try {
-    const saved = await SecureStore.getItemAsync(LANGUAGE_STORAGE_KEY);
+    const saved = await storage.getItem(LANGUAGE_STORAGE_KEY);
     if (saved === 'en' || saved === 'te' || saved === 'hi') {
       return saved as SupportedLanguage;
     }
@@ -45,7 +45,7 @@ export async function getSavedLanguage(): Promise<SupportedLanguage> {
 
 export async function saveLanguage(lang: SupportedLanguage): Promise<void> {
   try {
-    await SecureStore.setItemAsync(LANGUAGE_STORAGE_KEY, lang);
+    await storage.setItem(LANGUAGE_STORAGE_KEY, lang);
   } catch (err) {
     console.warn('[i18n] Could not persist language:', err);
   }

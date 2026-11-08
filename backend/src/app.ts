@@ -25,6 +25,7 @@ import { issuesRouter } from './routes/v1/issues.routes.js';
 import { adminRouter } from './routes/v1/admin.routes.js';
 import { sosRouter } from './routes/v1/sos.routes.js';
 import { adminSosRouter } from './routes/v1/admin-sos.routes.js';
+import { routesRouter } from './routes/v1/routes.routes.js';
 
 // Initialize Sentry error reporting
 initSentry();
@@ -43,11 +44,17 @@ const allowedOrigins = getCorsOrigins();
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow mobile apps, curl, CLI requests with no origin
+      // Allow mobile apps, curl, Postman, CLI requests with no origin
       if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+      // Allow any local development origin (localhost, 127.0.0.1, private IPs on any port)
+      if (
+        /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, false);
     },
     credentials: true,
   })
@@ -65,8 +72,8 @@ app.get(['/sos', '/sos/'], (_req, res) => {
 });
 app.use('/sos', express.static(path.join(process.cwd(), 'public/sos')));
 
-// Strict body parsing limit for low bandwidth / security (unless specific route overrides)
-app.use(express.json({ limit: '100kb' }));
+// Body parsing limit supporting bulk administrative operations while protecting against flood
+app.use(express.json({ limit: '5mb' }));
 
 // Structured Pino HTTP logging with request id and token/phone redaction
 app.use(httpLogger);
@@ -83,6 +90,7 @@ app.use('/v1', crowdReportRouter);
 app.use('/v1', newsRouter);
 app.use('/v1', publicWriteLimiter, devicesRouter);
 app.use('/v1', issuesRouter);
+app.use('/v1', routesRouter);
 app.use('/v1', sosRouter);
 app.use('/v1/admin/sos', adminSosRouter);
 app.use('/v1/admin', auditRouter);

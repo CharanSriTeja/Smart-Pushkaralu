@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { acquireUserLocation } from '../utils/location';
+import { acquireUserLocation, getLastKnownLocation } from '../utils/location';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
@@ -65,17 +65,21 @@ export default function ReportIssueScreen() {
   }, []);
 
   async function detectLocation() {
+    const cached = getLastKnownLocation();
+    if (cached) {
+      setLat(cached.latitude);
+      setLng(cached.longitude);
+    }
+
     setIsDetectingGps(true);
     try {
       const locResult = await acquireUserLocation();
       if (!locResult.granted || !locResult.coords) {
-        Alert.alert(
-          'Location Permission Required',
-          'Please allow GPS access so the grievance response squad can pinpoint your exact position on the ghat.'
-        );
-        // Default to Godavari Rajahmundry ghats coordinates
-        setLat(16.989065);
-        setLng(81.775412);
+        if (!cached) {
+          // Default to Godavari Rajahmundry ghats coordinates
+          setLat(16.989065);
+          setLng(81.775412);
+        }
         setIsDetectingGps(false);
         return;
       }
@@ -83,9 +87,11 @@ export default function ReportIssueScreen() {
       setLat(locResult.coords.latitude);
       setLng(locResult.coords.longitude);
     } catch {
-      // Fallback coordinate
-      setLat(16.989065);
-      setLng(81.775412);
+      if (!cached) {
+        // Fallback coordinate
+        setLat(16.989065);
+        setLng(81.775412);
+      }
     } finally {
       setIsDetectingGps(false);
     }
@@ -93,10 +99,12 @@ export default function ReportIssueScreen() {
 
   const handlePickPhoto = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Media library access is needed to attach a photo.');
-        return;
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Media library access is needed to attach a photo.');
+          return;
+        }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -115,6 +123,11 @@ export default function ReportIssueScreen() {
 
   const handleTakePhoto = async () => {
     try {
+      if (Platform.OS === 'web') {
+        // Web browsers do not support native camera launch; fallback to file picker
+        return handlePickPhoto();
+      }
+
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Camera permission is required to capture live grievance photos.');

@@ -28,7 +28,8 @@ export class PushkaraluSocketClient {
     try {
       this.socket = io(`${this.url}/admin-sos`, {
         auth: { token },
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
+        upgrade: true,
         autoConnect: true,
         reconnection: true,
         reconnectionAttempts: Infinity,
