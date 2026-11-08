@@ -159,6 +159,59 @@ sosRouter.post(
 );
 
 /**
+ * Public SOS add reporter note endpoint
+ * Allows the pilgrim/reporter to append additional live situational notes to their active alert
+ */
+sosRouter.post(
+  '/sos/:id/note',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = req.params.id as string;
+      const { token, note } = req.body;
+
+      if (!token || !note || typeof note !== 'string' || note.trim().length === 0) {
+        res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Token and valid note are required',
+          },
+        });
+        return;
+      }
+
+      const verified = await SosService.getAlertStatus(id, token);
+      if (!verified) {
+        res.status(404).json({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'SOS alert not found or invalid status token',
+          },
+        });
+        return;
+      }
+
+      const update = await SosService.addNote({
+        alertId: id,
+        adminId: 'reporter',
+        note: `Pilgrim Note: ${note.trim()}`,
+        isPublic: true,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: {
+          id: update.id,
+          note: update.note,
+          createdAt: update.created_at,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
  * Public Emergency Contacts endpoint
  */
 sosRouter.get(

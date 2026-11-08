@@ -282,15 +282,13 @@ describe('Module 8: Report an Issue Tests', () => {
         const log = {
           id: `audit-${mockAuditLogs.length + 1}`,
           admin_id: params[0],
-          admin_email: params[1],
-          action: params[2],
-          entity_type: params[3],
-          entity_id: params[4],
-          old_values: params[5] ? JSON.parse(params[5]) : null,
-          new_values: params[6] ? JSON.parse(params[6]) : null,
-          source_url: params[7],
-          reason: params[8],
-          ip_address: params[9],
+          action: params[1],
+          entity_type: params[2],
+          entity_id: params[3],
+          old_values: params[4] ? JSON.parse(params[4]) : null,
+          new_values: params[5] ? JSON.parse(params[5]) : null,
+          source_url: params[6] || null,
+          reason: params[7] || null,
           created_at: new Date().toISOString(),
         };
         mockAuditLogs.push(log);

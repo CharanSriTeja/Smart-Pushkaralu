@@ -280,6 +280,22 @@ export class SosService {
   }
 
   /**
+   * Adds a situational note to active alert
+   */
+  static async addNote(alertId: string, statusToken: string, note: string): Promise<boolean> {
+    try {
+      const res = await apiRequest<{ success: boolean }>(`/v1/sos/${alertId}/note`, {
+        method: 'POST',
+        body: JSON.stringify({ token: statusToken, note }),
+        skipAuth: true,
+      });
+      return !!res.success;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Fetches emergency contacts with fallback
    */
   static async getEmergencyContacts(ghatId?: string): Promise<EmergencyContact[]> {

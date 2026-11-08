@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   Linking,
   Alert,
   ActivityIndicator,
@@ -50,6 +51,8 @@ export default function SOSScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [assignedInfo, setAssignedInfo] = useState<string | null>(null);
+  const [noteInput, setNoteInput] = useState<string>('');
+  const [isSubmittingNote, setIsSubmittingNote] = useState<boolean>(false);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number; accuracy?: number | null } | null>(
     getLastKnownLocation()
   );
@@ -177,6 +180,15 @@ export default function SOSScreen() {
       }
     }
 
+    // Query battery level if supported by platform/browser
+    let batteryLevel: number | null = null;
+    if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
+      try {
+        const b = await (navigator as any).getBattery();
+        batteryLevel = Math.round(b.level * 100);
+      } catch {}
+    }
+
     try {
       const result = await SosService.triggerSos({
         type,
@@ -185,6 +197,10 @@ export default function SOSScreen() {
         lng: coords.lng,
         accuracyM: coords.accuracyM,
         zoneCode: zone || null,
+        metadata: {
+          batteryLevel,
+          triggeredAt: new Date().toISOString(),
+        },
       });
 
       setIsSubmitting(false);
@@ -288,8 +304,11 @@ export default function SOSScreen() {
 
   const handleSendSms = async () => {
     const typeKeyword = (selectedType || activeAlert?.type || 'GENERAL').toUpperCase();
-    const zoneKeyword = zone || activeAlert?.zoneCode || '';
-    const body = `SOS ${typeKeyword} ${zoneKeyword}`.trim();
+    const zoneKeyword = zone || activeAlert?.zoneCode ? ` ZONE:${zone || activeAlert?.zoneCode}` : '';
+    const locKeyword = userCoords
+      ? ` GPS:${userCoords.latitude.toFixed(5)},${userCoords.longitude.toFixed(5)}`
+      : '';
+    const body = `SOS ${typeKeyword}${zoneKeyword}${locKeyword}`.trim();
 
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined') {
@@ -305,6 +324,25 @@ export default function SOSScreen() {
       Linking.openURL(`sms:112?body=${encodeURIComponent(body)}`).catch(() => {
         Alert.alert('SMS Unavailable', `Please send an SMS to 112 manually: "${body}"`);
       });
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!activeAlert || !noteInput.trim()) return;
+    setIsSubmittingNote(true);
+    try {
+      const ok = await SosService.addNote(activeAlert.id, activeAlert.statusToken, noteInput.trim());
+      if (ok) {
+        setNoteInput('');
+        const data = await SosService.pollAlertStatus(activeAlert.id, activeAlert.statusToken);
+        if (data?.updates) setUpdates(data.updates);
+      } else {
+        Alert.alert('Failed to add note', 'Could not save note to emergency record. Please try again.');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to submit update');
+    } finally {
+      setIsSubmittingNote(false);
     }
   };
 
@@ -442,6 +480,34 @@ export default function SOSScreen() {
               ))}
             </View>
           ) : null}
+
+          {/* Add Pilgrim Note to Responder */}
+          <View style={styles.addNoteContainer}>
+            <Text style={[styles.addNoteTitle, { fontFamily: fontFamilyBold }]}>
+              Add Note for Responders:
+            </Text>
+            <View style={styles.addNoteRow}>
+              <TextInput
+                style={[styles.noteInput, { fontFamily }]}
+                placeholder="e.g. Near red pillar, need wheelchair..."
+                placeholderTextColor="#A8A29E"
+                value={noteInput}
+                onChangeText={setNoteInput}
+                editable={!isSubmittingNote}
+              />
+              <TouchableOpacity
+                style={[styles.addNoteBtn, (!noteInput.trim() || isSubmittingNote) && styles.addNoteBtnDisabled]}
+                onPress={handleAddNote}
+                disabled={!noteInput.trim() || isSubmittingNote}
+              >
+                {isSubmittingNote ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.addNoteBtnText, { fontFamily: fontFamilyBold }]}>Send</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* Action buttons */}
           <View style={styles.activeActionsRow}>
@@ -965,6 +1031,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginTop: 14,
+  },
+  addNoteContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#FEE2E2',
+  },
+  addNoteTitle: {
+    fontSize: 13,
+    color: '#991B1B',
+    marginBottom: 6,
+  },
+  addNoteRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  noteInput: {
+    flex: 1,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: '#1C1917',
+  },
+  addNoteBtn: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 16,
+    minHeight: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
+  },
+  addNoteBtnDisabled: {
+    backgroundColor: '#FCA5A5',
+  },
+  addNoteBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   btnActionSms: {
     flex: 1,

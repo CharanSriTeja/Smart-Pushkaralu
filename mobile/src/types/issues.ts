@@ -46,6 +46,7 @@ export interface CreateIssueDTO {
   lng: number;
   qr_zone_id?: string | null;
   ghat_id?: string | null;
+  reporter_phone?: string | null;
   reporter_device_token?: string | null;
   device_fingerprint?: string | null;
 }

@@ -17,7 +17,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
 import { IssueService } from '../services/issueService';
+import { GhatService } from '../services/ghatService';
+import { Ghat } from '../types/ghats';
 import { IssueCategory, LocationType } from '../types/issues';
+import { getLocalizedText } from '../utils/localized';
+import { colors, radii, spacing, typography } from '../theme/tokens';
 
 interface CategoryItem {
   id: IssueCategory;
@@ -39,13 +43,16 @@ const CATEGORIES: CategoryItem[] = [
 export default function ReportIssueScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { fontFamily, fontFamilyBold } = useLanguage();
+  const { language, fontFamily, fontFamilyBold } = useLanguage();
 
   const [category, setCategory] = useState<IssueCategory>('sanitation');
   const [description, setDescription] = useState('');
-  const [locationType, setLocationType] = useState<LocationType>('gps');
+  const [contactPhone, setContactPhone] = useState('');
+  const [locationType, setLocationType] = useState<LocationType | 'ghat'>('gps');
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
+  const [ghats, setGhats] = useState<Ghat[]>([]);
+  const [selectedGhatId, setSelectedGhatId] = useState<string>('');
   const [qrZoneId, setQrZoneId] = useState('');
   const [isDetectingGps, setIsDetectingGps] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -58,6 +65,18 @@ export default function ReportIssueScreen() {
     duplicate_of?: string;
     message?: string;
   } | null>(null);
+
+  // Load ghats list
+  useEffect(() => {
+    GhatService.getGhats({ limit: 100 } as any)
+      .then(({ ghats: list }) => {
+        setGhats(list);
+        if (list.length > 0) {
+          setSelectedGhatId(list[0].id);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Auto-fetch GPS on load
   useEffect(() => {
@@ -153,8 +172,16 @@ export default function ReportIssueScreen() {
       return;
     }
 
-    const reportLat = lat || 16.989065;
-    const reportLng = lng || 81.775412;
+    let reportLat = lat || 16.989065;
+    let reportLng = lng || 81.775412;
+
+    if (locationType === 'ghat' && selectedGhatId) {
+      const matchGhat = ghats.find((g) => g.id === selectedGhatId);
+      if (matchGhat) {
+        reportLat = matchGhat.lat;
+        reportLng = matchGhat.lng;
+      }
+    }
 
     setIsSubmitting(true);
     try {
@@ -170,9 +197,11 @@ export default function ReportIssueScreen() {
       const result = await IssueService.reportIssue({
         category,
         description: description.trim(),
-        location_type: locationType,
+        location_type: locationType === 'ghat' ? 'map_pin' : (locationType as any),
         lat: reportLat,
         lng: reportLng,
+        ghat_id: locationType === 'ghat' ? selectedGhatId : undefined,
+        reporter_phone: contactPhone.trim() || undefined,
         qr_zone_id: locationType === 'qr_zone' ? qrZoneId : undefined,
         photo_url: uploadedPhotoUrl,
       });
@@ -295,7 +324,7 @@ export default function ReportIssueScreen() {
                   style={[
                     styles.categoryLabel,
                     { fontFamily: isSelected ? fontFamilyBold : fontFamily },
-                    isSelected && { color: '#0F52BA' },
+                    isSelected && { color: colors.primary[700] },
                   ]}
                   numberOfLines={2}
                 >
@@ -325,6 +354,15 @@ export default function ReportIssueScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={[styles.locationTypePill, locationType === 'ghat' && styles.locationTypePillActive]}
+            onPress={() => setLocationType('ghat')}
+          >
+            <Text style={[styles.locationTypePillText, locationType === 'ghat' && styles.locationTypePillTextActive, { fontFamily }]}>
+              🏛️ Select Ghat
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.locationTypePill, locationType === 'qr_zone' && styles.locationTypePillActive]}
             onPress={() => setLocationType('qr_zone')}
           >
@@ -348,12 +386,41 @@ export default function ReportIssueScreen() {
               </View>
               <TouchableOpacity style={styles.refreshGpsBtn} onPress={detectLocation} disabled={isDetectingGps}>
                 {isDetectingGps ? (
-                  <ActivityIndicator size="small" color="#0F52BA" />
+                  <ActivityIndicator size="small" color={colors.primary[600]} />
                 ) : (
                   <Text style={styles.refreshGpsText}>🔄</Text>
                 )}
               </TouchableOpacity>
             </View>
+          </View>
+        ) : locationType === 'ghat' ? (
+          <View style={styles.ghatSelectorBox}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.ghatChipRow}>
+              {ghats.map((g) => {
+                const isCur = g.id === selectedGhatId;
+                return (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={[styles.ghatChip, isCur && styles.ghatChipActive]}
+                    onPress={() => {
+                      setSelectedGhatId(g.id);
+                      setLat(g.lat);
+                      setLng(g.lng);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.ghatChipText,
+                        isCur && styles.ghatChipTextActive,
+                        { fontFamily: isCur ? fontFamilyBold : fontFamily },
+                      ]}
+                    >
+                      {getLocalizedText(g.name, language)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         ) : (
           <View style={styles.zoneInputBox}>
@@ -380,6 +447,19 @@ export default function ReportIssueScreen() {
           multiline
           numberOfLines={4}
           textAlignVertical="top"
+        />
+
+        {/* Contact Phone (Optional) */}
+        <Text style={[styles.sectionHeading, { fontFamily: fontFamilyBold, marginTop: 20 }]}>
+          {t('issues.form.phone_label', 'Contact Phone (Optional)')}
+        </Text>
+        <TextInput
+          style={[styles.input, { fontFamily }]}
+          value={contactPhone}
+          onChangeText={setContactPhone}
+          placeholder={t('issues.form.phone_placeholder', 'e.g. 9876543210 for responders to reach you')}
+          placeholderTextColor="#9CA3AF"
+          keyboardType="phone-pad"
         />
 
         {/* Photo Attachment */}
@@ -446,7 +526,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 50,
     paddingBottom: 16,
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
   },
   backBtn: {
     width: 36,
@@ -481,7 +561,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   myReportsBtnText: {
-    color: '#0F52BA',
+    color: colors.primary[700],
     fontSize: 12,
     fontWeight: '700',
   },
@@ -513,8 +593,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   categoryCardSelected: {
-    borderColor: '#0F52BA',
-    backgroundColor: '#EFF6FF',
+    borderColor: colors.primary[600],
+    backgroundColor: colors.primary[50],
   },
   categoryIcon: {
     fontSize: 32,
@@ -532,7 +612,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -554,7 +634,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   locationTypePillActive: {
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
   },
   locationTypePillText: {
     fontSize: 13,
@@ -562,6 +642,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   locationTypePillTextActive: {
+    color: '#FFFFFF',
+  },
+  ghatSelectorBox: {
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 10,
+  },
+  ghatChipRow: {
+    gap: 8,
+  },
+  ghatChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D6D3D1',
+    backgroundColor: '#FAFAF9',
+  },
+  ghatChipActive: {
+    backgroundColor: colors.primary[600],
+    borderColor: colors.primary[600],
+  },
+  ghatChipText: {
+    fontSize: 13,
+    color: '#44403C',
+  },
+  ghatChipTextActive: {
     color: '#FFFFFF',
   },
   gpsDisplayBox: {
@@ -665,12 +775,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   submitButton: {
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 28,
-    shadowColor: '#0F52BA',
+    shadowColor: colors.primary[600],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -761,11 +871,11 @@ const styles = StyleSheet.create({
   ticketPillValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#0F52BA',
+    color: colors.primary[700],
     letterSpacing: 1.5,
   },
   primaryBtn: {
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',

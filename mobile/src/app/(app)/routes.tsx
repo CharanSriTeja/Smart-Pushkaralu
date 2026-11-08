@@ -26,9 +26,17 @@ export default function RoutesPage() {
     };
   }
 
+  const initialTab =
+    params.mode === 'directions' || params.tab === 'directions'
+      ? 'directions'
+      : params.tab === 'saved'
+      ? 'saved'
+      : 'plan';
+
   return (
     <RoutePlannerScreen
       initialGhat={initialGhat}
+      initialTab={initialTab}
       onBack={() => router.back()}
     />
   );

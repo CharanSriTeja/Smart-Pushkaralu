@@ -5,7 +5,9 @@
 
 export const colors = {
   // Backgrounds
-  background: '#FFFBF7', // Soft warm white as primary screen background
+  background: '#FFFBF7',
+  backgroundDefault: '#FFFBF7',
+  backgroundPaper: '#FFFFFF',
   surface: '#FFFFFF', // Clean card/sheet surface
   surfaceWarm: '#FFFBF7',
   
@@ -16,15 +18,45 @@ export const colors = {
   primary600: '#EA580C',
   primary700: '#C2410C', // Compliant with white text (5.18:1)
   
+  primary: {
+    50: '#FFF7ED',
+    100: '#FFEDD5',
+    500: '#F97316',
+    600: '#EA580C',
+    700: '#C2410C',
+    800: '#9A3412',
+    main: '#EA580C',
+  },
+  
   // Aliases for convenience
-  primary: '#C2410C',
   primaryLight: '#FFF7ED',
   primaryDark: '#9A3412',
   
+  // Neutrals palette
+  neutral: {
+    50: '#FAFAF9',
+    100: '#F5F5F4',
+    200: '#E7E5E4',
+    300: '#D6D3D1',
+    400: '#A8A29E',
+    500: '#78716C',
+    600: '#57534E',
+    700: '#44403C',
+    800: '#292524',
+    900: '#1C1917',
+  },
+  
   // Text
-  text: '#1C1917', // High contrast dark text (17.5:1 on white)
+  text: {
+    primary: '#1C1917',
+    secondary: '#57534E',
+    muted: '#57534E',
+    inverse: '#FFFFFF',
+    light: '#78716C',
+    orange: '#C2410C',
+  },
   textPrimary: '#1C1917',
-  textMuted: '#57534E', // Compliant secondary text (7.6:1 on white)
+  textMuted: '#57534E',
   textSecondary: '#57534E',
   textLight: '#78716C',
   textInverse: '#FFFFFF',
@@ -65,6 +97,15 @@ export const colors = {
 };
 
 export const spacing = {
+  0: 0,
+  1: 4,
+  2: 8,
+  3: 12,
+  4: 16,
+  5: 20,
+  6: 24,
+  8: 32,
+  10: 40,
   xs: 4,
   sm: 8,
   md: 16,
@@ -79,6 +120,7 @@ export const radii = {
   md: 12,
   lg: 16,
   xl: 20,
+  full: 9999,
   pill: 9999,
 };
 
@@ -122,6 +164,27 @@ export const shadows = {
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
     shadowRadius: 0,
+  },
+  sm: {
+    elevation: 2,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+  },
+  md: {
+    elevation: 4,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  lg: {
+    elevation: 6,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
   card: {
     elevation: 2,

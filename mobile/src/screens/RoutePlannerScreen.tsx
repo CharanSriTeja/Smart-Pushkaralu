@@ -9,25 +9,9 @@ import {
   Linking,
   Alert,
   Platform,
-  TextInput,
+  Share,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-// Conditionally import react-native-maps to avoid SSR crash in Expo Router
-// (codegenNativeComponent is not available in Node.js render environment)
-let MapView: any = null;
-let Marker: any = null;
-let Polyline: any = null;
-let UrlTile: any = null;
-
-try {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-  Polyline = Maps.Polyline;
-  UrlTile = Maps.UrlTile;
-} catch (_err) {
-  // react-native-maps not available in this environment (SSR / web)
-}
 import { acquireUserLocation } from '../utils/location';
 import { GhatService } from '../services/ghatService';
 import {
@@ -51,6 +35,50 @@ import {
 } from '../types/routes';
 import { decodePolylineCoordinates } from '../utils/polyline';
 import { WebLeafletMap, MapMarkerItem } from '../components/WebLeafletMap';
+import { storage } from '../utils/storage';
+import { colors, radii, spacing, touchTargets, typography, shadows } from '../theme/tokens';
+import {
+  Card,
+  Button,
+  SearchField,
+  Chip,
+  BathingBadge,
+  CrowdBadge,
+  Stepper,
+  EmptyState,
+  ErrorState,
+} from '../components';
+
+// Conditionally import react-native-maps for native rendering
+let MapView: any = null;
+let Marker: any = null;
+let Polyline: any = null;
+let UrlTile: any = null;
+
+try {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+  Polyline = Maps.Polyline;
+  UrlTile = Maps.UrlTile;
+} catch (_err) {
+  // Not available in web / SSR
+}
+
+export interface SavedTrip {
+  id: string;
+  originName: string;
+  destinationName: string;
+  ghatId: string;
+  lat: number;
+  lng: number;
+  date: string;
+  mode: RouteMode;
+  preferences: string[];
+  createdAt: string;
+}
+
+const SAVED_TRIPS_STORAGE_KEY = 'saved_pushkaralu_trips';
 
 interface RoutePlannerScreenProps {
   initialGhat?: {
@@ -59,20 +87,25 @@ interface RoutePlannerScreenProps {
     lat: number;
     lng: number;
   };
+  initialTab?: 'plan' | 'directions' | 'saved';
   onBack?: () => void;
 }
 
 export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
   initialGhat,
+  initialTab = 'plan',
   onBack,
 }) => {
   const { t, i18n } = useTranslation();
   const currentLang = (i18n.language || 'en').slice(0, 2) as 'en' | 'te' | 'hi';
 
+  const [activeMainTab, setActiveMainTab] = useState<'plan' | 'directions' | 'saved'>(initialTab);
+
+  // --- Common Routing State ---
   const [currentGhat, setCurrentGhat] = useState<any>(initialGhat || null);
   const [allGhats, setAllGhats] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAllPicker, setShowAllPicker] = useState(false);
+  const [showGhatSearch, setShowGhatSearch] = useState(false);
 
   const [origins, setOrigins] = useState<RouteOrigin[]>([]);
   const [selectedOrigin, setSelectedOrigin] = useState<RouteOrigin | null>(null);
@@ -84,15 +117,44 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
 
   const [mode, setMode] = useState<RouteMode>('car');
   const [loading, setLoading] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
   const [routeResult, setRouteResult] = useState<RouteResult | DegradedRouteResult | null>(null);
 
-  // Corridor Temples
+  // Corridor Temples & Closures
   const [corridorTemples, setCorridorTemples] = useState<RouteTemple[]>([]);
   const [selectedWaypoints, setSelectedWaypoints] = useState<RouteTemple[]>([]);
   const [loadingTemples, setLoadingTemples] = useState(false);
-
-  // Active Closures
   const [closures, setClosures] = useState<RouteClosure[]>([]);
+
+  // --- Trip Planner Wizard State ---
+  const [wizardStep, setWizardStep] = useState(0); // 0: Origin, 1: Destination, 2: Preferences, 3: Summary
+  const [tripDate, setTripDate] = useState('2027-07-14'); // Opening Day of 2027 Maha Pushkaram
+  const [selectedPrefs, setSelectedPrefs] = useState<string[]>(['changing_rooms']);
+  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  const wizardSteps = [
+    { label: 'Origin' },
+    { label: 'Ghat' },
+    { label: 'Date & Mode' },
+    { label: 'Summary' },
+  ];
+
+  const pushkaraluDates = [
+    { id: '2027-07-14', label: '14 Jul (Inaugural Day)' },
+    { id: '2027-07-15', label: '15 Jul (Pushkar Snanam)' },
+    { id: '2027-07-16', label: '16 Jul' },
+    { id: '2027-07-18', label: '18 Jul (Auspicious Sunday)' },
+    { id: '2027-07-20', label: '20 Jul' },
+    { id: '2027-07-25', label: '25 Jul (Closing Day)' },
+  ];
+
+  const preferenceOptions = [
+    { id: 'changing_rooms', label: 'Changing Rooms Available' },
+    { id: 'drinking_water', label: 'Filtered Drinking Water' },
+    { id: 'elderly_access', label: 'Elderly / Wheelchair Ramp' },
+    { id: 'medical_aid', label: 'First Aid / Medical Camp' },
+  ];
 
   useEffect(() => {
     if (initialGhat) {
@@ -100,7 +162,7 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
     }
   }, [initialGhat]);
 
-  // Load origins & closures on mount
+  // Load origins, closures, and ghats on mount
   useEffect(() => {
     fetchRouteOrigins().then((data) => {
       setOrigins(data);
@@ -119,6 +181,15 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
         }
       })
       .catch(() => {});
+
+    // Load saved trips from local storage
+    storage.getItem(SAVED_TRIPS_STORAGE_KEY).then((raw) => {
+      if (raw) {
+        try {
+          setSavedTrips(JSON.parse(raw));
+        } catch {}
+      }
+    });
   }, []);
 
   // Load access points when ghat changes
@@ -135,32 +206,30 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
     }
   }, [currentGhat?.id]);
 
-  // Request GPS permission and acquire position
   const handleUseMyLocation = async () => {
     setLoading(true);
     try {
       const locResult = await acquireUserLocation();
       if (!locResult.granted || !locResult.coords) {
-        Alert.alert(t('common.error'), t('routes.location_prompt'));
+        Alert.alert(t('common.error', 'Error'), t('routes.location_prompt', 'Please enable location permissions.'));
         return;
       }
 
       const myCoord = {
         lat: locResult.coords.latitude,
         lng: locResult.coords.longitude,
-        name: t('routes.use_my_location'),
+        name: t('routes.use_my_location', 'Current Location'),
       };
       setGpsOrigin(myCoord);
       setUsingGps(true);
       setSelectedOrigin(null);
     } catch {
-      Alert.alert(t('common.error'), 'Could not acquire current location.');
+      Alert.alert(t('common.error', 'Error'), 'Could not acquire GPS coordinates.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Determine active start coordinates
   const activeOriginCoord = useMemo(() => {
     if (usingGps && gpsOrigin) {
       return { lat: gpsOrigin.lat, lng: gpsOrigin.lng };
@@ -171,7 +240,6 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
     return null;
   }, [usingGps, gpsOrigin, selectedOrigin]);
 
-  // Determine active destination coordinates
   const activeDestCoord = useMemo(() => {
     if (selectedAccessPoint) {
       return { lat: selectedAccessPoint.lat, lng: selectedAccessPoint.lng };
@@ -179,17 +247,15 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
     if (currentGhat?.lat != null && currentGhat?.lng != null) {
       return { lat: Number(currentGhat.lat), lng: Number(currentGhat.lng) };
     }
-    if (currentGhat?.latitude != null && currentGhat?.longitude != null) {
-      return { lat: Number(currentGhat.latitude), lng: Number(currentGhat.longitude) };
-    }
     return null;
   }, [selectedAccessPoint, currentGhat]);
 
-  // Calculate or re-calculate primary route
+  // Calculate live route
   const handleCalculateRoute = useCallback(async () => {
     if (!activeOriginCoord || !activeDestCoord) return;
 
     setLoading(true);
+    setRouteError(null);
     try {
       let result: RouteResult | DegradedRouteResult;
 
@@ -212,7 +278,6 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
 
       setRouteResult(result);
 
-      // If full route calculated, fetch corridor temples
       if ('encodedPolyline' in result && result.encodedPolyline) {
         setLoadingTemples(true);
         fetchTemplesAlongRoute(result.encodedPolyline, 3)
@@ -220,34 +285,32 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
           .finally(() => setLoadingTemples(false));
       }
     } catch (err: any) {
-      Alert.alert(t('common.error'), err.message || 'Routing failed.');
+      console.warn('[RoutePlannerScreen] Calculation failed:', err);
+      setRouteError(err.message || 'Routing service is temporarily unreachable.');
     } finally {
       setLoading(false);
     }
-  }, [activeOriginCoord, activeDestCoord, selectedWaypoints, mode, currentGhat?.id, t]);
+  }, [activeOriginCoord, activeDestCoord, selectedWaypoints, mode, currentGhat?.id]);
 
-  // Recalculate when start/end/mode changes
   useEffect(() => {
-    if (activeOriginCoord && activeDestCoord) {
+    if (activeMainTab === 'directions' && activeOriginCoord && activeDestCoord) {
       handleCalculateRoute();
     }
-  }, [activeOriginCoord, activeDestCoord, mode]);
+  }, [activeMainTab, activeOriginCoord, activeDestCoord, mode]);
 
-  // Toggle temple waypoint
   const handleToggleWaypoint = (temple: RouteTemple) => {
     const isSelected = selectedWaypoints.some((w) => w.id === temple.id);
     if (isSelected) {
       setSelectedWaypoints((prev) => prev.filter((w) => w.id !== temple.id));
     } else {
       if (selectedWaypoints.length >= 3) {
-        Alert.alert(t('routes.title'), t('routes.max_stops_reached'));
+        Alert.alert('Maximum Stops', 'You can add up to 3 temple stops along the route.');
         return;
       }
       setSelectedWaypoints((prev) => [...prev, temple]);
     }
   };
 
-  // Decode polyline points for map
   const routeCoordinates = useMemo(() => {
     if (routeResult && 'encodedPolyline' in routeResult && routeResult.encodedPolyline) {
       return decodePolylineCoordinates(routeResult.encodedPolyline);
@@ -255,13 +318,14 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
     return [];
   }, [routeResult]);
 
-  // Open Google Maps Universal Link
-  const handleOpenGoogleMaps = () => {
-    if (routeResult?.googleMapsLink) {
-      Linking.openURL(routeResult.googleMapsLink).catch(() => {
-        Alert.alert(t('common.error'), 'Could not launch Google Maps.');
-      });
-    }
+  const handleOpenExternalMaps = () => {
+    if (!activeDestCoord) return;
+    const origStr = activeOriginCoord ? `${activeOriginCoord.lat},${activeOriginCoord.lng}` : '';
+    const destStr = `${activeDestCoord.lat},${activeDestCoord.lng}`;
+    const url = activeOriginCoord
+      ? `https://www.google.com/maps/dir/?api=1&origin=${origStr}&destination=${destStr}`
+      : `https://www.google.com/maps/search/?api=1&query=${destStr}`;
+    Linking.openURL(url).catch(() => {});
   };
 
   const getLocalized = (val: any) => {
@@ -273,740 +337,1090 @@ export const RoutePlannerScreen: React.FC<RoutePlannerScreenProps> = ({
     return String(val);
   };
 
-  const filteredGhats = useMemo(() => {
-    if (!Array.isArray(allGhats)) return [];
-    if (!searchQuery.trim()) return allGhats.slice(0, 15);
-    const q = searchQuery.toLowerCase().trim();
-    return allGhats.filter((g: any) => {
-      if (!g) return false;
-      const name = getLocalized(g.name).toLowerCase();
-      const dist = (g.district || '').toLowerCase();
-      return name.includes(q) || dist.includes(q);
-    });
-  }, [allGhats, searchQuery, currentLang]);
+  // --- Save & Share Trip Functions ---
+  const handleSaveTrip = async () => {
+    if (!currentGhat) return;
+
+    const originName = usingGps
+      ? 'Current GPS Location'
+      : selectedOrigin
+      ? getLocalized(selectedOrigin.name)
+      : 'Central Transit Hub';
+
+    const newTrip: SavedTrip = {
+      id: `trip_${Date.now()}`,
+      originName,
+      destinationName: getLocalized(currentGhat.name),
+      ghatId: currentGhat.id,
+      lat: Number(currentGhat.lat),
+      lng: Number(currentGhat.lng),
+      date: tripDate,
+      mode,
+      preferences: selectedPrefs,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [newTrip, ...savedTrips.filter((t) => t.ghatId !== currentGhat.id)];
+    setSavedTrips(updated);
+    await storage.setItem(SAVED_TRIPS_STORAGE_KEY, JSON.stringify(updated));
+    setSaveSuccessMsg('Trip saved to your pilgrimage itineraries!');
+    setTimeout(() => setSaveSuccessMsg(null), 4000);
+  };
+
+  const handleShareTrip = async () => {
+    const originName = usingGps
+      ? 'Current Location'
+      : selectedOrigin
+      ? getLocalized(selectedOrigin.name)
+      : 'Rajahmundry';
+    const ghatName = getLocalized(currentGhat?.name) || 'Pushkar Ghat';
+
+    const message = `🕉️ Smart Pushkaralu 2027 Pilgrimage Plan:\n` +
+      `• Origin: ${originName}\n` +
+      `• Destination: ${ghatName} (${currentGhat?.district || 'East Godavari'})\n` +
+      `• Date: ${tripDate}\n` +
+      `• Travel Mode: ${mode.toUpperCase()}\n` +
+      `• Recommended Snanam Timings: 05:30 AM - 08:30 AM\n\n` +
+      `View official ghat advisory: https://smartpushkaralu.ap.gov.in`;
+
+    try {
+      await Share.share({ message });
+    } catch {}
+  };
+
+  const handleDeleteSavedTrip = async (tripId: string) => {
+    const updated = savedTrips.filter((t) => t.id !== tripId);
+    setSavedTrips(updated);
+    await storage.setItem(SAVED_TRIPS_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const handleOpenSavedTrip = (trip: SavedTrip) => {
+    const match = allGhats.find((g) => g.id === trip.ghatId);
+    if (match) setCurrentGhat(match);
+    setMode(trip.mode);
+    setTripDate(trip.date);
+    setActiveMainTab('directions');
+  };
 
   return (
     <View style={styles.container}>
-      {/* Top Header */}
-      <View style={styles.header}>
+      {/* Top Navbar */}
+      <View style={styles.topNav}>
         {onBack && (
-          <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+          <TouchableOpacity
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            style={styles.backBtn}
+          >
             <Text style={styles.backBtnText}>←</Text>
           </TouchableOpacity>
         )}
         <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerTitle}>{t('routes.title')}</Text>
-          <Text style={styles.headerSubtitle} numberOfLines={1}>
-            {getLocalized(currentGhat?.name) || t('routes.destination_label')}
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={styles.headerTitle}
+          >
+            {activeMainTab === 'plan'
+              ? 'Yatra Trip Planner'
+              : activeMainTab === 'saved'
+              ? 'Saved Itineraries'
+              : 'Live Route & Directions'}
+          </Text>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={styles.headerSubtitle}
+            numberOfLines={1}
+          >
+            {getLocalized(currentGhat?.name) || 'Godavari Maha Pushkaralu 2027'}
           </Text>
         </View>
       </View>
 
-      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollInner}>
-        {/* Origin Selector */}
-        <View style={styles.card}>
-          <Text style={styles.sectionLabel}>{t('routes.origin_label')}</Text>
-          <TouchableOpacity
-            style={[styles.gpsButton, usingGps && styles.gpsButtonActive]}
-            onPress={handleUseMyLocation}
-          >
-            <Text style={[styles.gpsButtonText, usingGps && styles.gpsButtonTextActive]}>
-              📍 {usingGps ? t('routes.use_my_location') : t('routes.use_my_location')}
-            </Text>
-          </TouchableOpacity>
+      {/* Main Tab Switcher */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          onPress={() => setActiveMainTab('plan')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeMainTab === 'plan' }}
+          style={[styles.tabButton, activeMainTab === 'plan' && styles.tabButtonActive]}
+        >
+          <Text style={[styles.tabText, activeMainTab === 'plan' && styles.tabTextActive]}>
+            🧭 Plan a Trip
+          </Text>
+        </TouchableOpacity>
 
-          <Text style={styles.orDivider}>— {t('common.search')} {t('routes.select_origin')} —</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.originsScroll}>
-            {origins.map((orig) => {
-              const isSelected = !usingGps && selectedOrigin?.id === orig.id;
-              return (
-                <TouchableOpacity
-                  key={orig.id}
-                  style={[styles.originChip, isSelected && styles.originChipActive]}
-                  onPress={() => {
-                    setUsingGps(false);
-                    setSelectedOrigin(orig);
-                  }}
-                >
-                  <Text style={[styles.originChipText, isSelected && styles.originChipTextActive]}>
-                    {getLocalized(orig.name)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+        <TouchableOpacity
+          onPress={() => setActiveMainTab('directions')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeMainTab === 'directions' }}
+          style={[styles.tabButton, activeMainTab === 'directions' && styles.tabButtonActive]}
+        >
+          <Text style={[styles.tabText, activeMainTab === 'directions' && styles.tabTextActive]}>
+            🚗 Directions
+          </Text>
+        </TouchableOpacity>
 
-        {/* Destination Ghat Selector Card */}
-        <View style={styles.card}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionLabel}>🎯 {t('routes.destination_label', 'Destination Ghat')}</Text>
-            <TouchableOpacity
-              onPress={() => setShowAllPicker(!showAllPicker)}
-              style={styles.browseAllBtn}
-            >
-              <Text style={styles.browseAllBtnText}>
-                {showAllPicker ? 'Hide Search' : '🔍 Search All Ghats'}
+        <TouchableOpacity
+          onPress={() => setActiveMainTab('saved')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeMainTab === 'saved' }}
+          style={[styles.tabButton, activeMainTab === 'saved' && styles.tabButtonActive]}
+        >
+          <Text style={[styles.tabText, activeMainTab === 'saved' && styles.tabTextActive]}>
+            📋 Saved ({savedTrips.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ========================================================================= */}
+      {/* TAB 1: STEP-BY-STEP TRIP PLANNER WIZARD                                    */}
+      {/* ========================================================================= */}
+      {activeMainTab === 'plan' && (
+        <ScrollView contentContainerStyle={styles.scrollInner} showsVerticalScrollIndicator={false}>
+          {/* Stepper Progress */}
+          <Stepper steps={wizardSteps} currentStep={wizardStep} />
+
+          {/* STEP 0: Select Starting Origin */}
+          {wizardStep === 0 && (
+            <Card variant="elevated" style={styles.wizardCard}>
+              <Text style={styles.wizardTitle}>Step 1: Choose Starting Location</Text>
+              <Text style={styles.wizardDesc}>
+                Select where your pilgrimage will begin (GPS location, nearest railway station or central bus hub).
               </Text>
-            </TouchableOpacity>
-          </View>
 
-          {/* Currently Selected Ghat Banner */}
-          <View style={styles.selectedGhatBanner}>
-            <Text style={styles.selectedGhatName}>
-              🌊 {getLocalized(currentGhat?.name)}
-            </Text>
-            {currentGhat?.district && (
-              <Text style={styles.selectedGhatDistrict}>
-                {currentGhat.district} District
-              </Text>
-            )}
-          </View>
-
-          {/* Search box if opened */}
-          {showAllPicker && (
-            <View style={styles.searchBoxContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Type ghat name or district..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholderTextColor="#90A4AE"
-              />
-              <ScrollView style={styles.searchResultsList} nestedScrollEnabled>
-                {filteredGhats.slice(0, 15).map((g) => (
-                  <TouchableOpacity
-                    key={g.id}
-                    style={styles.searchResultItem}
-                    onPress={() => {
-                      setCurrentGhat(g);
-                      setShowAllPicker(false);
-                      setSearchQuery('');
-                    }}
-                  >
-                    <Text style={styles.searchResultTitle}>{getLocalized(g.name)}</Text>
-                    <Text style={styles.searchResultSub}>{g.district} • {g.river}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Official Ghat Destinations Chips */}
-          <Text style={styles.popularGhatsLabel}>{t('routes.popular_ghats') || 'Pilgrimage Ghats:'}</Text>
-          {allGhats.length === 0 ? (
-            <Text style={{ fontSize: 13, color: '#64748B', paddingVertical: 8, paddingHorizontal: 4 }}>
-              {t('routes.no_ghats_found') || 'Loading ghats from official registry...'}
-            </Text>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.originsScroll}>
-              {allGhats.slice(0, 10).map((g) => {
-                const isSelected = currentGhat?.id === g.id;
-                return (
-                  <TouchableOpacity
-                    key={g.id}
-                    style={[styles.originChip, isSelected && styles.destChipActive]}
-                    onPress={() => setCurrentGhat(g)}
-                  >
-                    <Text style={[styles.originChipText, isSelected && styles.originChipTextActive]}>
-                      {getLocalized(g.name)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-        </View>
-
-        {/* Destination Access Point Selector */}
-        {accessPoints.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.sectionLabel}>{t('routes.access_point_label')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.apScroll}>
-              {accessPoints.map((ap) => {
-                const isSelected = selectedAccessPoint?.id === ap.id;
-                const precisionLabel = t(`routes.precision.${ap.coordinates_precision}`);
-                return (
-                  <TouchableOpacity
-                    key={ap.id}
-                    style={[styles.apCard, isSelected && styles.apCardActive]}
-                    onPress={() => setSelectedAccessPoint(ap)}
-                  >
-                    <Text style={[styles.apCardTitle, isSelected && styles.apCardTitleActive]}>
-                      {getLocalized(ap.name)}
-                    </Text>
-                    <View style={styles.precisionBadge}>
-                      <Text style={styles.precisionBadgeText}>{precisionLabel}</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Travel Mode Selector */}
-        <View style={styles.modeRow}>
-          {(['car', 'bike', 'walk', 'bus', 'train'] as RouteMode[]).map((m) => {
-            const isSelected = mode === m;
-            return (
               <TouchableOpacity
-                key={m}
-                style={[styles.modeTab, isSelected && styles.modeTabActive]}
-                onPress={() => setMode(m)}
+                onPress={handleUseMyLocation}
+                style={[styles.gpsActionBtn, usingGps && styles.gpsActionBtnActive]}
+                accessibilityRole="button"
               >
-                <Text style={[styles.modeTabText, isSelected && styles.modeTabTextActive]}>
-                  {m === 'car' && '🚗'}
-                  {m === 'bike' && '🏍️'}
-                  {m === 'walk' && '🚶'}
-                  {m === 'bus' && '🚌'}
-                  {m === 'train' && '🚆'}
-                  {'\n'}
-                  {t(`routes.modes.${m}`)}
+                <Text style={styles.gpsActionIcon}>📍</Text>
+                <Text style={[styles.gpsActionText, usingGps && styles.gpsActionTextActive]}>
+                  {usingGps ? 'Using Current GPS Location ✓' : 'Use Current GPS Location'}
                 </Text>
               </TouchableOpacity>
-            );
-          })}
-        </View>
 
-        {/* Bike Speed Notice */}
-        {mode === 'bike' && (
-          <View style={styles.noticeBox}>
-            <Text style={styles.noticeText}>ℹ️ {t('routes.bike_estimate_notice')}</Text>
-          </View>
-        )}
+              <Text style={styles.orDivider}>— or choose official starting hub —</Text>
 
-        {/* Transit Handoff Card for Bus and Train */}
-        {(mode === 'bus' || mode === 'train') && (
-          <View style={styles.transitCard}>
-            <Text style={styles.transitCardTitle}>{t('routes.transit_title')}</Text>
-            <Text style={styles.transitCardDesc}>{t('routes.transit_desc')}</Text>
-            <TouchableOpacity style={styles.openGoogleMapsBtn} onPress={handleOpenGoogleMaps}>
-              <Text style={styles.openGoogleMapsBtnText}>{t('routes.open_google_maps')} ↗</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              <View style={styles.originsGrid}>
+                {origins.map((orig) => {
+                  const isSelected = !usingGps && selectedOrigin?.id === orig.id;
+                  return (
+                    <Chip
+                      key={orig.id}
+                      label={getLocalized(orig.name)}
+                      selected={isSelected}
+                      onPress={() => {
+                        setUsingGps(false);
+                        setSelectedOrigin(orig);
+                      }}
+                    />
+                  );
+                })}
+              </View>
 
-        {/* Map View */}
-        <View style={styles.mapContainer}>
-          {Platform.OS === 'web' && activeOriginCoord && activeDestCoord ? (
-            <WebLeafletMap
-              customMarkers={[
-                {
-                  id: 'origin',
-                  lat: activeOriginCoord.lat,
-                  lng: activeOriginCoord.lng,
-                  title: 'Start: ' + (usingGps ? 'My Location' : (selectedOrigin ? getLocalized(selectedOrigin.name) : 'Origin')),
-                  color: '#16A34A',
-                },
-                {
-                  id: 'destination',
-                  lat: activeDestCoord.lat,
-                  lng: activeDestCoord.lng,
-                  title: 'Ghat: ' + (selectedAccessPoint ? getLocalized(selectedAccessPoint.name) : getLocalized(currentGhat?.name)),
-                  color: '#EA580C',
-                },
-                ...selectedWaypoints.map((wp) => ({
-                  id: wp.id,
-                  lat: wp.lat,
-                  lng: wp.lng,
-                  title: '🛕 ' + getLocalized(wp.name),
-                  subtitle: wp.district ? `${wp.district} (Corridor Temple)` : 'Corridor Temple',
-                  color: '#9333EA',
-                })),
-                ...closures.filter(c => c.geometry?.coordinates).map((c) => ({
-                  id: c.id,
-                  lat: c.geometry.coordinates[1],
-                  lng: c.geometry.coordinates[0],
-                  title: '⚠️ ' + getLocalized(c.title),
-                  subtitle: getLocalized(c.description) || 'Traffic Closure / Diversion',
-                  color: c.severity === 'blocked' ? '#DC2626' : '#F59E0B',
-                })),
-              ]}
-              polylineCoords={routeCoordinates}
-              center={{
-                lat: (activeOriginCoord.lat + activeDestCoord.lat) / 2,
-                lng: (activeOriginCoord.lng + activeDestCoord.lng) / 2,
-              }}
-              zoom={10}
-              language={currentLang}
-            />
-          ) : activeOriginCoord && activeDestCoord && MapView ? (
-            <MapView
-              style={styles.map}
-              initialRegion={{
-                latitude: (activeOriginCoord.lat + activeDestCoord.lat) / 2,
-                longitude: (activeOriginCoord.lng + activeDestCoord.lng) / 2,
-                latitudeDelta: Math.abs(activeOriginCoord.lat - activeDestCoord.lat) * 1.5 + 0.05,
-                longitudeDelta: Math.abs(activeOriginCoord.lng - activeDestCoord.lng) * 1.5 + 0.05,
-              }}
-            >
-              {/* OSM tile overlay */}
-              {UrlTile && (
-                <UrlTile
-                  urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  maximumZ={19}
-                  flipY={false}
-                  zIndex={-1}
+              <View style={styles.wizardActions}>
+                <Button
+                  title="Next: Select Ghat →"
+                  variant="primary"
+                  size="md"
+                  onPress={() => setWizardStep(1)}
+                  style={{ flex: 1 }}
                 />
-              )}
-
-              {/* Polyline */}
-              {Polyline && routeCoordinates.length > 0 && (
-                <Polyline
-                  coordinates={routeCoordinates}
-                  strokeColor="#E65100"
-                  strokeWidth={4}
-                />
-              )}
-
-              {/* Start Marker */}
-              {Marker && (
-                <Marker
-                  coordinate={{ latitude: activeOriginCoord.lat, longitude: activeOriginCoord.lng }}
-                  title={t('routes.origin_label')}
-                  pinColor="green"
-                />
-              )}
-
-              {/* Destination Access Point Marker */}
-              {Marker && (
-                <Marker
-                  coordinate={{ latitude: activeDestCoord.lat, longitude: activeDestCoord.lng }}
-                  title={selectedAccessPoint ? getLocalized(selectedAccessPoint.name) : getLocalized(currentGhat?.name)}
-                  pinColor="orange"
-                />
-              )}
-
-              {/* Waypoint Markers */}
-              {Marker && selectedWaypoints.map((wp) => (
-                <Marker
-                  key={wp.id}
-                  coordinate={{ latitude: wp.lat, longitude: wp.lng }}
-                  title={getLocalized(wp.name)}
-                  pinColor="purple"
-                />
-              ))}
-
-              {/* Closure Markers */}
-              {Marker && closures.map((c) => {
-                if (!c.geometry?.coordinates) return null;
-                const coords = c.geometry.coordinates;
-                const lat = coords[1];
-                const lng = coords[0];
-                return (
-                  <Marker
-                    key={c.id}
-                    coordinate={{ latitude: lat, longitude: lng }}
-                    title={getLocalized(c.title)}
-                    description={getLocalized(c.description)}
-                    pinColor={c.severity === 'blocked' ? 'red' : 'gold'}
-                  />
-                );
-              })}
-            </MapView>
-          ) : (
-            <View style={styles.mapPlaceholder}>
-              <Text>{t('routes.calculating')}</Text>
-            </View>
+              </View>
+            </Card>
           )}
 
-          {/* Attribution pill */}
-          <View style={styles.mapAttribution}>
-            <Text style={styles.attributionText}>{ROUTE_ATTRIBUTION_TEXT}</Text>
-          </View>
-        </View>
+          {/* STEP 1: Select Destination Ghat */}
+          {wizardStep === 1 && (
+            <Card variant="elevated" style={styles.wizardCard}>
+              <Text style={styles.wizardTitle}>Step 2: Choose Holy Bathing Ghat</Text>
+              <Text style={styles.wizardDesc}>
+                Select the holy bathing ghat you intend to visit. Status and crowd density are pulled directly from the official database.
+              </Text>
 
-        {/* Route Stats & Warnings */}
-        {loading ? (
-          <ActivityIndicator size="large" color="#E65100" style={{ marginVertical: 20 }} />
-        ) : routeResult ? (
-          <View style={styles.routeSummaryCard}>
-            {'degraded' in routeResult && routeResult.degraded ? (
-              <View>
-                <Text style={styles.degradedTitle}>⚠️ {routeResult.message}</Text>
-                <Text style={styles.statLabel}>
-                  {t('routes.distance')}: {(routeResult.straightLineDistanceMeters / 1000).toFixed(1)} km (Straight line)
-                </Text>
-              </View>
-            ) : (
-              <View>
-                <View style={styles.statsRow}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>{t('routes.distance')}</Text>
-                    <Text style={styles.statValue}>
-                      {((routeResult as RouteResult).distanceMeters / 1000).toFixed(1)} km
-                    </Text>
+              {/* Selected Ghat display */}
+              {currentGhat && (
+                <View style={styles.selectedGhatHighlight}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.highlightGhatName}>🌊 {getLocalized(currentGhat.name)}</Text>
+                    <Text style={styles.highlightGhatDistrict}>{currentGhat.district} District</Text>
                   </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>{t('routes.est_time')}</Text>
-                    <Text style={styles.statValue}>
-                      {Math.ceil((routeResult as RouteResult).estimatedDurationSeconds / 60)} mins
-                    </Text>
-                  </View>
+                  <BathingBadge status={currentGhat.bathing_status || 'allowed'} size="sm" />
                 </View>
+              )}
 
-                {(routeResult as RouteResult).delayFactor > 1.0 && (
-                  <Text style={styles.delayNote}>
-                    ⏱️ {t('routes.delay_notice', { factor: (routeResult as RouteResult).delayFactor.toFixed(1) })}
-                  </Text>
-                )}
+              {/* Ghat search field */}
+              <SearchField
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search official ghats..."
+                onClear={() => setSearchQuery('')}
+              />
 
-                {/* Warnings / Diversions */}
-                {(routeResult as RouteResult).warnings?.map((w, idx) => (
-                  <View key={idx} style={styles.warningBox}>
-                    <Text style={styles.warningText}>⚠️ {w}</Text>
-                  </View>
+              <ScrollView style={styles.ghatSelectionList} nestedScrollEnabled>
+                {allGhats
+                  .filter((g) => {
+                    if (!searchQuery.trim()) return true;
+                    const q = searchQuery.toLowerCase().trim();
+                    const name = getLocalized(g.name).toLowerCase();
+                    const dist = (g.district || '').toLowerCase();
+                    return name.includes(q) || dist.includes(q);
+                  })
+                  .slice(0, 10)
+                  .map((g) => {
+                    const isSelected = currentGhat?.id === g.id;
+                    return (
+                      <TouchableOpacity
+                        key={g.id}
+                        onPress={() => setCurrentGhat(g)}
+                        style={[styles.ghatPickRow, isSelected && styles.ghatPickRowSelected]}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.ghatPickName, isSelected && styles.ghatPickNameSelected]}>
+                            {getLocalized(g.name)}
+                          </Text>
+                          <Text style={styles.ghatPickDistrict}>{g.district}</Text>
+                        </View>
+                        <CrowdBadge crowd={g.crowd_level || 'low'} size="sm" />
+                      </TouchableOpacity>
+                    );
+                  })}
+              </ScrollView>
+
+              <View style={styles.wizardActions}>
+                <Button
+                  title="← Back"
+                  variant="outline"
+                  size="md"
+                  onPress={() => setWizardStep(0)}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="Next: Date & Mode →"
+                  variant="primary"
+                  size="md"
+                  onPress={() => setWizardStep(2)}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </Card>
+          )}
+
+          {/* STEP 2: Date & Travel Mode & Preferences */}
+          {wizardStep === 2 && (
+            <Card variant="elevated" style={styles.wizardCard}>
+              <Text style={styles.wizardTitle}>Step 3: Pilgrimage Date & Travel Mode</Text>
+
+              {/* Date selection */}
+              <Text style={styles.subSectionTitle}>Select Pushkaralu Snanam Date:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                {pushkaraluDates.map((d) => (
+                  <Chip
+                    key={d.id}
+                    label={d.label}
+                    selected={tripDate === d.id}
+                    onPress={() => setTripDate(d.id)}
+                  />
+                ))}
+              </ScrollView>
+
+              {/* Mode selection */}
+              <Text style={[styles.subSectionTitle, { marginTop: spacing.md }]}>Travel Mode:</Text>
+              <View style={styles.modeChipsGrid}>
+                {[
+                  { id: 'car', icon: '🚗', label: 'Car / Cab' },
+                  { id: 'bike', icon: '🛵', label: 'Two-Wheeler' },
+                  { id: 'walk', icon: '🚶', label: 'Walking' },
+                  { id: 'bus', icon: '🚌', label: 'Pushkar Shuttle' },
+                ].map((m) => (
+                  <Chip
+                    key={m.id}
+                    label={`${m.icon} ${m.label}`}
+                    selected={mode === m.id}
+                    onPress={() => setMode(m.id as RouteMode)}
+                  />
                 ))}
               </View>
-            )}
 
-            <TouchableOpacity style={styles.openGoogleMapsBtn} onPress={handleOpenGoogleMaps}>
-              <Text style={styles.openGoogleMapsBtnText}>{t('routes.open_google_maps')} ↗</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
+              {/* Preferences */}
+              <Text style={[styles.subSectionTitle, { marginTop: spacing.md }]}>Facility Preferences:</Text>
+              <View style={styles.preferencesList}>
+                {preferenceOptions.map((pref) => {
+                  const isChecked = selectedPrefs.includes(pref.id);
+                  return (
+                    <TouchableOpacity
+                      key={pref.id}
+                      onPress={() => {
+                        if (isChecked) {
+                          setSelectedPrefs((p) => p.filter((x) => x !== pref.id));
+                        } else {
+                          setSelectedPrefs((p) => [...p, pref.id]);
+                        }
+                      }}
+                      style={styles.prefRow}
+                    >
+                      <Text style={styles.prefCheckbox}>{isChecked ? '☑️' : '◻️'}</Text>
+                      <Text style={styles.prefLabel}>{pref.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-        {/* Corridor Temples */}
-        <View style={styles.card}>
-          <Text style={styles.sectionLabel}>{t('routes.temples_corridor_title')}</Text>
-          <Text style={styles.sectionSubLabel}>{t('routes.temples_corridor_subtitle')}</Text>
-          <Text style={styles.stopsCountBadge}>
-            {t('routes.stops_count', { count: selectedWaypoints.length })}
-          </Text>
+              <View style={styles.wizardActions}>
+                <Button
+                  title="← Back"
+                  variant="outline"
+                  size="md"
+                  onPress={() => setWizardStep(1)}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="Review Itinerary →"
+                  variant="primary"
+                  size="md"
+                  onPress={() => setWizardStep(3)}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </Card>
+          )}
 
-          {loadingTemples ? (
-            <ActivityIndicator size="small" color="#E65100" />
-          ) : corridorTemples.length === 0 ? (
-            <Text style={styles.emptyText}>No verified temples within 3 km of this route.</Text>
-          ) : (
-            corridorTemples.map((temple) => {
-              const isSelected = selectedWaypoints.some((w) => w.id === temple.id);
-              return (
-                <View key={temple.id} style={styles.templeRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.templeName}>{getLocalized(temple.name)}</Text>
-                    <Text style={styles.templeDist}>
-                      {temple.distance_from_route_m ? `${(temple.distance_from_route_m / 1000).toFixed(1)} km from route` : ''}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={[styles.stopToggleBtn, isSelected && styles.stopToggleBtnActive]}
-                    onPress={() => handleToggleWaypoint(temple)}
-                  >
-                    <Text style={[styles.stopToggleText, isSelected && styles.stopToggleTextActive]}>
-                      {isSelected ? t('routes.remove_stop') : `+ ${t('routes.add_stop')}`}
-                    </Text>
-                  </TouchableOpacity>
+          {/* STEP 3: Summary, Save & Share */}
+          {wizardStep === 3 && (
+            <Card variant="elevated" style={styles.wizardCard}>
+              <Text style={styles.wizardTitle}>Step 4: Itinerary Summary</Text>
+              <Text style={styles.wizardDesc}>
+                Review your customized pilgrimage plan. Save it for offline reference or share it with family members.
+              </Text>
+
+              {saveSuccessMsg && (
+                <View style={styles.successBanner}>
+                  <Text style={styles.successBannerText}>✓ {saveSuccessMsg}</Text>
                 </View>
-              );
-            })
+              )}
+
+              {/* Itinerary overview */}
+              <View style={styles.summaryBox}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Starting Point:</Text>
+                  <Text style={styles.summaryValue}>
+                    {usingGps
+                      ? 'Current GPS Location'
+                      : selectedOrigin
+                      ? getLocalized(selectedOrigin.name)
+                      : 'Central Hub'}
+                  </Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Destination Ghat:</Text>
+                  <Text style={styles.summaryValue}>
+                    {getLocalized(currentGhat?.name)} ({currentGhat?.district})
+                  </Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Date:</Text>
+                  <Text style={styles.summaryValue}>{tripDate}</Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Travel Mode:</Text>
+                  <Text style={styles.summaryValue}>{mode.toUpperCase()}</Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Recommended Snanam:</Text>
+                  <Text style={[styles.summaryValue, { color: colors.status.success }]}>
+                    05:30 AM – 08:30 AM (Brahma Muhurtam)
+                  </Text>
+                </View>
+              </View>
+
+              {/* Advisory note */}
+              <View style={styles.advisoryNotice}>
+                <Text style={styles.advisoryText}>
+                  ⚠️ Note: Vehicle parking permits and cordon passes are regulated by the police on peak bathing days.
+                </Text>
+              </View>
+
+              {/* Action buttons */}
+              <View style={styles.summaryActionButtons}>
+                <Button
+                  title="💾 Save Itinerary"
+                  variant="primary"
+                  size="md"
+                  onPress={handleSaveTrip}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="📤 Share Plan"
+                  variant="secondary"
+                  size="md"
+                  onPress={handleShareTrip}
+                  style={{ flex: 1 }}
+                />
+              </View>
+
+              <Button
+                title="🗺️ View Live Route & Map"
+                variant="outline"
+                size="md"
+                onPress={() => setActiveMainTab('directions')}
+                style={{ marginTop: spacing.sm }}
+              />
+
+              <Button
+                title="← Edit Steps"
+                variant="ghost"
+                size="sm"
+                onPress={() => setWizardStep(0)}
+                style={{ marginTop: spacing.xs }}
+              />
+            </Card>
+          )}
+        </ScrollView>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: LIVE DIRECTIONS & ROUTING                                          */}
+      {/* ========================================================================= */}
+      {activeMainTab === 'directions' && (
+        <ScrollView contentContainerStyle={styles.scrollInner} showsVerticalScrollIndicator={false}>
+          {/* Active Closures Alert if any */}
+          {closures.length > 0 && (
+            <Card variant="tint" style={styles.closureCard}>
+              <Text style={styles.closureTitle}>🚧 Active Road Closures & Diversions</Text>
+              {closures.slice(0, 2).map((c) => (
+                <Text key={c.id} style={styles.closureText}>
+                  • {getLocalized(c.title)}: {c.description ? getLocalized(c.description) : 'Road closed for festival traffic'}
+                </Text>
+              ))}
+            </Card>
           )}
 
-          {selectedWaypoints.length > 0 && (
-            <TouchableOpacity style={styles.updateRouteBtn} onPress={handleCalculateRoute}>
-              <Text style={styles.updateRouteBtnText}>{t('routes.update_route_btn')}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+          {/* Destination & Access Point Card */}
+          <Card variant="elevated" style={styles.directionsControlCard}>
+            <View style={styles.destHeaderRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.destGhatTitle}>🌊 {getLocalized(currentGhat?.name)}</Text>
+                <Text style={styles.destGhatSubtitle}>{currentGhat?.district} District</Text>
+              </View>
+              <BathingBadge status={currentGhat?.bathing_status || 'allowed'} size="sm" />
+            </View>
 
-        {/* Safety Disclaimer Banner */}
-        <View style={styles.disclaimerCard}>
-          <Text style={styles.disclaimerTitle}>⚠️ Pushkaralu Safety Disclaimer</Text>
-          <Text style={styles.disclaimerText}>{t('routes.safety_disclaimer')}</Text>
-        </View>
-      </ScrollView>
+            {/* Travel Mode Selector */}
+            <View style={styles.modeSelectorRow}>
+              {(['car', 'bike', 'walk', 'bus'] as RouteMode[]).map((m) => (
+                <Chip
+                  key={m}
+                  label={m.toUpperCase()}
+                  selected={mode === m}
+                  onPress={() => setMode(m)}
+                />
+              ))}
+            </View>
+          </Card>
+
+          {/* Map Display */}
+          <View style={styles.mapContainer}>
+            {Platform.OS === 'web' ? (
+              <WebLeafletMap
+                center={{
+                  lat: activeDestCoord?.lat || 17.0005,
+                  lng: activeDestCoord?.lng || 81.7800,
+                }}
+                zoom={14}
+                customMarkers={[
+                  ...(activeOriginCoord
+                    ? [
+                        {
+                          id: 'origin',
+                          lat: activeOriginCoord.lat,
+                          lng: activeOriginCoord.lng,
+                          title: 'Origin Point',
+                          color: '#2563EB',
+                        },
+                      ]
+                    : []),
+                  ...(activeDestCoord
+                    ? [
+                        {
+                          id: 'destination',
+                          lat: activeDestCoord.lat,
+                          lng: activeDestCoord.lng,
+                          title: getLocalized(currentGhat?.name) || 'Destination Ghat',
+                          color: '#C2410C',
+                        },
+                      ]
+                    : []),
+                ]}
+                polylineCoords={routeCoordinates.map((c) => ({ latitude: c.latitude, longitude: c.longitude }))}
+                style={{ height: 260 }}
+              />
+            ) : MapView ? (
+              <MapView
+                style={{ flex: 1, height: 260 }}
+                initialRegion={{
+                  latitude: activeDestCoord?.lat || 17.0005,
+                  longitude: activeDestCoord?.lng || 81.7800,
+                  latitudeDelta: 0.08,
+                  longitudeDelta: 0.08,
+                }}
+              >
+                {activeOriginCoord && (
+                  <Marker
+                    coordinate={{ latitude: activeOriginCoord.lat, longitude: activeOriginCoord.lng }}
+                    title="Starting Origin"
+                    pinColor="#2563EB"
+                  />
+                )}
+                {activeDestCoord && (
+                  <Marker
+                    coordinate={{ latitude: activeDestCoord.lat, longitude: activeDestCoord.lng }}
+                    title={getLocalized(currentGhat?.name) || 'Ghat'}
+                    pinColor="#C2410C"
+                  />
+                )}
+                {routeCoordinates.length > 0 && (
+                  <Polyline coordinates={routeCoordinates} strokeColor={colors.primary700} strokeWidth={4} />
+                )}
+              </MapView>
+            ) : (
+              <View style={styles.mapFallback}>
+                <Text style={styles.mapFallbackText}>Interactive Map Active</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Route Result Summary Card or Error */}
+          {loading ? (
+            <Card variant="flat" style={styles.loadingRouteCard}>
+              <ActivityIndicator size="small" color={colors.primary700} />
+              <Text style={styles.loadingRouteText}>Computing real-time route via official network...</Text>
+            </Card>
+          ) : routeError ? (
+            <ErrorState
+              title="Unable to compute route"
+              message={routeError}
+              onRetry={handleCalculateRoute}
+              retryTitle="Retry Routing"
+            />
+          ) : routeResult ? (
+            <Card variant="elevated" style={styles.resultCard}>
+              <View style={styles.resultHeader}>
+                <View>
+                  <Text style={styles.resultDistance}>
+                    {'distanceMeters' in routeResult
+                      ? `${(routeResult.distanceMeters / 1000).toFixed(1)} km`
+                      : `${(((routeResult as any).straightLineDistanceMeters || 0) / 1000).toFixed(1)} km (approx)`}
+                  </Text>
+                  <Text style={styles.resultDuration}>
+                    {'durationSeconds' in routeResult
+                      ? `Approx. ${Math.round(routeResult.durationSeconds / 60)} mins`
+                      : (routeResult as any).message || 'Route estimated'}
+                  </Text>
+                </View>
+                <CrowdBadge crowd={currentGhat?.crowd_level || 'low'} />
+              </View>
+
+              {/* External Navigation Button */}
+              <Button
+                title="🗺️ Open in Google / Apple Maps"
+                variant="secondary"
+                size="md"
+                onPress={handleOpenExternalMaps}
+                style={{ marginTop: spacing.sm }}
+              />
+
+              {/* Legs summary if available */}
+              {'legs' in routeResult && routeResult.legs && routeResult.legs.length > 0 && (
+                <View style={styles.stepsList}>
+                  <Text style={styles.stepsHeading}>Route Corridor Guidance:</Text>
+                  {routeResult.legs.map((leg, idx) => (
+                    <Text key={idx} style={styles.stepItemText}>
+                      • Leg {idx + 1}: {(leg.distanceMeters / 1000).toFixed(1)} km (~{Math.round(leg.durationSeconds / 60)} mins)
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </Card>
+          ) : null}
+
+          {/* Corridor Temples */}
+          {corridorTemples.length > 0 && (
+            <Card variant="elevated" style={styles.templesCard}>
+              <Text style={styles.templesHeading}>🛕 Shrines Along Corridor:</Text>
+              {corridorTemples.map((temple) => (
+                <View key={temple.id} style={styles.templeRow}>
+                  <Text style={styles.templeName}>{getLocalized(temple.name)}</Text>
+                  <Button
+                    title={selectedWaypoints.some((w) => w.id === temple.id) ? 'Stop Added ✓' : '+ Add Stop'}
+                    variant="outline"
+                    size="sm"
+                    onPress={() => handleToggleWaypoint(temple)}
+                  />
+                </View>
+              ))}
+            </Card>
+          )}
+        </ScrollView>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: SAVED ITINERARIES                                                  */}
+      {/* ========================================================================= */}
+      {activeMainTab === 'saved' && (
+        <ScrollView contentContainerStyle={styles.scrollInner} showsVerticalScrollIndicator={false}>
+          {savedTrips.length === 0 ? (
+            <EmptyState
+              icon="📋"
+              title="No Saved Itineraries"
+              description="You have not saved any pilgrimage plans yet. Use the Plan a Trip wizard to create and store your itinerary."
+              actionTitle="Create First Plan"
+              onAction={() => setActiveMainTab('plan')}
+            />
+          ) : (
+            savedTrips.map((trip) => (
+              <Card key={trip.id} variant="elevated" style={styles.savedTripCard}>
+                <View style={styles.savedTripHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.savedTripDest}>🌊 {trip.destinationName}</Text>
+                    <Text style={styles.savedTripOrigin}>From: {trip.originName}</Text>
+                    <Text style={styles.savedTripDate}>📅 Scheduled: {trip.date}</Text>
+                  </View>
+                  <Chip label={trip.mode.toUpperCase()} selected={false} onPress={() => {}} />
+                </View>
+
+                <View style={styles.savedTripActions}>
+                  <Button
+                    title="View Route"
+                    variant="primary"
+                    size="sm"
+                    onPress={() => handleOpenSavedTrip(trip)}
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    title="Share"
+                    variant="secondary"
+                    size="sm"
+                    onPress={handleShareTrip}
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    title="Delete"
+                    variant="danger"
+                    size="sm"
+                    onPress={() => handleDeleteSavedTrip(trip.id)}
+                  />
+                </View>
+              </Card>
+            ))
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
-  header: {
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  topNav: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E65100',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-  },
-  backBtn: { marginRight: 12, padding: 4 },
-  backBtnText: { color: '#FFF', fontSize: 24, fontWeight: 'bold' },
-  headerTitleWrap: { flex: 1 },
-  headerTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
-  headerSubtitle: { color: '#FFE0B2', fontSize: 13, marginTop: 2 },
-  scrollContent: { flex: 1 },
-  scrollInner: { padding: 16, paddingBottom: 40 },
-  card: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#37474F', marginBottom: 8 },
-  sectionSubLabel: { fontSize: 12, color: '#78909C', marginBottom: 8 },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  browseAllBtn: {
-    backgroundColor: '#FFF3E0',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  browseAllBtnText: {
-    fontSize: 12,
-    color: '#E65100',
-    fontWeight: 'bold',
-  },
-  selectedGhatBanner: {
-    backgroundColor: '#FFF7ED',
-    borderLeftWidth: 4,
-    borderLeftColor: '#EA580C',
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 10,
-  },
-  selectedGhatName: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#9A3412',
-  },
-  selectedGhatDistrict: {
-    fontSize: 12,
-    color: '#C2410C',
-    marginTop: 2,
-  },
-  popularGhatsLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
-    marginBottom: 6,
-  },
-  destChipActive: {
-    backgroundColor: '#EA580C',
-  },
-  searchBoxContainer: {
-    marginBottom: 12,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    padding: 8,
-  },
-  searchInput: {
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    fontSize: 13,
-  },
-  searchResultsList: {
-    maxHeight: 160,
-    marginTop: 6,
-  },
-  searchResultItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
+    minHeight: 56,
   },
-  searchResultTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  searchResultSub: {
-    fontSize: 11,
-    color: '#64748B',
-  },
-  gpsButton: {
-    backgroundColor: '#FFF3E0',
-    borderWidth: 1,
-    borderColor: '#FFE0B2',
-    borderRadius: 8,
-    paddingVertical: 10,
+  backBtn: {
+    minWidth: touchTargets.minTouch,
+    minHeight: touchTargets.minTouch,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginRight: spacing.xs,
   },
-  gpsButtonActive: { backgroundColor: '#E65100', borderColor: '#E65100' },
-  gpsButtonText: { color: '#E65100', fontWeight: 'bold', fontSize: 14 },
-  gpsButtonTextActive: { color: '#FFF' },
-  orDivider: {
-    textAlign: 'center',
-    color: '#90A4AE',
-    fontSize: 12,
-    marginVertical: 10,
+  backBtnText: {
+    fontSize: 22,
+    color: colors.primary700,
+    fontWeight: '700',
   },
-  originsScroll: { flexDirection: 'row' },
-  originChip: {
-    backgroundColor: '#ECEFF1',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
+  headerTitleWrap: {
+    flex: 1,
   },
-  originChipActive: { backgroundColor: '#E65100' },
-  originChipText: { color: '#455A64', fontSize: 13 },
-  originChipTextActive: { color: '#FFF', fontWeight: 'bold' },
-  apScroll: { flexDirection: 'row' },
-  apCard: {
-    borderWidth: 1,
-    borderColor: '#CFD8DC',
-    borderRadius: 8,
-    padding: 10,
-    marginRight: 8,
-    backgroundColor: '#FAFAFA',
-    minWidth: 130,
+  headerTitle: {
+    fontSize: typography.sizes.h3,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
-  apCardActive: { borderColor: '#E65100', backgroundColor: '#FFF8E1' },
-  apCardTitle: { fontSize: 13, fontWeight: 'bold', color: '#263238' },
-  apCardTitleActive: { color: '#E65100' },
-  precisionBadge: {
-    marginTop: 4,
-    backgroundColor: '#E0F2F1',
-    alignSelf: 'flex-start',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  headerSubtitle: {
+    fontSize: typography.sizes.caption,
+    color: colors.textMuted,
   },
-  precisionBadgeText: { fontSize: 10, color: '#00695C', fontWeight: '600' },
-  modeRow: {
+  tabBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 14,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  modeTab: {
+  tabButton: {
     flex: 1,
-    backgroundColor: '#FFF',
-    marginHorizontal: 2,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ECEFF1',
-  },
-  modeTabActive: {
-    backgroundColor: '#E65100',
-    borderColor: '#E65100',
-  },
-  modeTabText: { fontSize: 10, textAlign: 'center', color: '#455A64' },
-  modeTabTextActive: { color: '#FFF', fontWeight: 'bold' },
-  noticeBox: {
-    backgroundColor: '#E1F5FE',
-    padding: 8,
-    borderRadius: 6,
-    marginBottom: 12,
-  },
-  noticeText: { fontSize: 12, color: '#0277BD' },
-  transitCard: {
-    backgroundColor: '#EDE7F6',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 14,
-  },
-  transitCardTitle: { fontSize: 14, fontWeight: 'bold', color: '#4A148C' },
-  transitCardDesc: { fontSize: 12, color: '#6A1B9A', marginVertical: 6 },
-  mapContainer: {
-    height: 240,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#CFD8DC',
-    position: 'relative',
-  },
-  map: { width: '100%', height: '100%' },
-  mapPlaceholder: {
-    flex: 1,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ECEFF1',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    minHeight: touchTargets.minTouch,
   },
-  mapAttribution: {
-    position: 'absolute',
-    bottom: 4,
-    right: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+  tabButtonActive: {
+    borderBottomColor: colors.primary700,
   },
-  attributionText: { fontSize: 9, color: '#455A64' },
-  routeSummaryCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 14,
-    elevation: 2,
+  tabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textMuted,
   },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 8 },
-  statItem: { alignItems: 'center' },
-  statLabel: { fontSize: 12, color: '#78909C' },
-  statValue: { fontSize: 18, fontWeight: 'bold', color: '#263238', marginTop: 2 },
-  delayNote: { fontSize: 12, color: '#D84315', marginTop: 4, textAlign: 'center' },
-  warningBox: {
-    backgroundColor: '#FFF3E0',
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 8,
+  tabTextActive: {
+    color: colors.primary700,
+    fontWeight: '700',
   },
-  warningText: { fontSize: 12, color: '#E65100' },
-  degradedTitle: { fontSize: 13, color: '#C62828', fontWeight: 'bold', marginBottom: 6 },
-  openGoogleMapsBtn: {
-    backgroundColor: '#1B5E20',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 12,
+  scrollInner: {
+    padding: spacing.md,
+    gap: spacing.md,
   },
-  openGoogleMapsBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
-  stopsCountBadge: {
-    fontSize: 11,
-    color: '#E65100',
-    fontWeight: 'bold',
-    marginBottom: 8,
+  wizardCard: {
+    gap: spacing.sm,
   },
-  emptyText: { fontSize: 12, color: '#90A4AE', fontStyle: 'italic', marginVertical: 6 },
-  templeRow: {
+  wizardTitle: {
+    fontSize: typography.sizes.h3,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  wizardDesc: {
+    fontSize: typography.sizes.caption,
+    color: colors.textMuted,
+    lineHeight: 20,
+  },
+  gpsActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+    minHeight: touchTargets.minTouch,
   },
-  templeName: { fontSize: 13, fontWeight: 'bold', color: '#263238' },
-  templeDist: { fontSize: 11, color: '#78909C' },
-  stopToggleBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#F5F5F5',
+  gpsActionBtnActive: {
+    borderColor: colors.primary700,
+    backgroundColor: colors.primary50,
   },
-  stopToggleBtnActive: { backgroundColor: '#FFEBEE' },
-  stopToggleText: { fontSize: 12, color: '#00838F', fontWeight: '600' },
-  stopToggleTextActive: { color: '#C62828' },
-  updateRouteBtn: {
-    backgroundColor: '#E65100',
-    borderRadius: 8,
-    paddingVertical: 10,
+  gpsActionIcon: {
+    fontSize: 18,
+  },
+  gpsActionText: {
+    fontSize: typography.sizes.bodySm || 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  gpsActionTextActive: {
+    color: colors.primary700,
+    fontWeight: '700',
+  },
+  orDivider: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginVertical: spacing.xs,
+  },
+  originsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  wizardActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  selectedGhatHighlight: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 12,
+    backgroundColor: colors.primary50,
+    borderWidth: 1,
+    borderColor: colors.borderOrange,
+    borderRadius: radii.md,
+    padding: spacing.md,
   },
-  updateRouteBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
-  disclaimerCard: {
-    backgroundColor: '#FFF9C4',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 10,
+  highlightGhatName: {
+    fontSize: typography.sizes.body,
+    fontWeight: '700',
+    color: colors.primary700,
   },
-  disclaimerTitle: { fontSize: 12, fontWeight: 'bold', color: '#F57F17', marginBottom: 4 },
-  disclaimerText: { fontSize: 11, color: '#5D4037', lineHeight: 16 },
+  highlightGhatDistrict: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  ghatSelectionList: {
+    maxHeight: 220,
+  },
+  ghatPickRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    minHeight: touchTargets.minTouch,
+  },
+  ghatPickRowSelected: {
+    backgroundColor: colors.primary50,
+  },
+  ghatPickName: {
+    fontSize: typography.sizes.bodySm || 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  ghatPickNameSelected: {
+    color: colors.primary700,
+    fontWeight: '700',
+  },
+  ghatPickDistrict: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  subSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  horizontalScroll: {
+    gap: spacing.xs,
+  },
+  modeChipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  preferencesList: {
+    gap: spacing.sm,
+  },
+  prefRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 36,
+  },
+  prefCheckbox: {
+    fontSize: 18,
+  },
+  prefLabel: {
+    fontSize: typography.sizes.bodySm || 14,
+    color: colors.textPrimary,
+  },
+  successBanner: {
+    backgroundColor: colors.status.successLight,
+    borderWidth: 1,
+    borderColor: colors.status.successBorder,
+    borderRadius: radii.sm,
+    padding: spacing.sm,
+  },
+  successBannerText: {
+    fontSize: 13,
+    color: colors.status.success,
+    fontWeight: '700',
+  },
+  summaryBox: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 2,
+  },
+  summaryLabel: {
+    fontSize: typography.sizes.caption,
+    color: colors.textMuted,
+  },
+  summaryValue: {
+    fontSize: typography.sizes.caption,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'right',
+  },
+  advisoryNotice: {
+    backgroundColor: colors.status.warningLight,
+    borderWidth: 1,
+    borderColor: colors.status.warningBorder,
+    borderRadius: radii.sm,
+    padding: spacing.sm,
+  },
+  advisoryText: {
+    fontSize: 12,
+    color: colors.status.warning,
+    lineHeight: 18,
+  },
+  summaryActionButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  closureCard: {
+    gap: 4,
+  },
+  closureTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.status.warning,
+  },
+  closureText: {
+    fontSize: 12,
+    color: colors.textPrimary,
+  },
+  directionsControlCard: {
+    gap: spacing.sm,
+  },
+  destHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  destGhatTitle: {
+    fontSize: typography.sizes.h3,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  destGhatSubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  modeSelectorRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  mapContainer: {
+    borderRadius: radii.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  mapFallback: {
+    height: 200,
+    backgroundColor: colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapFallbackText: {
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  loadingRouteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  loadingRouteText: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  resultCard: {
+    gap: spacing.xs,
+  },
+  resultHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  resultDistance: {
+    fontSize: typography.sizes.h2,
+    fontWeight: '800',
+    color: colors.primary700,
+  },
+  resultDuration: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  stepsList: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    gap: 4,
+  },
+  stepsHeading: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  stepItemText: {
+    fontSize: 12,
+    color: colors.textPrimary,
+    lineHeight: 18,
+  },
+  templesCard: {
+    gap: spacing.sm,
+  },
+  templesHeading: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  templeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  templeName: {
+    fontSize: 13,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  savedTripCard: {
+    gap: spacing.sm,
+  },
+  savedTripHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  savedTripDest: {
+    fontSize: typography.sizes.body,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  savedTripOrigin: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  savedTripDate: {
+    fontSize: 12,
+    color: colors.primary700,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  savedTripActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
 });
-
