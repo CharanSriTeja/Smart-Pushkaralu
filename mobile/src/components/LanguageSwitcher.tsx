@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { SupportedLanguage } from '../i18n';
-import { theme } from '../theme';
+import { colors, radii, spacing, touchTargets, typography } from '../theme/tokens';
 
 export interface LanguageOption {
   code: SupportedLanguage;
@@ -47,6 +47,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             ]}
           >
             <Text
+              maxFontSizeMultiplier={typography.maxScale}
               style={[
                 styles.nativeText,
                 isActive && styles.activeNativeText,
@@ -56,6 +57,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             </Text>
             {variant === 'chips' && (
               <Text
+                maxFontSizeMultiplier={typography.maxScale}
                 style={[
                   styles.subText,
                   isActive && styles.activeSubText,
@@ -76,44 +78,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   optionButton: {
-    minHeight: theme.touchTarget.minHeight, // 48dp minimum touch target
+    minHeight: touchTargets.minTouch, // 48dp minimum touch target
     minWidth: 80,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.md,
     borderWidth: 1.5,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
   compactButton: {
     minWidth: 64,
-    paddingHorizontal: theme.spacing.sm,
+    paddingHorizontal: spacing.sm,
   },
   activeButton: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primaryDark,
+    backgroundColor: colors.primary700,
+    borderColor: colors.primary700,
   },
   nativeText: {
-    fontSize: theme.typography.sizes.body,
+    fontSize: typography.sizes.body,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
+    color: colors.textPrimary,
   },
   activeNativeText: {
-    color: theme.colors.white,
+    color: colors.white,
   },
   subText: {
     fontSize: 11,
-    color: theme.colors.textMuted,
+    color: colors.textMuted,
     marginTop: 2,
   },
   activeSubText: {
-    color: '#DCEBFC',
+    color: colors.primary100,
   },
 });
-

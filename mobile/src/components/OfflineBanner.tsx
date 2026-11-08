@@ -3,12 +3,12 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useLanguage } from '../context/LanguageContext';
-import { theme } from '../theme';
+import { colors, spacing, typography } from '../theme/tokens';
 
 export const OfflineBanner: React.FC = () => {
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const { t } = useTranslation();
-  const { fontFamily } = useLanguage();
+  const { fontFamilyBold } = useLanguage();
 
   const isOffline = !isConnected || isInternetReachable === false;
 
@@ -18,8 +18,11 @@ export const OfflineBanner: React.FC = () => {
 
   return (
     <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
-      <Text style={[styles.text, { fontFamily }]}>
-        ⚠️ {t('common.offline_notice')}
+      <Text
+        maxFontSizeMultiplier={typography.maxScale}
+        style={[styles.text, { fontFamily: fontFamilyBold }]}
+      >
+        ⚠️ {t('common.offline_notice', 'Offline Mode: Showing cached information')}
       </Text>
     </View>
   );
@@ -27,20 +30,19 @@ export const OfflineBanner: React.FC = () => {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#FEF3C7', // Amber 100
-    borderColor: '#F59E0B',     // Amber 500
+    backgroundColor: colors.status.warningLight,
     borderBottomWidth: 1.5,
+    borderBottomColor: colors.status.warningBorder,
     paddingVertical: 10,
-    paddingHorizontal: theme.spacing.md,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   text: {
-    color: '#92400E', // Amber 800 - high contrast
-    fontSize: theme.typography.sizes.bodySm,
+    color: colors.status.warning, // #92400E
+    fontSize: typography.sizes.bodySm || 14,
     fontWeight: '700',
     textAlign: 'center',
   },
 });
-

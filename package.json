@@ -1,4 +1,7 @@
 {
   "name": "smart-pushkaralu",
-  "private": true
+  "private": true,
+  "scripts": {
+    "check:contrast": "node scripts/check-contrast.js"
+  }
 }

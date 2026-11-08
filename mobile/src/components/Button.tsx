@@ -8,14 +8,14 @@ import {
   TextStyle,
   AccessibilityProps,
 } from 'react-native';
-import { theme } from '../theme';
+import { colors, spacing, radii, touchTargets, typography } from '../theme/tokens';
 import { useLanguage } from '../context/LanguageContext';
 
 export interface ButtonProps extends AccessibilityProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost';
-  size?: 'default' | 'small' | 'large';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
+  size?: 'sm' | 'md' | 'lg' | 'small' | 'default' | 'large';
   loading?: boolean;
   disabled?: boolean;
   style?: ViewStyle;
@@ -27,7 +27,7 @@ export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
   variant = 'primary',
-  size = 'default',
+  size = 'md',
   loading = false,
   disabled = false,
   style,
@@ -37,40 +37,56 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const { fontFamilyBold } = useLanguage();
 
+  const normalizedSize = size === 'small' ? 'sm' : size === 'large' ? 'lg' : size === 'default' ? 'md' : size;
+
   const getContainerStyle = (): ViewStyle => {
-    const base: ViewStyle = { ...styles.base, ...styles[size] };
+    const base: ViewStyle = { ...styles.base, ...styles[normalizedSize] };
 
     switch (variant) {
       case 'secondary':
-        return { ...base, backgroundColor: theme.colors.secondary };
-      case 'danger':
-        return { ...base, backgroundColor: theme.colors.danger };
+        return {
+          ...base,
+          backgroundColor: colors.primary50,
+          borderWidth: 1.5,
+          borderColor: colors.primary700,
+        };
       case 'outline':
         return {
           ...base,
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          borderColor: theme.colors.primary,
+          backgroundColor: colors.white,
+          borderWidth: 1.5,
+          borderColor: colors.border,
+        };
+      case 'danger':
+        return {
+          ...base,
+          backgroundColor: colors.danger,
         };
       case 'ghost':
-        return { ...base, backgroundColor: 'transparent' };
+        return {
+          ...base,
+          backgroundColor: 'transparent',
+        };
       case 'primary':
       default:
-        return { ...base, backgroundColor: theme.colors.primary };
+        return {
+          ...base,
+          backgroundColor: colors.primary700,
+        };
     }
   };
 
   const getTextStyle = (): TextStyle => {
     switch (variant) {
-      case 'outline':
-        return { color: theme.colors.primary, fontFamily: fontFamilyBold };
-      case 'ghost':
-        return { color: theme.colors.primary, fontFamily: fontFamilyBold };
-      case 'primary':
       case 'secondary':
+      case 'ghost':
+        return { color: colors.primary700, fontFamily: fontFamilyBold };
+      case 'outline':
+        return { color: colors.textPrimary, fontFamily: fontFamilyBold };
       case 'danger':
+      case 'primary':
       default:
-        return { color: theme.colors.white, fontFamily: fontFamilyBold };
+        return { color: colors.white, fontFamily: fontFamilyBold };
     }
   };
 
@@ -93,12 +109,17 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : theme.colors.white}
+          color={variant === 'secondary' || variant === 'ghost' ? colors.primary700 : colors.white}
         />
       ) : (
         <>
           {icon}
-          <Text style={[styles.text, getTextStyle(), textStyle]}>{title}</Text>
+          <Text
+            maxFontSizeMultiplier={typography.maxScale}
+            style={[styles.text, getTextStyle(), textStyle]}
+          >
+            {title}
+          </Text>
         </>
       )}
     </TouchableOpacity>
@@ -107,33 +128,33 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: theme.touchTarget.minHeight, // 48dp minimum touch target
-    minWidth: theme.touchTarget.minWidth,
-    borderRadius: theme.borderRadius.md,
+    minHeight: touchTargets.minTouch,
+    minWidth: touchTargets.minTouch,
+    borderRadius: radii.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.md,
-    gap: theme.spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
   },
-  default: {
-    height: 52,
+  sm: {
+    minHeight: touchTargets.minTouch,
+    paddingHorizontal: spacing.md,
   },
-  small: {
-    height: 48,
-    paddingHorizontal: theme.spacing.sm,
+  md: {
+    minHeight: 52,
+    paddingHorizontal: spacing.lg,
   },
-  large: {
-    height: 58,
-    paddingHorizontal: theme.spacing.lg,
+  lg: {
+    minHeight: touchTargets.primaryAction, // 56dp
+    paddingHorizontal: spacing.xl,
   },
   disabled: {
     opacity: 0.5,
   },
   text: {
-    fontSize: theme.typography.sizes.body,
+    fontSize: typography.sizes.body,
     fontWeight: '700',
     textAlign: 'center',
   },
 });
-
