@@ -2,6 +2,7 @@
   "name": "smart-pushkaralu",
   "private": true,
   "scripts": {
+    "verify": "node scripts/verify-all.js",
     "check:contrast": "node scripts/check-contrast.js"
   }
 }
