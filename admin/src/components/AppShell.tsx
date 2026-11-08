@@ -8,6 +8,7 @@ export const AppShell: React.FC<{ children?: React.ReactNode }> = ({ children })
   const { user, loginWithToken, logout } = useAuth();
   const [tokenInput, setTokenInput] = useState('');
   const [showTokenModal, setShowTokenModal] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleApplyToken = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +29,7 @@ export const AppShell: React.FC<{ children?: React.ReactNode }> = ({ children })
       }}
     >
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar collapsed={isCollapsed} onToggleCollapse={() => setIsCollapsed(!isCollapsed)} />
 
       {/* Main Content Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -47,22 +48,39 @@ export const AppShell: React.FC<{ children?: React.ReactNode }> = ({ children })
             zIndex: 10,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              title={isCollapsed ? 'Expand navigation' : 'Collapse navigation'}
               style={{
-                display: 'inline-block',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: tokens.colors.success,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1.25rem',
+                color: tokens.colors.textPrimary,
+                padding: '4px 6px',
+                borderRadius: `${tokens.radii.sm}px`,
               }}
-            />
-            <span style={{ fontSize: '0.8125rem', fontWeight: '600', color: tokens.colors.textMuted }}>
-              System Status:
-            </span>
-            <span style={{ fontSize: '0.8125rem', fontWeight: '700', color: tokens.colors.success }}>
-              Operational
-            </span>
+            >
+              ☰
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: tokens.colors.success,
+                }}
+              />
+              <span style={{ fontSize: '0.8125rem', fontWeight: '600', color: tokens.colors.textMuted }}>
+                System Status:
+              </span>
+              <span style={{ fontSize: '0.8125rem', fontWeight: '700', color: tokens.colors.success }}>
+                Operational
+              </span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -12,6 +12,8 @@ import { NewsController } from '../../modules/news/news.controller.js';
 import { FacilitiesController } from '../../modules/facilities/facilities.controller.js';
 import { IssuesController } from '../../modules/issues/issues.controller.js';
 import { PlacesController } from '../../modules/places/places.controller.js';
+import { FCMService } from '../../services/fcm.service.js';
+import { AuditService } from '../../modules/audit/audit.service.js';
 
 export const adminRouter = Router();
 
@@ -226,5 +228,72 @@ adminRouter.delete('/places/overrides/:id', checkPermission('places.delete'), Pl
 adminRouter.get('/places/cache-status', checkPermission('places.cache'), PlacesController.getCacheStatus);
 adminRouter.post('/places/prewarm', checkPermission('places.cache'), PlacesController.prewarmCache);
 adminRouter.post('/places/cache/invalidate', checkPermission('places.cache'), PlacesController.invalidateCache);
+
+// 9. Push Notifications Management
+adminRouter.post(
+  '/notifications/broadcast',
+  checkPermission('news.publish'),
+  async (req, res, next) => {
+    try {
+      const { title, body, language, target, district, reason } = req.body;
+      if (!title || !body) {
+        res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Title and body are required' } });
+        return;
+      }
+      if (!reason || reason.trim().length < 5) {
+        res.status(400).json({ error: { code: 'AUDIT_REASON_REQUIRED', message: 'Audit reason of >= 5 characters is required' } });
+        return;
+      }
+
+      const lang = language || 'en';
+      const topic = district ? `district_${district.toLowerCase()}_${lang}` : target === 'urgent' ? `news_urgent_${lang}` : `news_all_${lang}`;
+
+      await FCMService.deliverToTopic(topic, lang, title, body, {
+        target: target || 'all',
+        district: district || '',
+        sentBy: (req as any).user?.phone || (req as any).user?.userId || 'admin',
+      });
+
+      await AuditService.record({
+        adminId: (req as any).user?.userId || 'unknown-admin',
+        adminEmail: (req as any).user?.phone || 'admin@smartpushkaralu.org',
+        action: 'BROADCAST_NOTIFICATION',
+        entityType: 'notification',
+        newValues: { title, body, language: lang, topic, district },
+        reason: reason.trim(),
+        ipAddress: req.ip,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: {
+          topic,
+          title,
+          body,
+          dispatchedAt: new Date().toISOString(),
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+adminRouter.get(
+  '/notifications',
+  checkPermission('news.publish'),
+  async (_req, res, next) => {
+    try {
+      const history = FCMService.getSentHistory();
+      res.status(200).json({
+        success: true,
+        data: history,
+        total: history.length,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 

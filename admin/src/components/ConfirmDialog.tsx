@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { tokens } from '../theme/tokens';
 
 export interface ConfirmDialogProps {
@@ -8,6 +8,7 @@ export interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   isDangerous?: boolean;
+  requiredMatchText?: string;
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
@@ -20,11 +21,22 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   isDangerous = false,
+  requiredMatchText,
   onConfirm,
   onCancel,
   loading = false,
 }) => {
+  const [typedMatch, setTypedMatch] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setTypedMatch('');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  const isMatchValid = !requiredMatchText || typedMatch.trim() === requiredMatchText.trim();
 
   return (
     <div
@@ -43,11 +55,11 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         style={{
           backgroundColor: tokens.colors.bg,
           borderRadius: `${tokens.radii.md}px`,
-          width: '440px',
+          width: '460px',
           maxWidth: '92%',
           padding: '1.5rem',
           boxShadow: tokens.shadows.modal,
-          border: `1px solid ${tokens.colors.border}`,
+          border: isDangerous ? `2px solid ${tokens.colors.danger}` : `1px solid ${tokens.colors.border}`,
         }}
       >
         <h3
@@ -56,8 +68,12 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             fontWeight: '700',
             color: isDangerous ? tokens.colors.danger : tokens.colors.textPrimary,
             marginBottom: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
           }}
         >
+          {isDangerous && <span>⚠️</span>}
           {title}
         </h3>
         <p
@@ -65,16 +81,48 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             fontSize: '0.875rem',
             color: tokens.colors.textMuted,
             lineHeight: 1.5,
-            marginBottom: '1.5rem',
+            marginBottom: '1rem',
           }}
         >
           {message}
         </p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+
+        {requiredMatchText && (
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                color: tokens.colors.textPrimary,
+                marginBottom: '4px',
+              }}
+            >
+              To confirm, type <strong style={{ color: tokens.colors.danger }}>{requiredMatchText}</strong> below:
+            </label>
+            <input
+              type="text"
+              value={typedMatch}
+              onChange={(e) => setTypedMatch(e.target.value)}
+              placeholder={requiredMatchText}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                fontSize: '0.875rem',
+                borderRadius: `${tokens.radii.sm}px`,
+                border: `1px solid ${tokens.colors.border}`,
+                backgroundColor: tokens.colors.bg,
+                color: tokens.colors.textPrimary,
+              }}
+            />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button
             type="button"
-            onClick={onCancel}
             disabled={loading}
+            onClick={onCancel}
             style={{
               padding: '8px 16px',
               fontSize: '0.8125rem',
@@ -82,26 +130,26 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               borderRadius: `${tokens.radii.sm}px`,
               border: `1px solid ${tokens.colors.border}`,
               backgroundColor: tokens.colors.bg,
-              color: tokens.colors.textPrimary,
-              cursor: loading ? 'not-allowed' : 'pointer',
+              color: tokens.colors.textMuted,
+              cursor: 'pointer',
             }}
           >
             {cancelLabel}
           </button>
           <button
             type="button"
+            disabled={loading || !isMatchValid}
             onClick={onConfirm}
-            disabled={loading}
             style={{
               padding: '8px 16px',
               fontSize: '0.8125rem',
-              fontWeight: '600',
+              fontWeight: '700',
               borderRadius: `${tokens.radii.sm}px`,
               border: 'none',
               backgroundColor: isDangerous ? tokens.colors.danger : tokens.colors.primary700,
               color: tokens.colors.textInverse,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
+              cursor: loading || !isMatchValid ? 'not-allowed' : 'pointer',
+              opacity: loading || !isMatchValid ? 0.6 : 1,
             }}
           >
             {loading ? 'Processing...' : confirmLabel}
@@ -111,4 +159,3 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     </div>
   );
 };
-
