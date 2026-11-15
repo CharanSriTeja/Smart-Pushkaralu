@@ -1,0 +1,111 @@
+.seva-admin-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  color: #475569;
+}
+
+.seva-admin-page table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.seva-admin-page .overflow-table {
+  overflow-x: auto;
+}
+
+.seva-admin-page input,
+.seva-admin-page select,
+.seva-admin-page textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.seva-admin-page img {
+  display: block;
+}
+
+.seva-admin-page [class~="flex"] { display: flex; }
+.seva-admin-page [class~="flex-col"] { flex-direction: column; }
+.seva-admin-page [class~="flex-wrap"] { flex-wrap: wrap; }
+.seva-admin-page [class~="items-center"] { align-items: center; }
+.seva-admin-page [class~="items-start"] { align-items: flex-start; }
+.seva-admin-page [class~="justify-between"] { justify-content: space-between; }
+.seva-admin-page [class~="justify-end"] { justify-content: flex-end; }
+.seva-admin-page [class~="gap-1"] { gap: 4px; }
+.seva-admin-page [class~="gap-2"] { gap: 8px; }
+.seva-admin-page [class~="gap-3"] { gap: 12px; }
+.seva-admin-page [class~="gap-4"] { gap: 16px; }
+.seva-admin-page [class~="grid"] { display: grid; }
+.seva-admin-page [class~="grid-cols-1"] { grid-template-columns: 1fr; }
+.seva-admin-page [class~="w-full"] { width: 100%; }
+.seva-admin-page [class~="w-16"] { width: 64px; }
+.seva-admin-page [class~="w-24"] { width: 96px; }
+.seva-admin-page [class~="w-28"] { width: 112px; }
+.seva-admin-page [class~="w-32"] { width: 128px; }
+.seva-admin-page [class~="h-16"] { height: 64px; }
+.seva-admin-page [class~="min-w-full"] { min-width: 100%; }
+.seva-admin-page [class~="p-6"] { padding: 24px; }
+.seva-admin-page [class~="p-8"] { padding: 32px; }
+.seva-admin-page [class~="p-4"] { padding: 16px; }
+.seva-admin-page [class~="px-2"] { padding-left: 8px; padding-right: 8px; }
+.seva-admin-page [class~="px-3"] { padding-left: 12px; padding-right: 12px; }
+.seva-admin-page [class~="px-4"] { padding-left: 16px; padding-right: 16px; }
+.seva-admin-page [class~="py-1"] { padding-top: 4px; padding-bottom: 4px; }
+.seva-admin-page [class~="py-2"] { padding-top: 8px; padding-bottom: 8px; }
+.seva-admin-page [class~="py-3"] { padding-top: 12px; padding-bottom: 12px; }
+.seva-admin-page [class~="mt-1"] { margin-top: 4px; }
+.seva-admin-page [class~="mt-4"] { margin-top: 16px; }
+.seva-admin-page [class~="mt-6"] { margin-top: 24px; }
+.seva-admin-page [class~="mb-4"] { margin-bottom: 16px; }
+.seva-admin-page [class~="space-y-4"] > * + * { margin-top: 16px; }
+.seva-admin-page [class~="rounded"] { border-radius: 4px; }
+.seva-admin-page [class~="rounded-md"] { border-radius: 6px; }
+.seva-admin-page [class~="rounded-lg"] { border-radius: 8px; }
+.seva-admin-page [class~="rounded-full"] { border-radius: 9999px; }
+.seva-admin-page [class~="border"] { border: 1px solid #e2e8f0; }
+.seva-admin-page [class~="border-b"] { border-bottom: 1px solid #e2e8f0; }
+.seva-admin-page [class~="border-gray-200"] { border-color: #e2e8f0; }
+.seva-admin-page [class~="overflow-hidden"] { overflow: hidden; }
+.seva-admin-page [class~="overflow-y-auto"] { overflow-y: auto; }
+.seva-admin-page [class~="overflow-x-auto"] { overflow-x: auto; }
+.seva-admin-page [class~="text-left"] { text-align: left; }
+.seva-admin-page [class~="text-right"] { text-align: right; }
+.seva-admin-page [class~="text-center"] { text-align: center; }
+.seva-admin-page [class~="text-xs"] { font-size: 12px; line-height: 1.4; }
+.seva-admin-page [class~="text-sm"] { font-size: 14px; line-height: 1.5; }
+.seva-admin-page [class~="text-xl"] { font-size: 20px; }
+.seva-admin-page [class~="text-2xl"] { font-size: 24px; }
+.seva-admin-page [class~="font-medium"] { font-weight: 500; }
+.seva-admin-page [class~="font-semibold"] { font-weight: 600; }
+.seva-admin-page [class~="font-bold"] { font-weight: 700; }
+.seva-admin-page [class~="font-mono"] { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.seva-admin-page [class~="whitespace-nowrap"] { white-space: nowrap; }
+.seva-admin-page [class~="object-cover"] { object-fit: cover; }
+.seva-admin-page [class~="relative"] { position: relative; }
+.seva-admin-page [class~="absolute"] { position: absolute; }
+.seva-admin-page [class~="fixed"] { position: fixed; }
+.seva-admin-page [class~="inset-0"] { inset: 0; }
+.seva-admin-page [class~="z-50"] { z-index: 50; }
+.seva-admin-page [class~="bg-white"] { background: #fff; }
+.seva-admin-page [class~="bg-gray-50"] { background: #f8fafc; }
+.seva-admin-page [class~="bg-gray-100"] { background: #f1f5f9; }
+.seva-admin-page [class~="bg-black"] { background: #000; }
+.seva-admin-page [class~="text-gray-500"] { color: #64748b; }
+.seva-admin-page [class~="text-gray-600"] { color: #475569; }
+.seva-admin-page [class~="text-gray-700"] { color: #334155; }
+.seva-admin-page [class~="text-gray-900"] { color: #0f172a; }
+.seva-admin-page [class~="text-white"] { color: #fff; }
+
+@media (min-width: 768px) {
+  .seva-admin-page [class~="md:flex-row"] { flex-direction: row; }
+  .seva-admin-page [class~="md:items-center"] { align-items: center; }
+  .seva-admin-page [class~="md:mt-0"] { margin-top: 0; }
+  .seva-admin-page [class~="md:grid-cols-2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767px) {
+  .seva-admin-page {
+    padding: 16px !important;
+  }
+}

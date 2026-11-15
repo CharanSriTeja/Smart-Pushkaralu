@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MockRole } from '../types';
+import './Layout.css';
 
 interface NavItem {
   to: string;
@@ -52,9 +53,10 @@ export const Layout: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#F8FAFC' }}>
+    <div className="admin-shell" style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#F8FAFC' }}>
       {/* Sidebar */}
       <aside
+        className="admin-sidebar"
         style={{
           width: '260px',
           backgroundColor: '#0F172A', // Slate 900
@@ -139,9 +141,10 @@ export const Layout: React.FC = () => {
       </aside>
 
       {/* Main Container */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div className="admin-main" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Top Header */}
         <header
+          className="admin-header"
           style={{
             height: '60px',
             backgroundColor: '#FFFFFF',
@@ -212,7 +215,7 @@ export const Layout: React.FC = () => {
         </header>
 
         {/* Page Content Body */}
-        <main style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
+        <main className="admin-content" style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
           <Outlet />
         </main>
       </div>
@@ -299,4 +302,3 @@ export const Layout: React.FC = () => {
     </div>
   );
 };
-

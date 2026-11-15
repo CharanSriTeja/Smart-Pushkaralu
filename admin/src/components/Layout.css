@@ -1,0 +1,77 @@
+.admin-shell {
+  min-width: 0;
+}
+
+.admin-sidebar {
+  flex: 0 0 260px;
+}
+
+.admin-main {
+  min-width: 0;
+}
+
+.admin-content {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+@media (max-width: 900px) {
+  .admin-sidebar {
+    flex-basis: 220px;
+    width: 220px !important;
+  }
+
+  .admin-content {
+    padding: 20px !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-sidebar {
+    flex-basis: 64px;
+    width: 64px !important;
+  }
+
+  .admin-sidebar > div:first-child {
+    padding: 12px 8px !important;
+  }
+
+  .admin-sidebar > div:first-child > div {
+    justify-content: center;
+  }
+
+  .admin-sidebar > div:first-child > div > div:last-child,
+  .admin-sidebar nav > div,
+  .admin-sidebar nav li a span:last-child,
+  .admin-sidebar > div:last-child {
+    display: none;
+  }
+
+  .admin-sidebar nav {
+    padding: 12px 8px !important;
+  }
+
+  .admin-sidebar nav li a {
+    justify-content: center;
+    padding: 10px 8px !important;
+  }
+
+  .admin-header {
+    height: auto !important;
+    min-height: 60px;
+    padding: 10px 12px !important;
+    gap: 8px;
+  }
+
+  .admin-header > div:first-child span {
+    display: none;
+  }
+
+  .admin-header select {
+    max-width: 145px;
+  }
+
+  .admin-content {
+    padding: 16px !important;
+  }
+}
