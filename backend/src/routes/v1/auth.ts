@@ -46,7 +46,17 @@ authRouter.post('/firebase', async (req, res, next) => {
     let firebaseUid: string;
     let phone: string | undefined;
 
-    if (devAuthEnabled && data.idToken.startsWith('test-id-token:')) {
+    if (data.idToken.startsWith('test-id-token:')) {
+      if (!devAuthEnabled) {
+        res.status(401).json({
+          error: {
+            code: 'DEV_AUTH_DISABLED',
+            message:
+              'Development authentication tokens are not allowed. Set ALLOW_DEV_AUTH=true in backend/.env for non-production environments.',
+          },
+        });
+        return;
+      }
       phone = data.idToken.replace('test-id-token:', '');
       firebaseUid = 'dev-uid-' + phone.replace(/\D/g, '');
     } else {
