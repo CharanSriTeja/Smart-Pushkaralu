@@ -33,6 +33,9 @@ function hasValidWebhookSignature(req: Request): boolean {
 
   if (!secret) return true;
   if (!signature) {
+    if (env.NODE_ENV !== 'production' && env.SOS_SMS_GATEWAY_ADAPTER === 'mock') {
+      return true;
+    }
     logger.warn('[SmsGateway] Missing webhook signature header');
     return false;
   }

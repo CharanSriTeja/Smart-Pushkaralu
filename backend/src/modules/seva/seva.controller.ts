@@ -44,7 +44,7 @@ export class SevaController {
    */
   async getPublicVideoById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const video = await sevaService.getPublicVideoById(id);
 
       if (!video) {
@@ -170,7 +170,7 @@ export class SevaController {
    */
   async patchAdminVideo(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const adminId = req.user?.userId || 'admin-super-01';
       const body = req.body || {};
 
@@ -219,7 +219,7 @@ export class SevaController {
    */
   async deleteAdminVideo(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const adminId = req.user?.userId || 'admin-super-01';
 
       const existing = await sevaRepository.findVideoById(id, true);

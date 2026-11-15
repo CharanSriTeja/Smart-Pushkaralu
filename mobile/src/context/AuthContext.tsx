@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 import { getApps, initializeApp, getApp } from '@react-native-firebase/app';
 import {
   getAuth,
@@ -173,9 +173,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     modulePendingPhone = phone;
     setPendingPhoneState(phone);
     if (phone) {
-      SecureStore.setItemAsync(PENDING_PHONE_KEY, phone).catch(() => {});
+      storage.setItem(PENDING_PHONE_KEY, phone).catch(() => {});
     } else {
-      SecureStore.deleteItemAsync(PENDING_PHONE_KEY).catch(() => {});
+      storage.deleteItem(PENDING_PHONE_KEY).catch(() => {});
     }
   };
 
@@ -227,7 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Restore pending phone if saved
       try {
-        const savedPhone = await SecureStore.getItemAsync(PENDING_PHONE_KEY);
+        const savedPhone = await storage.getItem(PENDING_PHONE_KEY);
         if (savedPhone && !pendingPhone) {
           setPendingPhone(savedPhone);
           if (Platform.OS === 'web' && !confirmation) {

@@ -104,8 +104,14 @@ export default function OtpScreen() {
         errMsg.includes('TOO_MANY_REQUESTS')
       ) {
         setErrorMessage(t('otp.error_too_many_attempts'));
+      } else if (
+        errMsg.includes('Connection terminated') ||
+        errMsg.includes('connection timeout') ||
+        errMsg.includes('Network request failed')
+      ) {
+        setErrorMessage('Server or database connection timed out. Please tap verify again to retry.');
       } else {
-        setErrorMessage(t('otp.error_generic'));
+        setErrorMessage(err.message || t('otp.error_generic'));
       }
     }
   };

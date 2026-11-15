@@ -14,7 +14,8 @@ export function getAdminToken() {
   return (
     localStorage.getItem('sp_admin_token') ||
     localStorage.getItem('pushkaralu_admin_token') ||
-    activeToken
+    activeToken ||
+    ''
   );
 }
 
@@ -399,7 +400,7 @@ export const AdminApi = {
     return json;
   },
 
-  async createTransportHub(payload: any): Promise<any> {
+  async createPlaceTransportHub(payload: any): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/admin/places/transport-hubs`, {
       method: 'POST',
       headers: authHeaders(),
@@ -410,7 +411,7 @@ export const AdminApi = {
     return json.data;
   },
 
-  async updateTransportHub(id: string, payload: any): Promise<any> {
+  async updatePlaceTransportHub(id: string, payload: any): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/admin/places/transport-hubs/${id}`, {
       method: 'PATCH',
       headers: authHeaders(),
@@ -421,7 +422,7 @@ export const AdminApi = {
     return json.data;
   },
 
-  async deleteTransportHub(id: string, reason: string): Promise<any> {
+  async deletePlaceTransportHub(id: string, reason: string): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/admin/places/transport-hubs/${id}`, {
       method: 'DELETE',
       headers: authHeaders(),
@@ -629,71 +630,215 @@ export const AdminApi = {
   },
 
   // ==========================================
+  // MODULE 2: ROUTING & TRIP PLANNER ADMIN API
+  // ==========================================
+
+  async getRouteOrigins(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/origins`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch route origins');
+    const json = await res.json();
+    return json.origins || [];
+  },
+
+  async createRouteOrigin(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/origins`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create origin');
+    return json.origin;
+  },
+
+  async updateRouteOrigin(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/origins/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update origin');
+    return json.origin;
+  },
+
+  async deleteRouteOrigin(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/origins/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete origin');
+    return json;
+  },
+
+  async getGhatAccessPoints(ghatId: string): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/access-points/${ghatId}`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch access points');
+    const json = await res.json();
+    return json.access_points || [];
+  },
+
+  async createGhatAccessPoint(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/access-points`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create access point');
+    return json.access_point;
+  },
+
+  async updateGhatAccessPoint(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/access-points/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update access point');
+    return json.access_point;
+  },
+
+  async getRouteClosures(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/closures`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch route closures');
+    const json = await res.json();
+    return json.closures || [];
+  },
+
+  async createRouteClosure(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/closures`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create closure');
+    return json.closure;
+  },
+
+  async deleteRouteClosure(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/closures/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete closure');
+    return json;
+  },
+
+  async getDelayFactors(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/delay-factors`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch delay factors');
+    const json = await res.json();
+    return json.delay_factors || [];
+  },
+
+  async createDelayFactor(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/delay-factors`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create delay factor');
+    return json.delay_factor;
+  },
+
+  async deleteDelayFactor(id: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/delay-factors/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete delay factor');
+    return json;
+  },
+
+  async getAdminTemples(): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/temples`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch temples');
+    const json = await res.json();
+    return json.temples || [];
+  },
+
+  async updateAdminTemple(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/temples/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update temple');
+    return json.temple;
+  },
+
+  async getRoutingOperations(): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/routes/operations`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch routing operations');
+    const json = await res.json();
+    return json.operations;
+  },
+
+  // ==========================================
   // MODULE 6: TRANSPORT & SHUTTLES ADMIN API
   // ==========================================
 
   // Hubs
   async getTransportHubs(params: Record<string, string> = {}): Promise<any[]> {
-    try {
-      const q = new URLSearchParams(params);
-      const res = await fetch(`${API_BASE_URL}/admin/transport/hubs?${q.toString()}`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('API offline');
-      const json = await res.json();
-      return json.items || [];
-    } catch {
-      return [
-        {
-          id: 'mock-hub-1',
-          name: { en: 'Rajahmundry Central Bus Station', te: 'రాజమండ్రి సెంట్రల్ బస్ స్టేషన్', hi: 'राजमंड्री सेंट्रल बस स्टेशन' },
-          hub_type: 'bus_stand',
-          operator: 'APSRTC',
-          code: 'RJY-CBS',
-          phone: '+91 883 2462002',
-          lat: 17.0095,
-          lng: 81.7892,
-          is_active: true,
-        },
-        {
-          id: 'mock-hub-2',
-          name: { en: 'Rajahmundry Railway Station (RJY)', te: 'రాజమండ్రి రైల్వే స్టేషన్ (RJY)', hi: 'राजमंड्री रेलवे स्टेशन (RJY)' },
-          hub_type: 'railway_station',
-          operator: 'Indian Railways (SCR)',
-          code: 'RJY',
-          phone: '139',
-          lat: 16.9934,
-          lng: 81.7821,
-          is_active: true,
-        },
-      ];
-    }
+    const q = new URLSearchParams(params);
+    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs?${q.toString()}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch transport hubs: ${res.statusText}`);
+    const json = await res.json();
+    return json.items || [];
+  },
+
+  async createTransportHub(data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to create hub');
+    return json.item;
+  },
+
+  async updateTransportHub(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to update hub');
+    return json.item;
+  },
+
+  async deleteTransportHub(id: string, reason: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete hub');
+    return json;
   },
 
   // Bus Routes
   async getBusRoutes(params: Record<string, string> = {}): Promise<any[]> {
-    try {
-      const q = new URLSearchParams(params);
-      const res = await fetch(`${API_BASE_URL}/admin/transport/bus-routes?${q.toString()}`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('API offline');
-      const json = await res.json();
-      return json.items || [];
-    } catch {
-      return [
-        {
-          id: 'mock-route-1',
-          route_number: 'Route 101',
-          operator: 'APSRTC',
-          origin: { en: 'RTC Complex', te: 'ఆర్టీసీ కాంప్లెక్స్' },
-          destination: { en: 'Pushkar Ghat', te: 'పుష్కర్ ఘాట్' },
-          frequency_minutes: 10,
-          bus_type: 'ordinary',
-          is_active: true,
-        },
-      ];
-    }
+    const q = new URLSearchParams(params);
+    const res = await fetch(`${API_BASE_URL}/admin/transport/bus-routes?${q.toString()}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch bus routes: ${res.statusText}`);
+    const json = await res.json();
+    return json.items || [];
   },
 
   async createBusRoute(data: any): Promise<any> {
@@ -731,28 +876,12 @@ export const AdminApi = {
 
   // Special Services
   async getSpecialServices(): Promise<any[]> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/admin/transport/special-services`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('API offline');
-      const json = await res.json();
-      return json.items || [];
-    } catch {
-      return [
-        {
-          id: 'mock-spl-1',
-          service_code: 'PUSH-SPL-HYD-01',
-          service_title: { en: 'Hyderabad to Rajahmundry Pushkaralu Special', te: 'హైదరాబాద్ - రాజమండ్రి ప్రత్యేక బస్సు' },
-          operator: 'APSRTC',
-          origin_city: { en: 'Hyderabad (MGBS)' },
-          destination_town: { en: 'Rajahmundry' },
-          operating_dates: { start_date: '2027-07-14', end_date: '2027-07-25' },
-          booking_url: 'https://www.apsrtconline.in',
-          is_active: true,
-        },
-      ];
-    }
+    const res = await fetch(`${API_BASE_URL}/admin/transport/special-services`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch special services: ${res.statusText}`);
+    const json = await res.json();
+    return json.items || [];
   },
 
   async createSpecialService(data: any): Promise<any> {
@@ -790,28 +919,12 @@ export const AdminApi = {
 
   // Rail Stations
   async getRailStations(): Promise<any[]> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/admin/transport/rail-stations`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('API offline');
-      const json = await res.json();
-      return json.items || [];
-    } catch {
-      return [
-        {
-          id: 'mock-rail-1',
-          station_code: 'RJY',
-          station_name: { en: 'Rajahmundry', te: 'రాజమండ్రి', hi: 'राजमंड्री' },
-          division: 'Vijayawada (BZA)',
-          zone: 'SCR',
-          total_platforms: 5,
-          has_pushkaralu_special_trains: true,
-          helpdesk_phone: '+91 883 2463131',
-          is_active: true,
-        },
-      ];
-    }
+    const res = await fetch(`${API_BASE_URL}/admin/transport/rail-stations`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch rail stations: ${res.statusText}`);
+    const json = await res.json();
+    return json.items || [];
   },
 
   async createRailStation(data: any): Promise<any> {
@@ -849,33 +962,13 @@ export const AdminApi = {
 
   // Shuttles & Stops
   async getShuttleRoutes(params: Record<string, string> = {}): Promise<any[]> {
-    try {
-      const q = new URLSearchParams(params);
-      const res = await fetch(`${API_BASE_URL}/admin/transport/shuttle-routes?${q.toString()}`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('API offline');
-      const json = await res.json();
-      return json.items || [];
-    } catch {
-      return [
-        {
-          id: 'mock-shuttle-1',
-          route_code: 'SHTL-GREEN-01',
-          route_name: { en: 'Morampudi Parking to Pushkar Ghat Free Shuttle', te: 'మొరంపూడి పార్కింగ్ నుండి పుష్కర్ ఘాట్ ఉచిత షటిల్' },
-          shuttle_type: 'free',
-          fare: 0,
-          frequency_minutes: 8,
-          accessible_for_elderly_disabled: true,
-          color_code: '#2E7D32',
-          is_active: true,
-          stops: [
-            { stop_order: 1, stop_name: { en: 'Morampudi Boarding Point' } },
-            { stop_order: 2, stop_name: { en: 'Pushkar Ghat Drop-off' } },
-          ],
-        },
-      ];
-    }
+    const q = new URLSearchParams(params);
+    const res = await fetch(`${API_BASE_URL}/admin/transport/shuttle-routes?${q.toString()}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch shuttle routes: ${res.statusText}`);
+    const json = await res.json();
+    return json.items || [];
   },
 
   async createShuttleRoute(data: any): Promise<any> {
@@ -924,27 +1017,12 @@ export const AdminApi = {
 
   // External Links
   async getExternalLinks(): Promise<any[]> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/admin/transport/external-links`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('API offline');
-      const json = await res.json();
-      return json.items || [];
-    } catch {
-      return [
-        {
-          id: 'mock-link-1',
-          category: 'bus',
-          key: 'apsrtc_booking',
-          title: { en: 'APSRTC Official Ticket Booking', te: 'ఆర్టీసీ అధికారిక టికెట్ బుకింగ్' },
-          url: 'https://www.apsrtconline.in',
-          official_authority: 'APSRTC (Govt. of AP)',
-          is_verified: true,
-          is_active: true,
-        },
-      ];
-    }
+    const res = await fetch(`${API_BASE_URL}/admin/transport/external-links`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch external links: ${res.statusText}`);
+    const json = await res.json();
+    return json.items || [];
   },
 
   async updateExternalLink(id: string, data: any): Promise<any> {
@@ -962,66 +1040,17 @@ export const AdminApi = {
   // Module 10: Virtual Seva & Event Experience
   // ----------------------------------------------------
   async getSevaVideos(params?: { category?: string; published?: boolean; is_live?: boolean }): Promise<any[]> {
-    try {
-      const query = new URLSearchParams();
-      if (params?.category) query.append('category', params.category);
-      if (params?.published !== undefined) query.append('published', String(params.published));
-      if (params?.is_live !== undefined) query.append('is_live', String(params.is_live));
+    const query = new URLSearchParams();
+    if (params?.category) query.append('category', params.category);
+    if (params?.published !== undefined) query.append('published', String(params.published));
+    if (params?.is_live !== undefined) query.append('is_live', String(params.is_live));
 
-      const res = await fetch(`${API_BASE_URL}/admin/seva?${query.toString()}`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('API offline');
-      const json = await res.json();
-      return json.data || [];
-    } catch {
-      return [
-        {
-          id: 'seva-live-harathi-01',
-          youtube_id: 'dQw4w9WgXcQ',
-          youtube_url: 'https://www.youtube.com/live/dQw4w9WgXcQ',
-          title_en: 'Maha Pushkar Godavari Harathi - Live Evening Darshan',
-          title_te: 'మహా పుష్కర గోదావరి హారతి - ప్రత్యక్ష ప్రసారం',
-          title_hi: 'महा पुष्कर गोदावरी महा आरती - सीधा प्रसारण',
-          category: 'aarthi',
-          ghat_id: 'pushkar-ghat-01',
-          event_date: new Date().toISOString(),
-          is_live: true,
-          published: true,
-          sort_order: 1,
-          thumbnail_url: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
-        },
-        {
-          id: 'seva-kotilingala-rudrabhishekam-02',
-          youtube_id: 'C0DPdy98e4c',
-          youtube_url: 'https://www.youtube.com/watch?v=C0DPdy98e4c',
-          title_en: 'Sri Kotilingeswara Swamy Maha Rudrabhishekam',
-          title_te: 'శ్రీ కోటిలింగేశ్వర స్వామి మహా రుద్రాభిషేకం',
-          title_hi: 'श्री कोटिलिंगेश्वर स्वामी महा रुद्राभिषेक',
-          category: 'pooja',
-          ghat_id: 'kotilingala-ghat-02',
-          event_date: '2026-11-02T04:30:00Z',
-          is_live: false,
-          published: true,
-          sort_order: 2,
-          thumbnail_url: 'https://img.youtube.com/vi/C0DPdy98e4c/hqdefault.jpg',
-        },
-        {
-          id: 'seva-draft-unpub-05',
-          youtube_id: '3JZ_D3ELwOQ',
-          youtube_url: 'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
-          title_en: 'Upcoming: VIP Pushkar Bath Preparation Preview (Draft)',
-          title_te: 'రాబోయే కార్యక్రమం: వీఐపీ ఘాట్ ఏర్పాట్లు (చిత్తుప్రతి)',
-          category: 'general',
-          ghat_id: null,
-          event_date: '2026-11-10T10:00:00Z',
-          is_live: false,
-          published: false,
-          sort_order: 5,
-          thumbnail_url: 'https://img.youtube.com/vi/3JZ_D3ELwOQ/hqdefault.jpg',
-        },
-      ];
-    }
+    const res = await fetch(`${API_BASE_URL}/admin/seva?${query.toString()}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch seva videos: ${res.statusText}`);
+    const json = await res.json();
+    return json.data || [];
   },
 
   async createSevaVideo(payload: any): Promise<any> {
@@ -1066,6 +1095,16 @@ export const AdminApi = {
     if (!res.ok) throw new Error(json.error?.message || 'Failed to reorder Seva videos');
     return json;
   },
+
+  async getDashboardStats(): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/admin/dashboard-stats`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to fetch dashboard stats: ${res.statusText}`);
+    const json = await res.json();
+    return json.stats;
+  },
 };
 
 export const adminApi = AdminApi;
+export default AdminApi;

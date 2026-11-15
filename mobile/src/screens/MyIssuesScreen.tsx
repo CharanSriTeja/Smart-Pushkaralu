@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
 import { IssueService } from '../services/issueService';
 import { IssueReport, IssueStatus } from '../types/issues';
+import { colors } from '../theme/tokens';
 
 const CATEGORY_ICONS: Record<string, string> = {
   sanitation: '🧹',
@@ -207,7 +208,7 @@ export default function MyIssuesScreen() {
       {/* Content List */}
       {loading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#0F52BA" />
+          <ActivityIndicator size="large" color={colors.primary[600]} />
         </View>
       ) : filteredIssues.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 50,
     paddingBottom: 16,
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
   },
   backBtn: {
     width: 36,
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   reportNewBtnText: {
-    color: '#0F52BA',
+    color: colors.primary[700],
     fontSize: 13,
     fontWeight: '700',
   },
@@ -311,7 +312,7 @@ const styles = StyleSheet.create({
     color: '#1E293B',
   },
   searchBtn: {
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
     borderRadius: 10,
     paddingHorizontal: 16,
     justifyContent: 'center',
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   filterChipActive: {
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
   },
   filterChipText: {
     fontSize: 12,
@@ -373,7 +374,7 @@ const styles = StyleSheet.create({
   },
   cardTicketNo: {
     fontSize: 15,
-    color: '#0F52BA',
+    color: colors.primary[700],
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -422,7 +423,7 @@ const styles = StyleSheet.create({
   },
   viewArrow: {
     fontSize: 12,
-    color: '#0F52BA',
+    color: colors.primary[700],
     fontWeight: '600',
   },
   centerContainer: {
@@ -454,7 +455,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   emptyBtn: {
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 10,

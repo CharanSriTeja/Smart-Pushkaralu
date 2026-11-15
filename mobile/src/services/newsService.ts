@@ -1,6 +1,6 @@
 import { NewsPost, NewsFilters, RegisterDevicePayload } from '../types/news';
 import { GhatFacility } from '../types/ghats';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 import { API_V1_URL as API_BASE_URL } from './api';
 const NEWS_CACHE_KEY = 'offline_cached_news_v1';
 const FACILITIES_CACHE_PREFIX = 'offline_cached_facilities_';
@@ -36,7 +36,7 @@ export class NewsService {
 
         // Save general news to cache for offline availability
         if ((!filters.category || filters.category === 'all') && !filters.ghat) {
-          SecureStore.setItemAsync(NEWS_CACHE_KEY, JSON.stringify(news)).catch(() => {});
+          storage.setItem(NEWS_CACHE_KEY, JSON.stringify(news)).catch(() => {});
         }
 
         return { news, isOffline: false };
@@ -47,7 +47,7 @@ export class NewsService {
 
     // Offline Cache Fallback
     try {
-      const cached = await SecureStore.getItemAsync(NEWS_CACHE_KEY);
+      const cached = await storage.getItem(NEWS_CACHE_KEY);
       if (cached) {
         let news: NewsPost[] = JSON.parse(cached);
 
@@ -90,7 +90,7 @@ export class NewsService {
 
     // Try finding in offline cache
     try {
-      const cached = await SecureStore.getItemAsync(NEWS_CACHE_KEY);
+      const cached = await storage.getItem(NEWS_CACHE_KEY);
       if (cached) {
         const list: NewsPost[] = JSON.parse(cached);
         const found = list.find((n) => n.id === id);
@@ -135,7 +135,7 @@ export class NewsService {
       if (res.ok) {
         const json = await res.json();
         const facilities: GhatFacility[] = json.data || [];
-        SecureStore.setItemAsync(cacheKey, JSON.stringify(facilities)).catch(() => {});
+        storage.setItem(cacheKey, JSON.stringify(facilities)).catch(() => {});
         return { facilities, isOffline: false };
       }
     } catch (err) {
@@ -144,7 +144,7 @@ export class NewsService {
 
     // Offline cache fallback
     try {
-      const cached = await SecureStore.getItemAsync(cacheKey);
+      const cached = await storage.getItem(cacheKey);
       if (cached) {
         return { facilities: JSON.parse(cached), isOffline: true };
       }

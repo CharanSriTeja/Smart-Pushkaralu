@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { acquireUserLocation } from '../utils/location';
 import * as Device from 'expo-device';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../context/LanguageContext';
 import { GhatService } from '../services/ghatService';
@@ -37,10 +37,10 @@ export const CrowdReportModal: React.FC<Props> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getDeviceFingerprint = async (): Promise<string> => {
-    let fp = await SecureStore.getItemAsync('device_fingerprint_id');
+    let fp = await storage.getItem('device_fingerprint_id');
     if (!fp) {
       fp = 'dev_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
-      await SecureStore.setItemAsync('device_fingerprint_id', fp);
+      await storage.setItem('device_fingerprint_id', fp);
     }
     return fp;
   };

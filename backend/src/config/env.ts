@@ -3,9 +3,16 @@ import { z } from 'zod';
 
 dotenv.config();
 
+// Known insecure defaults – rejected in production
 const INSECURE_JWT_DEFAULTS = [
   'smart-pushkaralu-dev-secret-super-safe-key-32chars',
   'smart-pushkaralu-super-secret-jwt-key-2027',
+  'changeme',
+  'secret',
+  'dev-secret',
+];
+const INSECURE_SOS_DEFAULTS = [
+  'dev-sos-webhook-secret-key-32chars',
   'changeme',
   'secret',
 ];
@@ -17,7 +24,7 @@ const envSchema = z.object({
     .preprocess((val) => val === 'true' || val === '1', z.boolean())
     .default(false),
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/smart_pushkaralu'),
-  JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters long').default('smart-pushkaralu-dev-secret-super-safe-key-32chars'),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long').default('smart-pushkaralu-dev-secret-super-safe-key-32chars'),
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional(),
   UPLOAD_SECRET: z.string().min(32).optional(),
   ADMIN_PHONES: z.string().default(''),
@@ -46,6 +53,18 @@ const envSchema = z.object({
   SOS_DEDUP_WINDOW_MINUTES: z.coerce.number().default(5),
   SOS_CLUSTER_THRESHOLD: z.coerce.number().default(5),
   SOS_CLUSTER_WINDOW_MINUTES: z.coerce.number().default(10),
+  // Module 2 Routing configuration (required for real routing)
+  ROUTING_PROVIDER: z.enum(['ors', 'osrm', 'mock']).default('ors'),
+  ORS_API_KEY: z.string().optional(),
+  OPENROUTESERVICE_API: z.string().optional(),
+  OSRM_BASE_URL: z.string().url().optional(),
+  // Seed/demo data flag
+  SEED_DEMO: z
+    .preprocess((val) => {
+      if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
+      return Boolean(val);
+    }, z.boolean())
+    .default(false),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -58,11 +77,49 @@ if (!parsed.success) {
 export const env = parsed.data;
 export const devAuthEnabled = env.NODE_ENV !== 'production' && env.ALLOW_DEV_AUTH;
 
-if (env.NODE_ENV === 'production' && !env.UPLOAD_SECRET) {
-  throw new Error('UPLOAD_SECRET must be configured in production');
-}
-if (env.NODE_ENV === 'production' && INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
-  throw new Error('JWT_SECRET must be replaced with a random production secret');
+// ── Production safety checks ──────────────────────────────────────────────────
+// These fail loudly on startup so a misconfigured production deploy never serves
+// real users with insecure defaults or fake data.
+if (env.NODE_ENV === 'production') {
+  const errors: string[] = [];
+
+  if (!env.UPLOAD_SECRET) {
+    errors.push('UPLOAD_SECRET must be configured in production (min 32 chars).');
+  }
+
+  if (INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
+    errors.push('JWT_SECRET is set to a known insecure default. Set a random 64-char secret.');
+  }
+  if (INSECURE_SOS_DEFAULTS.includes(env.SOS_WEBHOOK_SECRET)) {
+    errors.push('SOS_WEBHOOK_SECRET is set to a known insecure default. Set a random 64-char secret.');
+  }
+  if (env.SOS_SMS_GATEWAY_ADAPTER === 'mock') {
+    errors.push(
+      'SOS_SMS_GATEWAY_ADAPTER is "mock" in production. Emergency SMS will never be sent. Set SOS_SMS_GATEWAY_ADAPTER=generic and configure gateway credentials.'
+    );
+  }
+  if (env.ROUTING_PROVIDER === 'mock') {
+    errors.push(
+      'ROUTING_PROVIDER is "mock" in production. Users will receive fake straight-line routes. Set ROUTING_PROVIDER=ors and ORS_API_KEY.'
+    );
+  }
+  if (env.ROUTING_PROVIDER === 'ors' && !env.ORS_API_KEY && !env.OPENROUTESERVICE_API) {
+    errors.push(
+      'ROUTING_PROVIDER=ors but neither ORS_API_KEY nor OPENROUTESERVICE_API is set. Routing will silently fall back to mock.'
+    );
+  }
+  if (env.SEED_DEMO) {
+    errors.push('SEED_DEMO=true in production. This flag must only be used in development/test environments.');
+  }
+
+  if (errors.length > 0) {
+    console.error('\n╔══════════════════════════════════════════════════════════════╗');
+    console.error('║   PRODUCTION STARTUP SAFETY CHECK FAILED                     ║');
+    console.error('╚══════════════════════════════════════════════════════════════╝');
+    errors.forEach((e) => console.error('  ✗ ' + e));
+    console.error('');
+    throw new Error(`Production safety check failed with ${errors.length} error(s). See above.`);
+  }
 }
 
 export const getAdminPhoneList = (): string[] => {

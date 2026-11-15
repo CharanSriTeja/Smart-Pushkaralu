@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { optionalAuth } from '../../middleware/auth.js';
 import { GhatsController } from '../../modules/ghats/ghats.controller.js';
 import { CrowdController } from '../../modules/crowd/crowd.controller.js';
 import { NoticesController } from '../../modules/notices/notices.controller.js';
@@ -9,7 +10,7 @@ import { crowdReportLimiter } from '../../middleware/rate-limiter.js';
 export const ghatsRouter = Router();
 
 // GET /v1/ghats (list with filters, search, distance calculation)
-ghatsRouter.get('/ghats', GhatsController.listGhats);
+ghatsRouter.get('/ghats', optionalAuth, GhatsController.listGhats);
 
 // GET /v1/ghats/:id (full detail)
 ghatsRouter.get('/ghats/:id', GhatsController.getGhatById);

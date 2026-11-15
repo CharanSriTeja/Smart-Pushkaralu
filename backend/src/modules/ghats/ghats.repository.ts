@@ -161,7 +161,7 @@ export class GhatsRepository {
 
     // Pagination
     const page = Math.max(1, params.page || 1);
-    const limit = Math.min(100, Math.max(1, params.limit || 20));
+    const limit = Math.min(1000, Math.max(1, params.limit || 20));
     const offset = (page - 1) * limit;
 
     const dataSql = `
@@ -197,6 +197,8 @@ export class GhatsRepository {
 
       return {
         ...row,
+        lat: Number(row.lat),
+        lng: Number(row.lng),
         distance_meters: distanceMeters,
         distance_km: distanceKm,
         is_officially_approved: approval.isOfficiallyApproved,
@@ -241,6 +243,8 @@ export class GhatsRepository {
 
     return {
       ...ghat,
+      lat: Number(ghat.lat),
+      lng: Number(ghat.lng),
       sources: sourcesRes.rows,
       facilities: facilitiesRes.rows,
       aarti_timings: aartiRes.rows,

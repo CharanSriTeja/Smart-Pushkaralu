@@ -210,6 +210,55 @@ export const SOSDashboardPage: React.FC = () => {
     socketClient.setSoundEnabled(next);
   };
 
+  const handleExportCsv = () => {
+    if (alerts.length === 0) {
+      alert('No alerts to export.');
+      return;
+    }
+    const headers = [
+      'ID',
+      'Type',
+      'Status',
+      'Severity',
+      'Channel',
+      'Phone',
+      'Ghat Name',
+      'Zone',
+      'Assigned To',
+      'Latitude',
+      'Longitude',
+      'Created At',
+    ];
+    const rows = alerts.map((a: any) => [
+      a.id,
+      a.type,
+      a.status,
+      a.severity,
+      a.channel,
+      a.phone || '',
+      typeof a.ghat_name === 'object' ? a.ghat_name?.en || '' : a.ghat_name || '',
+      a.zone_code || '',
+      a.assigned_to_name ? `${a.assigned_to_name} (${a.assigned_to_phone || ''})` : '',
+      a.lat ?? '',
+      a.lng ?? '',
+      a.created_at,
+    ]);
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((r) => r.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(','))].join(
+        '\n'
+      );
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `pushkaralu_sos_incident_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Filtered alerts
   const filteredAlerts = useMemo(() => {
     return alerts.filter((a) => {
@@ -270,6 +319,22 @@ export const SOSDashboardPage: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            onClick={handleExportCsv}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: '1px solid #CBD5E1',
+              background: '#FFFFFF',
+              color: '#0F172A',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            📥 Export CSV
+          </button>
+
           <button
             onClick={toggleSound}
             style={{

@@ -19,6 +19,7 @@ import { Ghat } from '../types/ghats';
 import { GhatService } from '../services/ghatService';
 import { getLocalizedText } from '../utils/localized';
 import { ConditionDisclaimerBanner } from '../components/ConditionDisclaimerBanner';
+import { WebLeafletMap } from '../components/WebLeafletMap';
 
 // Conditionally import react-native-maps for cross-platform safety
 let MapView: any = null;
@@ -143,6 +144,15 @@ export const GhatMapScreen: React.FC = () => {
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#0F52BA" />
         </View>
+      ) : Platform.OS === 'web' ? (
+        <WebLeafletMap
+          ghats={ghats}
+          language={language}
+          center={{ lat: 17.0005, lng: 81.7725 }}
+          zoom={9}
+          style={styles.webMap}
+          onSelectGhat={(id) => router.push(`/(app)/ghats/${id}` as any)}
+        />
       ) : MapView ? (
         <MapView
           ref={mapRef}
@@ -262,6 +272,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    ...(Platform.OS === 'web' ? { minHeight: '100vh', height: '100%' } : {}),
+  },
+  webMap: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    ...(Platform.OS === 'web' ? { minHeight: '100vh' } : {}),
   },
   topBar: {
     position: 'absolute',

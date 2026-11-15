@@ -7,6 +7,7 @@ import {
   storeRefreshToken,
   findRefreshToken,
   revokeRefreshToken,
+  revokeAllUserRefreshTokens,
   isUserAdmin,
 } from '../../services/user.js';
 import {

@@ -33,6 +33,20 @@ export default function LandingScreen() {
     router.replace('/(app)' as any);
   };
 
+  const handleOpenSos = () => {
+    try {
+      router.navigate('/(app)/sos' as any);
+    } catch {
+      try {
+        router.push('/(app)/sos' as any);
+      } catch {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/(app)/sos';
+        }
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
@@ -140,6 +154,19 @@ export default function LandingScreen() {
 
         {/* Primary and Secondary CTA Buttons */}
         <View style={styles.ctaSection}>
+          {/* Prominent Emergency SOS CTA */}
+          <TouchableOpacity
+            style={styles.sosButton}
+            onPress={handleOpenSos}
+            accessibilityRole="button"
+            accessibilityLabel="Emergency SOS"
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.sosButtonText, { fontFamily: fontFamilyBold }]}>
+              🚨 {t('sos.title', 'Emergency SOS / 112')}
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={handleContinueWithPhone}
@@ -314,6 +341,27 @@ const styles = StyleSheet.create({
   ctaSection: {
     marginTop: 20,
     gap: 12,
+  },
+  sosButton: {
+    minHeight: 52,
+    backgroundColor: '#DC2626',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: '#B91C1C',
+    elevation: 3,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+  },
+  sosButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   primaryButton: {
     minHeight: 56,

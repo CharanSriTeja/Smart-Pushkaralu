@@ -1,6 +1,6 @@
 import { Ghat, GhatFilters, CrowdStatus, GhatNotice } from '../types/ghats';
-import * as SecureStore from 'expo-secure-store';
-import { API_V1_URL as API_BASE_URL } from './api';
+import { storage } from '../utils/storage';
+import { getBaseV1Url } from './api';
 const GHATS_CACHE_KEY = 'offline_cached_ghats_v1';
 const GHAT_DETAIL_CACHE_PREFIX = 'offline_cached_ghat_detail_';
 
@@ -18,8 +18,9 @@ export class GhatService {
     if (filters.facilities) params.append('facilities', filters.facilities);
     if (filters.near) params.append('near', filters.near);
     if (filters.search) params.append('search', filters.search);
+    params.append('limit', String((filters as any).limit || 1000));
 
-    const url = `${API_BASE_URL}/ghats?${params.toString()}`;
+    const url = `${getBaseV1Url()}/ghats?${params.toString()}`;
 
     try {
       const controller = new AbortController();
@@ -34,7 +35,7 @@ export class GhatService {
 
         // Cache the full list for offline usage
         if (!filters.search && !filters.near && (!filters.district || filters.district === 'all')) {
-          SecureStore.setItemAsync(GHATS_CACHE_KEY, JSON.stringify(ghats)).catch(() => {});
+          storage.setItem(GHATS_CACHE_KEY, JSON.stringify(ghats)).catch(() => {});
         }
 
         return { ghats, isOffline: false };
@@ -45,7 +46,7 @@ export class GhatService {
 
     // Attempt to load from offline cache
     try {
-      const cached = await SecureStore.getItemAsync(GHATS_CACHE_KEY);
+      const cached = await storage.getItem(GHATS_CACHE_KEY);
       if (cached) {
         let ghats: Ghat[] = JSON.parse(cached);
 
@@ -73,7 +74,7 @@ export class GhatService {
    * Fetch full details for a single ghat with offline fallback
    */
   static async getGhatById(id: string): Promise<{ ghat: Ghat | null; isOffline: boolean }> {
-    const url = `${API_BASE_URL}/ghats/${id}`;
+    const url = `${getBaseV1Url()}/ghats/${id}`;
     const cacheKey = `${GHAT_DETAIL_CACHE_PREFIX}${id}`;
 
     try {
@@ -88,7 +89,7 @@ export class GhatService {
         const ghat: Ghat = json.data;
 
         // Save to cache
-        SecureStore.setItemAsync(cacheKey, JSON.stringify(ghat)).catch(() => {});
+        storage.setItem(cacheKey, JSON.stringify(ghat)).catch(() => {});
         return { ghat, isOffline: false };
       }
     } catch (err) {
@@ -97,7 +98,7 @@ export class GhatService {
 
     // Try reading cached detail
     try {
-      const cached = await SecureStore.getItemAsync(cacheKey);
+      const cached = await storage.getItem(cacheKey);
       if (cached) {
         return { ghat: JSON.parse(cached), isOffline: true };
       }
@@ -111,7 +112,7 @@ export class GhatService {
    */
   static async getGhatNotices(id: string): Promise<GhatNotice[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/ghats/${id}/notices`);
+      const res = await fetch(`${getBaseV1Url()}/ghats/${id}/notices`);
       if (res.ok) {
         const json = await res.json();
         return json.data || [];
@@ -127,7 +128,7 @@ export class GhatService {
    */
   static async getGhatCrowdStatus(id: string): Promise<CrowdStatus | null> {
     try {
-      const res = await fetch(`${API_BASE_URL}/ghats/${id}/crowd`);
+      const res = await fetch(`${getBaseV1Url()}/ghats/${id}/crowd`);
       if (res.ok) {
         const json = await res.json();
         return json.data || null;
@@ -149,7 +150,7 @@ export class GhatService {
     device_fingerprint: string;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const res = await fetch(`${API_BASE_URL}/crowd-reports`, {
+      const res = await fetch(`${getBaseV1Url()}/crowd-reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

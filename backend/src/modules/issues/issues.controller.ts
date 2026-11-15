@@ -28,6 +28,7 @@ const reportIssueSchema = z.object({
   lng: z.number().min(-180).max(180),
   qr_zone_id: z.string().optional().nullable(),
   ghat_id: z.string().uuid().optional().nullable(),
+  reporter_phone: z.string().max(20).optional().nullable(),
   reporter_device_token: z.string().optional().nullable(),
   device_fingerprint: z.string().optional().nullable(),
   client_metadata: z.record(z.string(), z.any()).optional().nullable(),

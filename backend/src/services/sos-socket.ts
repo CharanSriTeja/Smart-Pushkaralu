@@ -1,7 +1,7 @@
 import { Server, Socket, Namespace } from 'socket.io';
 import { verifyAccessToken } from './token.js';
 import { findUserById, isUserAdmin } from './user.js';
-import { env } from '../config/env.js';
+import { env, devAuthEnabled } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 import { SosAlertRecord, ClusterEventPayload } from '../types/sos.js';
 
@@ -35,6 +35,16 @@ export function initSosSocket(io: Server): Namespace {
       const token = authHeader.startsWith('Bearer ')
         ? authHeader.substring(7).trim()
         : authHeader.trim();
+
+      if (devAuthEnabled && token === 'dev-admin-token') {
+        socket.data.user = {
+          id: 'admin-super-01',
+          phone: '+919999999999',
+          name: 'District Collector (Super Admin)',
+        };
+        next();
+        return;
+      }
 
       const payload = verifyAccessToken(token);
       const user = await findUserById(payload.userId);

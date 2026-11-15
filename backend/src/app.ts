@@ -22,6 +22,7 @@ import { icccRouter } from './routes/v1/iccc.js';
 import { ghatsRouter, crowdReportRouter } from './routes/v1/ghats.routes.js';
 import { newsRouter } from './routes/v1/news.routes.js';
 import { issuesRouter } from './routes/v1/issues.routes.js';
+import { routesRouter } from './routes/v1/routes.routes.js';
 import { adminRouter } from './routes/v1/admin.routes.js';
 import { sosRouter } from './routes/v1/sos.routes.js';
 import { adminSosRouter } from './routes/v1/admin-sos.routes.js';
@@ -48,11 +49,17 @@ const allowedOrigins = getCorsOrigins();
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow mobile apps, curl, CLI requests with no origin
+      // Allow mobile apps, curl, Postman, CLI requests with no origin
       if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+      // Allow any local development origin (localhost, 127.0.0.1, private IPs on any port)
+      if (
+        /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, false);
     },
     credentials: true,
   })
@@ -70,10 +77,10 @@ app.get(['/sos', '/sos/'], (_req, res) => {
 });
 app.use('/sos', express.static(path.join(process.cwd(), 'public/sos')));
 
-// Strict body parsing limit for low bandwidth / security (unless specific route overrides)
+// Body parsing limit supporting bulk administrative operations while protecting against flood, with raw-body capture for webhook verification
 app.use(
   express.json({
-    limit: '100kb',
+    limit: '5mb',
     verify: (req, _res, buf) => {
       (req as Request & { rawBody?: Buffer }).rawBody = Buffer.from(buf);
     },
@@ -97,6 +104,7 @@ app.use('/v1/news', publicGhatsLimiter);
 app.use('/v1', newsRouter);
 app.use('/v1', devicesRouter);
 app.use('/v1', issuesRouter);
+app.use('/v1', routesRouter);
 app.use('/v1', sosRouter);
 app.use('/v1/admin/sos', adminSosRouter);
 app.use('/v1/transport', transportRouter);

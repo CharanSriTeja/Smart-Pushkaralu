@@ -4,14 +4,26 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   Linking,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { acquireUserLocation } from '../../utils/location';
-import * as SMS from 'expo-sms';
+import {
+  acquireUserLocation,
+  getLastKnownLocation,
+  addLocationListener,
+} from '../../utils/location';
+// expo-sms is not available on web — conditionally load it
+let SMS: any = null;
+try {
+  SMS = require('expo-sms');
+} catch {
+  // Web: SMS not available; we fall back to sms: URL scheme
+}
 import { Screen } from '../../components/Screen';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -39,9 +51,41 @@ export default function SOSScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [assignedInfo, setAssignedInfo] = useState<string | null>(null);
+  const [noteInput, setNoteInput] = useState<string>('');
+  const [isSubmittingNote, setIsSubmittingNote] = useState<boolean>(false);
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number; accuracy?: number | null } | null>(
+    getLastKnownLocation()
+  );
+  const [isAcquiringLocation, setIsAcquiringLocation] = useState(false);
 
   const countdownTimerRef = useRef<any>(null);
   const pollTimerRef = useRef<any>(null);
+
+  // Sync with global location events
+  useEffect(() => {
+    return addLocationListener((coords) => {
+      setUserCoords(coords);
+    });
+  }, []);
+
+  const handleAcquireLocation = async () => {
+    setIsAcquiringLocation(true);
+    try {
+      const res = await acquireUserLocation();
+      if (res.granted && res.coords) {
+        setUserCoords(res.coords);
+      } else {
+        const msg = res.error || 'Location permission was denied or unavailable.';
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.alert(`GPS Location: ${msg}\nPlease allow location permission in your browser to dispatch rescue teams to your exact spot.`);
+        } else {
+          Alert.alert('GPS Location', msg);
+        }
+      }
+    } finally {
+      setIsAcquiringLocation(false);
+    }
+  };
 
   // Load existing active alert & emergency contacts on mount
   useEffect(() => {
@@ -83,6 +127,16 @@ export default function SOSScreen() {
   const handleCategoryPress = (type: SosType) => {
     setSelectedType(type);
     setCountdown(3); // Start 3-second countdown
+    // If location is not yet acquired, immediately prompt during this user gesture
+    if (!userCoords) {
+      acquireUserLocation()
+        .then((res) => {
+          if (res.granted && res.coords) {
+            setUserCoords(res.coords);
+          }
+        })
+        .catch(() => {});
+    }
   };
 
   const handleCancelCountdown = () => {
@@ -95,64 +149,95 @@ export default function SOSScreen() {
     setCountdown(null);
     setIsSubmitting(true);
 
-    // 3-second GPS acquisition with fallback
     let coords: { lat: number | null; lng: number | null; accuracyM: number | null } = {
-      lat: null,
-      lng: null,
-      accuracyM: null,
+      lat: userCoords?.latitude ?? null,
+      lng: userCoords?.longitude ?? null,
+      accuracyM: userCoords?.accuracy ?? null,
     };
 
-    try {
-      const locPromise = (async () => {
-        const res = await acquireUserLocation();
-        if (res.granted && res.coords) {
-          return {
-            lat: res.coords.latitude,
-            lng: res.coords.longitude,
-            accuracyM: res.coords.accuracy ?? null,
-          };
-        }
-        return coords;
-      })();
+    if (coords.lat === null || coords.lng === null) {
+      try {
+        const locPromise = (async () => {
+          const res = await acquireUserLocation();
+          if (res.granted && res.coords) {
+            setUserCoords(res.coords);
+            return {
+              lat: res.coords.latitude,
+              lng: res.coords.longitude,
+              accuracyM: res.coords.accuracy ?? null,
+            };
+          }
+          return coords;
+        })();
 
-      const timeoutPromise = new Promise<{ lat: number | null; lng: number | null; accuracyM: number | null }>((resolve) => {
-        setTimeout(() => resolve(coords), 3000);
-      });
+        const timeoutPromise = new Promise<{ lat: number | null; lng: number | null; accuracyM: number | null }>((resolve) => {
+          setTimeout(() => resolve(coords), 5000);
+        });
 
-      coords = await Promise.race([locPromise, timeoutPromise]);
-    } catch {
-      // Proceed without GPS if error
+        coords = await Promise.race([locPromise, timeoutPromise]);
+      } catch {
+        // Proceed without GPS if error
+      }
     }
 
-    const result = await SosService.triggerSos({
-      type,
-      channel: zone ? 'qr' : 'app',
-      lat: coords.lat,
-      lng: coords.lng,
-      accuracyM: coords.accuracyM,
-      zoneCode: zone || null,
-    });
+    // Query battery level if supported by platform/browser
+    let batteryLevel: number | null = null;
+    if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
+      try {
+        const b = await (navigator as any).getBattery();
+        batteryLevel = Math.round(b.level * 100);
+      } catch {}
+    }
 
-    setIsSubmitting(false);
+    try {
+      const result = await SosService.triggerSos({
+        type,
+        channel: zone ? 'qr' : 'app',
+        lat: coords.lat,
+        lng: coords.lng,
+        accuracyM: coords.accuracyM,
+        zoneCode: zone || null,
+        metadata: {
+          batteryLevel,
+          triggeredAt: new Date().toISOString(),
+        },
+      });
 
-    if (result.queued) {
-      Alert.alert(
-        t('sos.title'),
-        t('sos.offline_queued') || 'Network unavailable. Your SOS alert is queued and will sync automatically once connected.',
-        [{ text: 'OK' }]
-      );
-    } else if (result.alert) {
-      setActiveAlert(result.alert);
-      startPolling(result.alert.id, result.alert.statusToken);
+      setIsSubmitting(false);
+
+      if (result.queued) {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.alert(t('sos.offline_queued') || 'Network unavailable. Your SOS alert is queued and will sync automatically once connected.');
+        } else {
+          Alert.alert(
+            t('sos.title'),
+            t('sos.offline_queued') || 'Network unavailable. Your SOS alert is queued and will sync automatically once connected.',
+            [{ text: 'OK' }]
+          );
+        }
+      } else if (result.alert) {
+        setActiveAlert(result.alert);
+        startPolling(result.alert.id, result.alert.statusToken);
+      }
+    } catch (err: any) {
+      setIsSubmitting(false);
+      const errMsg = `An error occurred: ${err?.message || 'Unknown error'}. Please dial 112 directly if this is a life-threatening emergency.`;
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(errMsg);
+      } else {
+        Alert.alert('⚠️ SOS Alert', errMsg, [{ text: 'OK' }]);
+      }
     }
   };
 
   function startPolling(alertId: string, statusToken: string) {
     if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    let consecutiveErrors = 0;
 
     const poll = async () => {
       const data = await SosService.pollAlertStatus(alertId, statusToken);
       if (data && data.alert) {
+        consecutiveErrors = 0;
         setActiveAlert((prev) => (prev ? { ...prev, status: data.alert.status } : null));
         setUpdates(data.updates || []);
         if (data.alert.assignedToName) {
@@ -162,17 +247,44 @@ export default function SOSScreen() {
           clearInterval(pollTimerRef.current);
           SosService.clearActiveAlert();
         }
+      } else {
+        consecutiveErrors++;
+        // If alert was not found on server for 3 consecutive polls (e.g. stale from previous test or DB reset), clear it
+        if (consecutiveErrors >= 3) {
+          clearInterval(pollTimerRef.current);
+          SosService.clearActiveAlert();
+          setActiveAlert(null);
+        }
       }
     };
 
     poll();
     pollTimerRef.current = setInterval(poll, 5000);
+  }
+
+  const handleClearAlert = async () => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    await SosService.clearActiveAlert();
+    setActiveAlert(null);
+    setUpdates([]);
+    setAssignedInfo(null);
   };
 
   const handleCancelAlert = () => {
+    const cancelMsg = 'Are you sure you want to cancel this emergency alert? Please only cancel if this was an accidental trigger.';
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const ok = window.confirm(cancelMsg);
+      if (ok && activeAlert) {
+        SosService.cancelAlert(activeAlert.id, activeAlert.statusToken, 'User cancelled on mobile app');
+        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+        handleClearAlert();
+      }
+      return;
+    }
+
     Alert.alert(
       t('sos.actions.cancel_alert'),
-      'Are you sure you want to cancel this emergency alert? Please only cancel if this was an accidental trigger.',
+      cancelMsg,
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -182,7 +294,7 @@ export default function SOSScreen() {
             if (activeAlert) {
               await SosService.cancelAlert(activeAlert.id, activeAlert.statusToken, 'User cancelled on mobile app');
               if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-              setActiveAlert(null);
+              await handleClearAlert();
             }
           },
         },
@@ -191,11 +303,21 @@ export default function SOSScreen() {
   };
 
   const handleSendSms = async () => {
-    const isAvailable = await SMS.isAvailableAsync();
     const typeKeyword = (selectedType || activeAlert?.type || 'GENERAL').toUpperCase();
-    const zoneKeyword = zone || activeAlert?.zoneCode || '';
-    const body = `SOS ${typeKeyword} ${zoneKeyword}`.trim();
+    const zoneKeyword = zone || activeAlert?.zoneCode ? ` ZONE:${zone || activeAlert?.zoneCode}` : '';
+    const locKeyword = userCoords
+      ? ` GPS:${userCoords.latitude.toFixed(5)},${userCoords.longitude.toFixed(5)}`
+      : '';
+    const body = `SOS ${typeKeyword}${zoneKeyword}${locKeyword}`.trim();
 
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        window.location.href = `sms:112?body=${encodeURIComponent(body)}`;
+      }
+      return;
+    }
+
+    const isAvailable = SMS ? await SMS.isAvailableAsync() : false;
     if (isAvailable) {
       await SMS.sendSMSAsync(['112'], body);
     } else {
@@ -205,7 +327,36 @@ export default function SOSScreen() {
     }
   };
 
+  const handleAddNote = async () => {
+    if (!activeAlert || !noteInput.trim()) return;
+    setIsSubmittingNote(true);
+    try {
+      const ok = await SosService.addNote(activeAlert.id, activeAlert.statusToken, noteInput.trim());
+      if (ok) {
+        setNoteInput('');
+        const data = await SosService.pollAlertStatus(activeAlert.id, activeAlert.statusToken);
+        if (data?.updates) setUpdates(data.updates);
+      } else {
+        Alert.alert('Failed to add note', 'Could not save note to emergency record. Please try again.');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to submit update');
+    } finally {
+      setIsSubmittingNote(false);
+    }
+  };
+
   const handleCall = (number: string, title: string) => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        const ok = window.confirm(`${title}\n\nDial emergency helpline ${number}?`);
+        if (ok) {
+          window.location.href = `tel:${number}`;
+        }
+      }
+      return;
+    }
+
     Alert.alert(title, `Dial emergency helpline ${number}?`, [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -330,6 +481,34 @@ export default function SOSScreen() {
             </View>
           ) : null}
 
+          {/* Add Pilgrim Note to Responder */}
+          <View style={styles.addNoteContainer}>
+            <Text style={[styles.addNoteTitle, { fontFamily: fontFamilyBold }]}>
+              Add Note for Responders:
+            </Text>
+            <View style={styles.addNoteRow}>
+              <TextInput
+                style={[styles.noteInput, { fontFamily }]}
+                placeholder="e.g. Near red pillar, need wheelchair..."
+                placeholderTextColor="#A8A29E"
+                value={noteInput}
+                onChangeText={setNoteInput}
+                editable={!isSubmittingNote}
+              />
+              <TouchableOpacity
+                style={[styles.addNoteBtn, (!noteInput.trim() || isSubmittingNote) && styles.addNoteBtnDisabled]}
+                onPress={handleAddNote}
+                disabled={!noteInput.trim() || isSubmittingNote}
+              >
+                {isSubmittingNote ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.addNoteBtnText, { fontFamily: fontFamilyBold }]}>Send</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Action buttons */}
           <View style={styles.activeActionsRow}>
             <TouchableOpacity style={styles.btnActionSms} onPress={handleSendSms}>
@@ -340,6 +519,15 @@ export default function SOSScreen() {
               <Text style={styles.btnActionCancelText}>{t('sos.actions.cancel_alert')}</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Dismiss & Start New Alert option */}
+          <TouchableOpacity
+            style={[styles.btnActionClear, { marginTop: 10 }]}
+            onPress={handleClearAlert}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.btnActionClearText}>✕ Dismiss Alert / Start New SOS</Text>
+          </TouchableOpacity>
         </Card>
       ) : (
         /* TRIGGER / CATEGORY SELECTION VIEW */
@@ -379,6 +567,39 @@ export default function SOSScreen() {
           <Text style={[styles.categorySectionSubtitle, { fontFamily }]}>
             {t('sos.subtitle')}
           </Text>
+
+          {/* Prominent GPS Location Status Card */}
+          <Card style={[styles.gpsStatusCard, userCoords ? styles.gpsCardSuccess : styles.gpsCardWarning]}>
+            <View style={styles.gpsRow}>
+              <Text style={{ fontSize: 24 }}>{userCoords ? '📍' : '⚠️'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.gpsTitle, { fontFamily: fontFamilyBold }]}>
+                  {userCoords ? 'GPS Location Acquired' : 'GPS Rescue Location Missing'}
+                </Text>
+                <Text style={[styles.gpsDesc, { fontFamily }]}>
+                  {userCoords
+                    ? `Coordinates: ${userCoords.latitude.toFixed(5)}, ${userCoords.longitude.toFixed(5)} (±${Math.round(userCoords.accuracy || 15)}m)`
+                    : 'Emergency rescue teams need your GPS coordinates to locate you at the ghats.'}
+                </Text>
+              </View>
+              {!userCoords && (
+                <TouchableOpacity
+                  style={styles.btnGpsAcquire}
+                  onPress={handleAcquireLocation}
+                  disabled={isAcquiringLocation}
+                  accessibilityRole="button"
+                >
+                  {isAcquiringLocation ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={[styles.btnGpsAcquireText, { fontFamily: fontFamilyBold }]}>
+                      Share GPS
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          </Card>
 
           {/* Category Touch Targets (≥ 56dp height each) */}
           <TouchableOpacity
@@ -581,6 +802,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
   },
   btnDial112Text: {
     color: '#FFFFFF',
@@ -624,6 +846,50 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     marginBottom: 14,
   },
+  gpsStatusCard: {
+    padding: 12,
+    marginBottom: 14,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  gpsCardSuccess: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+  },
+  gpsCardWarning: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FCD34D',
+  },
+  gpsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  gpsTitle: {
+    fontSize: 14,
+    color: '#1E293B',
+    fontWeight: '700',
+  },
+  gpsDesc: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  btnGpsAcquire: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 84,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
+  },
+  btnGpsAcquireText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   categoryBtn: {
     minHeight: 64, // Touch target ≥ 56dp
     borderRadius: 12,
@@ -633,6 +899,7 @@ const styles = StyleSheet.create({
     gap: 14,
     marginBottom: 10,
     borderWidth: 1.5,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
   },
   catMedical: {
     backgroundColor: '#FEE2E2',
@@ -765,6 +1032,50 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 14,
   },
+  addNoteContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#FEE2E2',
+  },
+  addNoteTitle: {
+    fontSize: 13,
+    color: '#991B1B',
+    marginBottom: 6,
+  },
+  addNoteRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  noteInput: {
+    flex: 1,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: '#1C1917',
+  },
+  addNoteBtn: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 16,
+    minHeight: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
+  },
+  addNoteBtnDisabled: {
+    backgroundColor: '#FCA5A5',
+  },
+  addNoteBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   btnActionSms: {
     flex: 1,
     backgroundColor: '#4B5563',
@@ -772,6 +1083,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
   },
   btnActionSmsText: {
     color: '#FFFFFF',
@@ -787,11 +1099,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
   },
   btnActionCancelText: {
     color: '#DC2626',
     fontWeight: '700',
     fontSize: 13,
+  },
+  btnActionClear: {
+    width: '100%',
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    minHeight: 42,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
+  },
+  btnActionClearText: {
+    color: '#4338CA',
+    fontWeight: '700',
+    fontSize: 12,
   },
   contactsSection: {
     marginBottom: theme.spacing.xl,
@@ -824,6 +1153,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer', userSelect: 'none' } as any) : {}),
   },
   contactCallBtnText: {
     color: '#FFFFFF',

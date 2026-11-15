@@ -154,7 +154,7 @@ export class IssuesRepository {
       dto.qr_zone_id || null,
       ghatId,
       reporter?.id || null,
-      reporter?.phone || null,
+      reporter?.phone || (dto as any).reporter_phone || null,
       dto.reporter_device_token || null,
       dto.device_fingerprint || null,
       dto.client_metadata ? JSON.stringify(dto.client_metadata) : null,

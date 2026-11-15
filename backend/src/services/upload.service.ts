@@ -4,7 +4,9 @@ import fs from 'fs';
 import sharp from 'sharp';
 import { env } from '../config/env.js';
 
-const UPLOAD_SECRET = env.UPLOAD_SECRET;
+const UPLOAD_SECRET =
+  env.UPLOAD_SECRET ||
+  (env.NODE_ENV !== 'production' ? 'dev-fallback-upload-secret-at-least-32-chars' : undefined);
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB max
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 

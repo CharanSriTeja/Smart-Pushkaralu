@@ -16,6 +16,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { IssueService } from '../services/issueService';
 import { IssueReport, IssueUpdate, IssueStatus } from '../types/issues';
 import { API_BASE_URL } from '../services/api';
+import { colors } from '../theme/tokens';
 
 const STATUS_STEPS: IssueStatus[] = ['submitted', 'under_review', 'in_progress', 'resolved'];
 
@@ -92,7 +93,7 @@ export default function IssueTimelineScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0F52BA" />
+        <ActivityIndicator size="large" color={colors.primary[600]} />
         <Text style={[styles.loadingText, { fontFamily }]}>Loading grievance status...</Text>
       </View>
     );
@@ -256,7 +257,7 @@ export default function IssueTimelineScreen() {
 
             <View style={styles.timelineList}>
               {timeline.map((update, idx) => {
-                const updColor = STATUS_COLORS[update.status]?.color || '#0F52BA';
+                const updColor = STATUS_COLORS[update.status]?.color || colors.primary[600];
                 const resPhotoUrl = update.resolution_photo_url
                   ? update.resolution_photo_url.startsWith('http')
                     ? update.resolution_photo_url
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 50,
     paddingBottom: 16,
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
   },
   backBtn: {
     width: 36,
@@ -453,7 +454,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#16A34A',
   },
   stepDotCurrent: {
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
   },
   stepDotRejected: {
     backgroundColor: '#DC2626',
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   stepTitleCurrent: {
-    color: '#0F52BA',
+    color: colors.primary[700],
     fontSize: 14,
   },
   stepDesc: {
@@ -599,7 +600,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backHomeBtn: {
-    backgroundColor: '#0F52BA',
+    backgroundColor: colors.primary[600],
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,

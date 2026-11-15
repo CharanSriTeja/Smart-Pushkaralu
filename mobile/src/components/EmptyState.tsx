@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { theme } from '../theme';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { colors, spacing, typography } from '../theme/tokens';
 import { Button } from './Button';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -10,6 +10,7 @@ export interface EmptyStateProps {
   description?: string;
   actionTitle?: string;
   onAction?: () => void;
+  style?: ViewStyle;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
@@ -18,22 +19,33 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   description,
   actionTitle,
   onAction,
+  style,
 }) => {
   const { fontFamily, fontFamilyBold } = useLanguage();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <Text style={styles.icon}>{icon}</Text>
-      <Text style={[styles.title, { fontFamily: fontFamilyBold }]}>{title}</Text>
+      <Text
+        maxFontSizeMultiplier={typography.maxScale}
+        style={[styles.title, { fontFamily: fontFamilyBold }]}
+      >
+        {title}
+      </Text>
       {description ? (
-        <Text style={[styles.description, { fontFamily }]}>{description}</Text>
+        <Text
+          maxFontSizeMultiplier={typography.maxScale}
+          style={[styles.description, { fontFamily }]}
+        >
+          {description}
+        </Text>
       ) : null}
       {actionTitle && onAction ? (
         <Button
           title={actionTitle}
           onPress={onAction}
-          variant="outline"
-          size="small"
+          variant="secondary"
+          size="sm"
           style={styles.button}
         />
       ) : null}
@@ -45,28 +57,28 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: theme.spacing.xl,
-    marginVertical: theme.spacing.lg,
+    padding: spacing.xl,
+    marginVertical: spacing.lg,
   },
   icon: {
     fontSize: 48,
-    marginBottom: theme.spacing.md,
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: theme.typography.sizes.h3,
-    color: theme.colors.textPrimary,
+    fontSize: typography.sizes.h3,
+    color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: theme.spacing.xs,
+    marginBottom: spacing.xs,
   },
   description: {
-    fontSize: theme.typography.sizes.bodySm,
-    color: theme.colors.textSecondary,
+    fontSize: typography.sizes.bodySm || 14,
+    color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: theme.spacing.md,
+    lineHeight: typography.lineHeights.caption,
+    marginBottom: spacing.md,
+    maxWidth: 300,
   },
   button: {
-    marginTop: theme.spacing.sm,
+    marginTop: spacing.sm,
   },
 });
-

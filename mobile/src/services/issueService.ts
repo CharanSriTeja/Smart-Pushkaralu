@@ -1,5 +1,5 @@
 
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 import { Platform } from 'react-native';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { apiRequest, API_BASE_URL, getInMemoryAccessToken } from './api';
@@ -10,10 +10,10 @@ const DEVICE_FP_KEY = 'sp_device_fingerprint';
 
 async function getOrGenerateDeviceFingerprint(): Promise<string> {
   try {
-    let fp = await SecureStore.getItemAsync(DEVICE_FP_KEY);
+    let fp = await storage.getItem(DEVICE_FP_KEY);
     if (!fp) {
       fp = `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      await SecureStore.setItemAsync(DEVICE_FP_KEY, fp);
+      await storage.setItem(DEVICE_FP_KEY, fp);
     }
     return fp;
   } catch {
@@ -23,7 +23,7 @@ async function getOrGenerateDeviceFingerprint(): Promise<string> {
 
 export async function getSavedTicketNumbers(): Promise<string[]> {
   try {
-    const raw = await SecureStore.getItemAsync(LOCAL_TICKETS_KEY);
+    const raw = await storage.getItem(LOCAL_TICKETS_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -35,7 +35,7 @@ export async function saveTicketNumber(ticketNo: string): Promise<void> {
     const list = await getSavedTicketNumbers();
     if (!list.includes(ticketNo)) {
       list.unshift(ticketNo);
-      await SecureStore.setItemAsync(LOCAL_TICKETS_KEY, JSON.stringify(list.slice(0, 50)));
+      await storage.setItem(LOCAL_TICKETS_KEY, JSON.stringify(list.slice(0, 50)));
     }
   } catch (err) {
     console.warn('[issueService] Failed to save ticket number:', err);
@@ -47,6 +47,9 @@ export class IssueService {
    * Compresses image client-side to ensure swift upload on weak festival cellular connectivity
    */
   static async compressPhoto(uri: string): Promise<string> {
+    if (Platform.OS === 'web') {
+      return uri;
+    }
     try {
       const result = await manipulateAsync(
         uri,

@@ -116,7 +116,7 @@ export const TransportScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F52BA" />
+      <StatusBar barStyle="light-content" />
 
       {/* Top Header */}
       <View style={styles.header}>

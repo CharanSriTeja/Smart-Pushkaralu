@@ -19,7 +19,11 @@ const allowedOrigins = getCorsOrigins();
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        (env.NODE_ENV !== 'production' && allowedOrigins.includes('*'))
+      ) {
         return callback(null, true);
       }
       if (env.NODE_ENV !== 'production') {

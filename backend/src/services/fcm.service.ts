@@ -228,7 +228,7 @@ export class FCMService {
   /**
    * Internal delivery helper: Sends to Firebase Admin if configured, always records history
    */
-  private static async deliverToTopic(
+  public static async deliverToTopic(
     topic: string,
     language: SupportedLanguage,
     title: string,
