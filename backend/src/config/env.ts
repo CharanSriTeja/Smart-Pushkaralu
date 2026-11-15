@@ -6,6 +6,9 @@ dotenv.config();
 const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  ALLOW_DEV_AUTH: z
+    .preprocess((val) => val === 'true' || val === '1', z.boolean())
+    .default(false),
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/smart_pushkaralu'),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters long').default('smart-pushkaralu-dev-secret-super-safe-key-32chars'),
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional(),
@@ -45,6 +48,7 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+export const devAuthEnabled = env.NODE_ENV !== 'production' && env.ALLOW_DEV_AUTH;
 
 export const getAdminPhoneList = (): string[] => {
   if (!env.ADMIN_PHONES) return [];

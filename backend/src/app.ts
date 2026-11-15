@@ -9,7 +9,7 @@ import { errorHandler } from './middleware/error-handler.js';
 import {
   generalLimiter,
   publicWriteLimiter,
-  authLimiter,
+  publicGhatsLimiter,
 } from './middleware/rate-limiter.js';
 import { healthRouter } from './routes/v1/health.js';
 import { authRouter } from './routes/v1/auth.js';
@@ -34,6 +34,7 @@ import { adminSevaRouter } from './routes/v1/admin-seva.routes.js';
 initSentry();
 
 export const app = express();
+app.set('trust proxy', 1);
 
 // Security headers with cross-origin resource policy disabled for static mobile previews
 app.use(
@@ -77,15 +78,17 @@ app.use(httpLogger);
 
 // API v1 Routes
 app.use('/v1', healthRouter);
-app.use('/v1/auth', authLimiter, authRouter);
+app.use('/v1/auth', authRouter);
 app.use('/v1', userRouter);
 app.use('/v1', settingsRouter);
 app.use('/v1', usageRouter);
 app.use('/v1', icccRouter);
+app.use('/v1/ghats', publicGhatsLimiter);
 app.use('/v1', ghatsRouter);
 app.use('/v1', crowdReportRouter);
+app.use('/v1/news', publicGhatsLimiter);
 app.use('/v1', newsRouter);
-app.use('/v1', publicWriteLimiter, devicesRouter);
+app.use('/v1', devicesRouter);
 app.use('/v1', issuesRouter);
 app.use('/v1', sosRouter);
 app.use('/v1/admin/sos', adminSosRouter);

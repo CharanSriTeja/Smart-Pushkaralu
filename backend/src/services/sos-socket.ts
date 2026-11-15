@@ -36,16 +36,6 @@ export function initSosSocket(io: Server): Namespace {
         ? authHeader.substring(7).trim()
         : authHeader.trim();
 
-      if (env.NODE_ENV !== 'production' && token === 'dev-admin-token') {
-        socket.data.user = {
-          id: 'admin-super-01',
-          phone: '+919999999999',
-          name: 'District Collector (Super Admin)',
-        };
-        next();
-        return;
-      }
-
       const payload = verifyAccessToken(token);
       const user = await findUserById(payload.userId);
 
@@ -186,4 +176,3 @@ export function trackAlertForCluster(params: {
 export function resetClusterTracker(): void {
   clusterTracker.clear();
 }
-

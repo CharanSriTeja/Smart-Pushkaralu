@@ -4,12 +4,9 @@ import { CrowdController } from '../../modules/crowd/crowd.controller.js';
 import { NoticesController } from '../../modules/notices/notices.controller.js';
 import { FacilitiesController } from '../../modules/facilities/facilities.controller.js';
 import { PlacesController } from '../../modules/places/places.controller.js';
-import { publicGhatsLimiter, crowdReportLimiter } from '../../middleware/rate-limiter.js';
+import { crowdReportLimiter } from '../../middleware/rate-limiter.js';
 
 export const ghatsRouter = Router();
-
-// Rate limited public GET endpoints
-ghatsRouter.use(publicGhatsLimiter);
 
 // GET /v1/ghats (list with filters, search, distance calculation)
 ghatsRouter.get('/ghats', GhatsController.listGhats);
@@ -32,4 +29,3 @@ ghatsRouter.get('/ghats/:id/nearby', PlacesController.getNearby);
 // Crowd reports router (can also be mounted at root /v1/crowd-reports)
 export const crowdReportRouter = Router();
 crowdReportRouter.post('/crowd-reports', crowdReportLimiter, CrowdController.submitCrowdReport);
-

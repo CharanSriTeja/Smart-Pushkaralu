@@ -88,15 +88,15 @@ export interface CrowdReport {
 export interface AuditLog {
   id: string;
   admin_id: string | null;
-  admin_email: string;
+  admin_phone?: string | null;
+  admin_name?: string | null;
   action: string;
   entity_type: string;
-  entity_id: string;
-  old_values: any | null;
-  new_values: any | null;
+  entity_id: string | null;
+  old_value: any | null;
+  new_value: any | null;
   source_url: string | null;
-  reason: string;
-  ip_address: string | null;
+  reason: string | null;
   created_at: string;
 }
 

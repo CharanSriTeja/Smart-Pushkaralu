@@ -16,6 +16,7 @@ import {
   getRefreshTokenExpiryDate,
 } from '../../services/token.js';
 import { authLimiter } from '../../middleware/rate-limiter.js';
+import { devAuthEnabled } from '../../config/env.js';
 
 export const authRouter = Router();
 
@@ -44,8 +45,7 @@ authRouter.post('/firebase', async (req, res, next) => {
     let firebaseUid: string;
     let phone: string | undefined;
 
-    // Support development tokens for Web browser test suites and local testing
-    if (process.env.NODE_ENV !== 'production' && data.idToken.startsWith('test-id-token:')) {
+    if (devAuthEnabled && data.idToken.startsWith('test-id-token:')) {
       phone = data.idToken.replace('test-id-token:', '');
       firebaseUid = 'dev-uid-' + phone.replace(/\D/g, '');
     } else {

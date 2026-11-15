@@ -30,7 +30,7 @@ export interface AuditLogRecord {
 /**
  * Inserts an immutable audit record for tracking admin actions and sensitive modifications.
  */
-export async function writeAudit(entry: AuditLogEntry): Promise<AuditLogRecord | null> {
+export async function writeAudit(entry: AuditLogEntry): Promise<AuditLogRecord> {
   try {
     const { rows } = await query<AuditLogRecord>(
       `INSERT INTO audit_logs (
@@ -51,11 +51,20 @@ export async function writeAudit(entry: AuditLogEntry): Promise<AuditLogRecord |
       ]
     );
 
-    return rows[0] || null;
-  } catch (err: any) {
-    // Fail safely without disrupting the primary request, but log prominently
-    logger.error({ err, entry }, 'Failed to record audit log entry');
-    return null;
+    if (!rows[0]) {
+      throw new Error('Audit log insert returned no record');
+    }
+
+    return rows[0];
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    logger.error(
+      { err: error, action: entry.action, entityType: entry.entityType, entityId: entry.entityId },
+      'Failed to record audit log entry'
+    );
+    throw new Error(
+      `Failed to record audit log entry for ${entry.action} on ${entry.entityType}: ${error.message}`,
+      { cause: error }
+    );
   }
 }
-
