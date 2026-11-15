@@ -3,6 +3,13 @@ import { z } from 'zod';
 
 dotenv.config();
 
+const INSECURE_JWT_DEFAULTS = [
+  'smart-pushkaralu-dev-secret-super-safe-key-32chars',
+  'smart-pushkaralu-super-secret-jwt-key-2027',
+  'changeme',
+  'secret',
+];
+
 const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -12,6 +19,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/smart_pushkaralu'),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters long').default('smart-pushkaralu-dev-secret-super-safe-key-32chars'),
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional(),
+  UPLOAD_SECRET: z.string().min(32).optional(),
   ADMIN_PHONES: z.string().default(''),
   CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:8081,http://localhost:3000'),
   ICCC_ENABLED: z
@@ -50,6 +58,13 @@ if (!parsed.success) {
 export const env = parsed.data;
 export const devAuthEnabled = env.NODE_ENV !== 'production' && env.ALLOW_DEV_AUTH;
 
+if (env.NODE_ENV === 'production' && !env.UPLOAD_SECRET) {
+  throw new Error('UPLOAD_SECRET must be configured in production');
+}
+if (env.NODE_ENV === 'production' && INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
+  throw new Error('JWT_SECRET must be replaced with a random production secret');
+}
+
 export const getAdminPhoneList = (): string[] => {
   if (!env.ADMIN_PHONES) return [];
   return env.ADMIN_PHONES.split(',')
@@ -58,7 +73,7 @@ export const getAdminPhoneList = (): string[] => {
 };
 
 export const getCorsOrigins = (): string[] => {
-  if (!env.CORS_ORIGINS) return ['*'];
+  if (!env.CORS_ORIGINS) return [];
   return env.CORS_ORIGINS.split(',')
     .map((o) => o.trim())
     .filter(Boolean);

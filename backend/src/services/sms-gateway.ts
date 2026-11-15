@@ -25,10 +25,40 @@ export interface SmsGatewayAdapter {
   sendSms(to: string, message: string): Promise<boolean>;
 }
 
+function hasValidWebhookSignature(req: Request): boolean {
+  const secret = env.SOS_WEBHOOK_SECRET;
+  const signature = (req.headers['x-signature'] || req.headers['x-webhook-signature']) as
+    | string
+    | undefined;
+
+  if (!secret) return true;
+  if (!signature) {
+    logger.warn('[SmsGateway] Missing webhook signature header');
+    return false;
+  }
+
+  const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+  if (!rawBody) {
+    logger.warn('[SmsGateway] Raw webhook body unavailable for signature verification');
+    return false;
+  }
+
+  const given = Buffer.from(signature, 'hex');
+
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest();
+  if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) {
+    logger.warn('[SmsGateway] Webhook HMAC signature verification failed');
+    return false;
+  }
+
+  return true;
+}
+
 export class MockSmsGatewayAdapter implements SmsGatewayAdapter {
   public static sentMessages: Array<{ to: string; message: string; timestamp: Date }> = [];
 
   parseAndValidate(req: Request): SmsWebhookPayload | null {
+    if (!hasValidWebhookSignature(req)) return null;
     const body = req.body || {};
     const phone = body.phone || body.From || body.from || body.sender || '';
     const message = body.message || body.Body || body.text || body.content || '';
@@ -60,24 +90,7 @@ export class MockSmsGatewayAdapter implements SmsGatewayAdapter {
 
 export class GenericSmsGatewayAdapter implements SmsGatewayAdapter {
   parseAndValidate(req: Request): SmsWebhookPayload | null {
-    const secret = env.SOS_WEBHOOK_SECRET;
-    const signature = (req.headers['x-signature'] || req.headers['x-webhook-signature']) as string | undefined;
-
-    // In production or when secret is set, verify HMAC signature
-    if (secret && secret !== 'test-secret' && env.NODE_ENV === 'production') {
-      if (!signature) {
-        logger.warn('[SmsGateway] Missing webhook signature header');
-        return null;
-      }
-
-      const bodyRaw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-      const expectedSignature = crypto.createHmac('sha256', secret).update(bodyRaw).digest('hex');
-
-      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
-        logger.warn('[SmsGateway] Webhook HMAC signature verification failed');
-        return null;
-      }
-    }
+    if (!hasValidWebhookSignature(req)) return null;
 
     const body = req.body || {};
     const phone = body.phone || body.From || body.from || body.sender || '';
@@ -190,4 +203,3 @@ export function parseSmsSosMessage(text: string, phone: string): ParsedSmsSos {
     originalMessage: trimmed,
   };
 }
-

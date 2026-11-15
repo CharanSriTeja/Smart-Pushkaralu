@@ -19,8 +19,21 @@ const allowedOrigins = getCorsOrigins();
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
+      }
+      if (env.NODE_ENV !== 'production') {
+        try {
+          const parsedOrigin = new URL(origin);
+          if (
+            ['localhost', '127.0.0.1'].includes(parsedOrigin.hostname) &&
+            ['http:', 'https:'].includes(parsedOrigin.protocol)
+          ) {
+            return callback(null, true);
+          }
+        } catch {
+          // Reject malformed origins below.
+        }
       }
       return callback(new Error('Not allowed by CORS'));
     },

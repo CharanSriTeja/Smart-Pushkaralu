@@ -44,7 +44,7 @@ export function errorHandler(
     return;
   }
 
-  const message = err.message || 'Internal server error';
+  const message = statusCode >= 500 ? 'Internal server error' : err.message || 'Request failed';
   const code = err.code || 'INTERNAL_ERROR';
 
   res.status(statusCode).json({

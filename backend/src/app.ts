@@ -1,5 +1,5 @@
 import path from 'path';
-import express from 'express';
+import express, { Request } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { getCorsOrigins } from './config/env.js';
@@ -71,7 +71,14 @@ app.get(['/sos', '/sos/'], (_req, res) => {
 app.use('/sos', express.static(path.join(process.cwd(), 'public/sos')));
 
 // Strict body parsing limit for low bandwidth / security (unless specific route overrides)
-app.use(express.json({ limit: '100kb' }));
+app.use(
+  express.json({
+    limit: '100kb',
+    verify: (req, _res, buf) => {
+      (req as Request & { rawBody?: Buffer }).rawBody = Buffer.from(buf);
+    },
+  })
+);
 
 // Structured Pino HTTP logging with request id and token/phone redaction
 app.use(httpLogger);

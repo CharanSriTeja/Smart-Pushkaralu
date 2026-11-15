@@ -158,8 +158,18 @@ authRouter.post('/refresh', async (req, res, next) => {
       return;
     }
 
-    // Revoke old refresh token (Token Rotation)
-    await revokeRefreshToken(tokenHash);
+    // Revoke old refresh token atomically; reuse invalidates the whole token family.
+    const revoked = await revokeRefreshToken(tokenHash);
+    if (!revoked) {
+      await revokeAllUserRefreshTokens(tokenRecord.user_id);
+      res.status(401).json({
+        error: {
+          code: 'REVOKED_REFRESH_TOKEN',
+          message: 'Token already used',
+        },
+      });
+      return;
+    }
 
     // Look up user
     const user = await findUserById(tokenRecord.user_id);

@@ -124,7 +124,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const parts = jwt.split('.');
       if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1]));
+        const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+        const payload = JSON.parse(atob(padded));
         setUser({
           id: payload.userId || 'admin-real',
           phone: payload.phone || '+91 99999 99999',
@@ -172,4 +174,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export function useAuth() {
   return useContext(AuthContext);
 }
-

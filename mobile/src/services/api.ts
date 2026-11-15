@@ -5,17 +5,12 @@ const REFRESH_TOKEN_KEY = 'sp_refresh_token';
 const USER_CACHE_KEY = 'sp_user_cache';
 
 function getApiBaseUrl(): string {
-  if (Platform.OS === 'android') {
-    if (process.env.EXPO_PUBLIC_API_URL && !process.env.EXPO_PUBLIC_API_URL.includes('localhost') && !process.env.EXPO_PUBLIC_API_URL.includes('127.0.0.1')) {
-      return process.env.EXPO_PUBLIC_API_URL;
-    }
-    // Android emulator routes host machine loopback to 10.0.2.2
-    return 'http://10.0.2.2:4000';
+  const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (configuredUrl) return configuredUrl;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('EXPO_PUBLIC_API_URL must be configured in production');
   }
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-  return 'http://localhost:4000';
+  return Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000';
 }
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -97,14 +92,28 @@ async function refreshAccessToken(): Promise<string | null> {
         throw new Error('No refresh token available');
       }
 
-      const response = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: storedRefreshToken }),
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      let response: Response;
+      try {
+        response = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: storedRefreshToken }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
 
       if (!response.ok) {
-        throw new Error('Refresh token rejected');
+        if (response.status === 401 || response.status === 403) {
+          setInMemoryAccessToken(null);
+          await setStoredRefreshToken(null);
+          await setCachedUser(null);
+          logoutCallback?.();
+        }
+        return null;
       }
 
       const data = await response.json();
@@ -113,14 +122,8 @@ async function refreshAccessToken(): Promise<string | null> {
         await setStoredRefreshToken(data.refreshToken);
       }
       return data.accessToken;
-    } catch (err) {
-      // Clear tokens and notify app of logout
-      setInMemoryAccessToken(null);
-      await setStoredRefreshToken(null);
-      await setCachedUser(null);
-      if (logoutCallback) {
-        logoutCallback();
-      }
+    } catch {
+      // Keep the refresh token across transient network failures.
       return null;
     } finally {
       refreshPromise = null;
@@ -148,14 +151,25 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${inMemoryAccessToken}`;
   }
 
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      ...options,
-      headers,
-    });
-  } catch (err: any) {
-    throw new Error('Network request failed: ' + (err.message || 'Check connection'));
+  const method = (options.method || 'GET').toUpperCase();
+  const maxAttempts = method === 'GET' ? 2 : 1;
+  let response: Response | null = null;
+  let networkError: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      response = await fetch(url, { ...options, headers, signal: controller.signal });
+      break;
+    } catch (err) {
+      networkError = err;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  if (!response) {
+    const error = networkError instanceof Error ? networkError.message : 'Check connection';
+    throw new Error('Network request failed: ' + error);
   }
 
   // Handle 401 Unauthorized -> Refresh token & retry once

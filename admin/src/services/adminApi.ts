@@ -3,8 +3,7 @@ import { Ghat, GhatNotice, CrowdStatus, AuditLog, PublishStatus, CrowdLevel } fr
 const rawApiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000';
 const API_BASE_URL = rawApiUrl.endsWith('/v1') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/v1`;
 
-// Default mock admin token for control room development session
-let activeToken = localStorage.getItem('pushkaralu_admin_token') || 'dev-admin-token';
+let activeToken = localStorage.getItem('pushkaralu_admin_token') || '';
 
 export function setAdminToken(token: string) {
   activeToken = token;
@@ -15,15 +14,17 @@ export function getAdminToken() {
   return (
     localStorage.getItem('sp_admin_token') ||
     localStorage.getItem('pushkaralu_admin_token') ||
-    activeToken ||
-    'dev-admin-token'
+    activeToken
   );
 }
 
-const authHeaders = () => ({
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${getAdminToken()}`,
-});
+const authHeaders = () => {
+  const token = getAdminToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
 export const AdminApi = {
   async getGhats(params: Record<string, string> = {}): Promise<{ data: Ghat[]; total: number }> {
@@ -669,39 +670,6 @@ export const AdminApi = {
     }
   },
 
-  async createTransportHub(data: any): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error?.message || 'Failed to create hub');
-    return json.item;
-  },
-
-  async updateTransportHub(id: string, data: any): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs/${id}`, {
-      method: 'PUT',
-      headers: authHeaders(),
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error?.message || 'Failed to update hub');
-    return json.item;
-  },
-
-  async deleteTransportHub(id: string, reason: string): Promise<any> {
-    const res = await fetch(`${API_BASE_URL}/admin/transport/hubs/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-      body: JSON.stringify({ reason }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error?.message || 'Failed to delete hub');
-    return json;
-  },
-
   // Bus Routes
   async getBusRoutes(params: Record<string, string> = {}): Promise<any[]> {
     try {
@@ -1100,5 +1068,4 @@ export const AdminApi = {
   },
 };
 
-
-
+export const adminApi = AdminApi;

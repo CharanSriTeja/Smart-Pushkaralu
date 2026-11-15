@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { apiClient } from '../api/client';
+import { apiRequest } from './api';
 import * as SecureStore from 'expo-secure-store';
 
 const FCM_TOKEN_STORAGE_KEY = 'sp_fcm_device_token';
@@ -62,11 +62,14 @@ export async function registerPushNotifications(
     await SecureStore.setItemAsync(FCM_TOKEN_STORAGE_KEY, token);
 
     // Register with backend /v1/devices
-    await apiClient.post('/v1/devices', {
+    await apiRequest('/v1/devices', {
+      method: 'POST',
+      body: JSON.stringify({
       fcmToken: token,
       language,
       topics,
       platform: Platform.OS,
+      }),
     });
 
     console.log('[Push] Device registered with backend successfully.');
@@ -85,13 +88,15 @@ export async function updateDeviceLanguage(language: string): Promise<void> {
     const token = await SecureStore.getItemAsync(FCM_TOKEN_STORAGE_KEY);
     if (!token) return;
 
-    await apiClient.post('/v1/devices', {
+    await apiRequest('/v1/devices', {
+      method: 'POST',
+      body: JSON.stringify({
       fcmToken: token,
       language,
       platform: Platform.OS,
+      }),
     });
   } catch (err: any) {
     console.warn('[Push] Failed to update language topic:', err.message);
   }
 }
-
