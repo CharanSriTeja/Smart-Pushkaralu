@@ -61,10 +61,10 @@ export async function getUserPermissions(
     return { isSuperAdmin: false, permissions: [] };
   }
 
-  const isSuperAdmin = rows.some((r) => r.role_name === 'super_admin');
+  const isSuperAdmin = rows.some((r: any) => r.role_name === 'super_admin');
   const permissions = rows
-    .map((r) => r.permission_name)
-    .filter((p): p is string => Boolean(p));
+    .map((r: any) => r.permission_name)
+    .filter((p: any): p is string => Boolean(p));
 
   return { isSuperAdmin, permissions };
 }

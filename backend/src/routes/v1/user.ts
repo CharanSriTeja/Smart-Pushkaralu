@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth.js';
 import { updateUser, deleteUser, findUserById } from '../../services/user.js';
@@ -14,7 +14,7 @@ const updateProfileSchema = z.object({
 });
 
 // GET /v1/me
-userRouter.get('/me', async (req, res, next) => {
+userRouter.get('/me', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = await findUserById(req.user!.userId);
     if (!user) {
@@ -47,7 +47,7 @@ userRouter.get('/me', async (req, res, next) => {
 });
 
 // PATCH /v1/me
-userRouter.patch('/me', async (req, res, next) => {
+userRouter.patch('/me', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = updateProfileSchema.parse(req.body);
     const updated = await updateUser(req.user!.userId, data);
@@ -82,7 +82,7 @@ userRouter.patch('/me', async (req, res, next) => {
 });
 
 // DELETE /v1/me
-userRouter.delete('/me', async (req, res, next) => {
+userRouter.delete('/me', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const deleted = await deleteUser(req.user!.userId);
 

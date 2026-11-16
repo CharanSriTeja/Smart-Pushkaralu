@@ -2,6 +2,8 @@
   "name": "smart-pushkaralu",
   "private": true,
   "scripts": {
+    "build": "npm --prefix backend run build",
+    "start": "npm --prefix backend run start",
     "verify": "node scripts/verify-all.js",
     "check:contrast": "node scripts/check-contrast.js"
   }

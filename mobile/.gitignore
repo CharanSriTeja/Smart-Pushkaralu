@@ -21,6 +21,8 @@ ios/
 .env
 .env.*
 !.env.example
+google-services.json
+GoogleService-Info.plist
 
 # Expo / Metro
 .metro-health-check*

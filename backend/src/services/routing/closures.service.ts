@@ -34,7 +34,7 @@ export async function findClosuresOnRoute(
       [now, JSON.stringify(geojsonLineString), bufferMeters]
     );
 
-    return res.rows.map((row) => ({
+    return res.rows.map((row: any) => ({
       id: row.id,
       title: typeof row.title === 'string' ? JSON.parse(row.title) : row.title,
       description: row.description ? (typeof row.description === 'string' ? JSON.parse(row.description) : row.description) : null,

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { captureException } from '../lib/sentry.js';
 import { logger } from '../lib/logger.js';
+import { env } from '../config/env.js';
 
 export function errorHandler(
   err: any,
@@ -44,8 +45,11 @@ export function errorHandler(
     return;
   }
 
-  const message = statusCode >= 500 ? 'Internal server error' : err.message || 'Request failed';
-  const code = err.code || 'INTERNAL_ERROR';
+  const isProd = env.NODE_ENV === 'production';
+  const message = statusCode >= 500 && isProd
+    ? 'Internal server error'
+    : (err.message || 'Internal server error');
+  const code = err.code || (statusCode >= 500 ? 'INTERNAL_ERROR' : 'ERROR');
 
   res.status(statusCode).json({
     error: {

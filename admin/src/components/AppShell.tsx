@@ -84,6 +84,29 @@ export const AppShell: React.FC<{ children?: React.ReactNode }> = ({ children })
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {user.role !== 'guest' && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '4px 10px',
+                  borderRadius: `${tokens.radii.pill}px`,
+                  backgroundColor: tokens.colors.primary50,
+                  border: `1px solid ${tokens.colors.borderOrange}`,
+                }}
+              >
+                <span style={{ fontSize: '0.875rem' }}>👤</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: tokens.colors.primary700, lineHeight: 1.2 }}>
+                    {user.name || 'Admin'}
+                  </span>
+                  <span style={{ fontSize: '0.625rem', color: tokens.colors.textMuted, fontWeight: '600', textTransform: 'uppercase' }}>
+                    {user.role.replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+            )}
             <button
               onClick={() => setShowTokenModal(true)}
               style={{
@@ -92,12 +115,12 @@ export const AppShell: React.FC<{ children?: React.ReactNode }> = ({ children })
                 fontWeight: '600',
                 borderRadius: `${tokens.radii.sm}px`,
                 border: `1px solid ${tokens.colors.border}`,
-                backgroundColor: tokens.colors.primary50,
-                color: tokens.colors.primary700,
+                backgroundColor: tokens.colors.bg,
+                color: tokens.colors.textMuted,
                 cursor: 'pointer',
               }}
             >
-              🔑 Set JWT Token
+              🔑 JWT
             </button>
             <button
               onClick={logout}
@@ -108,7 +131,7 @@ export const AppShell: React.FC<{ children?: React.ReactNode }> = ({ children })
                 borderRadius: `${tokens.radii.sm}px`,
                 border: `1px solid ${tokens.colors.border}`,
                 backgroundColor: tokens.colors.bg,
-                color: tokens.colors.textMuted,
+                color: tokens.colors.danger,
                 cursor: 'pointer',
               }}
             >

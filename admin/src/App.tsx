@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { Layout } from './components/Layout';
+import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SOSDashboardPage } from './pages/SOSDashboardPage';
 import { GhatsPage } from './pages/GhatsPage';
@@ -25,6 +26,7 @@ export const App: React.FC = () => {
     <AuthProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<Layout />}>
             <Route index element={<DashboardPage />} />
             <Route path="sos" element={<SOSDashboardPage />} />

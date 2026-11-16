@@ -13,7 +13,10 @@ export class PushkaraluSocketClient {
   private audioCtx: AudioContext | null = null;
 
   constructor(url?: string) {
-    const rawUrl = url || (import.meta as any).env?.VITE_SOCKET_URL || 'http://localhost:4000';
+    const rawUrl = url || (import.meta as any).env?.VITE_SOCKET_URL;
+    if (!rawUrl) {
+      throw new Error('VITE_SOCKET_URL environment variable is required.');
+    }
     this.url = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
   }
 
@@ -22,7 +25,8 @@ export class PushkaraluSocketClient {
 
     const token =
       localStorage.getItem('sp_admin_token') ||
-      localStorage.getItem('pushkaralu_admin_token');
+      localStorage.getItem('pushkaralu_admin_token') ||
+      '';
 
     if (!token) return;
 

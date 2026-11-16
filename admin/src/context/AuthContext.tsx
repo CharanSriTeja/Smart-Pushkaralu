@@ -44,39 +44,13 @@ export const ROLE_PERMISSIONS: Record<MockRole, string[]> = {
   guest: [],
 };
 
-const MOCK_USERS: Record<MockRole, AdminUser> = {
-  super_admin: {
-    id: 'admin-super-01',
-    phone: '+91 99999 99999',
-    name: 'District Collector (Super Admin)',
-    role: 'super_admin',
-    permissions: ROLE_PERMISSIONS.super_admin,
-    isSuperAdmin: true,
-  },
-  editor: {
-    id: 'admin-editor-02',
-    phone: '+91 88888 88888',
-    name: 'Media & Ghat Officer (Editor)',
-    role: 'editor',
-    permissions: ROLE_PERMISSIONS.editor,
-    isSuperAdmin: false,
-  },
-  viewer: {
-    id: 'admin-viewer-03',
-    phone: '+91 77777 77777',
-    name: 'Auditor & Observer (Viewer)',
-    role: 'viewer',
-    permissions: ROLE_PERMISSIONS.viewer,
-    isSuperAdmin: false,
-  },
-  guest: {
-    id: 'guest',
-    phone: '',
-    name: 'Guest / Unauthenticated',
-    role: 'guest',
-    permissions: [],
-    isSuperAdmin: false,
-  },
+const GUEST_USER: AdminUser = {
+  id: '',
+  phone: '',
+  name: 'Guest / Unauthenticated',
+  role: 'guest',
+  permissions: [],
+  isSuperAdmin: false,
 };
 
 interface AuthContextType {
@@ -90,104 +64,88 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: MOCK_USERS.super_admin,
-  mockRole: 'super_admin',
+  user: GUEST_USER,
+  mockRole: 'guest',
   token: null,
   setMockRole: () => {},
   loginWithToken: () => {},
   logout: () => {},
-  hasPermission: () => true,
+  hasPermission: () => false,
 });
 
-export const isDevAuth = Boolean(import.meta.env.DEV || import.meta.env.VITE_MOCK_MODE === 'true');
+export const isDevAuth = false;
+
+function decodeAdminJwt(jwt: string): AdminUser | null {
+  try {
+    const parts = jwt.split('.');
+    if (parts.length === 3) {
+      let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) {
+        base64 += '=';
+      }
+      const payload = JSON.parse(atob(base64));
+      const isAdmin = Boolean(payload.isAdmin);
+      const role: MockRole = (payload.role as MockRole) || (isAdmin ? 'super_admin' : 'viewer');
+      return {
+        id: payload.userId || 'admin',
+        phone: payload.phone || '',
+        name: payload.name || (isAdmin ? 'Admin User' : 'Viewer'),
+        role,
+        permissions: payload.permissions || ROLE_PERMISSIONS[role] || (isAdmin ? ROLE_PERMISSIONS.super_admin : ['audit.read']),
+        isSuperAdmin: isAdmin && role === 'super_admin',
+        token: jwt,
+      };
+    }
+  } catch {
+    // invalid token
+  }
+  return null;
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [mockRole, setRoleState] = useState<MockRole>(() => {
-    if (!isDevAuth) return 'guest';
-    const saved = localStorage.getItem('sp_admin_role');
-    return (saved as MockRole) || 'super_admin';
-  });
-
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('sp_admin_token') || null;
+    return localStorage.getItem('sp_admin_token') || localStorage.getItem('pushkaralu_admin_token') || null;
   });
 
   const [user, setUser] = useState<AdminUser>(() => {
-    if (!isDevAuth && !token) {
-      return MOCK_USERS.guest;
+    const initialToken = localStorage.getItem('sp_admin_token') || localStorage.getItem('pushkaralu_admin_token');
+    if (initialToken) {
+      const decoded = decodeAdminJwt(initialToken);
+      if (decoded) return decoded;
     }
-    return MOCK_USERS[mockRole];
+    return GUEST_USER;
   });
 
   useEffect(() => {
     if (token) {
-      // Decode JWT token user
-      try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          setUser({
-            id: payload.userId || 'admin-real',
-            phone: payload.phone || '',
-            name: payload.name || 'Verified Admin',
-            role: payload.isAdmin ? 'super_admin' : 'viewer',
-            permissions: payload.isAdmin ? ROLE_PERMISSIONS.super_admin : ['audit.read'],
-            isSuperAdmin: Boolean(payload.isAdmin),
-            token,
-          });
-          return;
-        }
-      } catch {
-        // invalid token
+      const decoded = decodeAdminJwt(token);
+      if (decoded) {
+        setUser(decoded);
+        return;
       }
     }
+    setUser(GUEST_USER);
+  }, [token]);
 
-    if (!isDevAuth) {
-      setUser(MOCK_USERS.guest);
-      return;
-    }
-
-    setUser(MOCK_USERS[mockRole]);
-    localStorage.setItem('sp_admin_role', mockRole);
-  }, [mockRole, token]);
-
-  const setMockRole = (role: MockRole) => {
-    if (!isDevAuth) {
-      console.warn('Mock role switcher is disabled in production builds.');
-      return;
-    }
-    setRoleState(role);
+  const setMockRole = (_role: MockRole) => {
+    console.warn('Mock role switcher is disabled in production.');
   };
 
   const loginWithToken = (jwt: string) => {
     setToken(jwt);
     localStorage.setItem('sp_admin_token', jwt);
-    // Parse JWT payload safely if present
-    try {
-      const parts = jwt.split('.');
-      if (parts.length === 3) {
-        const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
-        const payload = JSON.parse(atob(padded));
-        setUser({
-          id: payload.userId || 'admin-real',
-          phone: payload.phone || '+91 99999 99999',
-          name: payload.name || 'Verified Admin',
-          role: payload.isAdmin ? 'super_admin' : 'viewer',
-          permissions: payload.isAdmin ? ROLE_PERMISSIONS.super_admin : ['audit.read'],
-          isSuperAdmin: Boolean(payload.isAdmin),
-          token: jwt,
-        });
-      }
-    } catch (e) {
-      console.warn('Could not decode token, using standard mock role', e);
+    localStorage.setItem('pushkaralu_admin_token', jwt);
+    const decoded = decodeAdminJwt(jwt);
+    if (decoded) {
+      setUser(decoded);
     }
   };
 
   const logout = () => {
     setToken(null);
     localStorage.removeItem('sp_admin_token');
-    setRoleState('guest');
+    localStorage.removeItem('pushkaralu_admin_token');
+    setUser(GUEST_USER);
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -200,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
-        mockRole,
+        mockRole: (user.role as MockRole) || 'guest',
         token,
         setMockRole,
         loginWithToken,

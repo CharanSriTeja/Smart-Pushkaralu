@@ -24,8 +24,10 @@ const envSchema = z.object({
     .preprocess((val) => val === 'true' || val === '1', z.boolean())
     .default(false),
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/smart_pushkaralu'),
+  MIGRATION_DATABASE_URL: z.string().optional(),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long').default('smart-pushkaralu-dev-secret-super-safe-key-32chars'),
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional(),
+  FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
   UPLOAD_SECRET: z.string().min(32).optional(),
   ADMIN_PHONES: z.string().default(''),
   CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:8081,http://localhost:3000'),
@@ -43,6 +45,21 @@ const envSchema = z.object({
   PLACES_API_DAILY_LIMIT: z.coerce.number().default(500),
   SPEED_FACTOR_DRIVING_KMH: z.coerce.number().default(15),
   SPEED_FACTOR_WALKING_KMH: z.coerce.number().default(4.5),
+  // Storage settings for photo uploads
+  STORAGE_ADAPTER: z.enum(['cloudinary', 'firebase', 's3', 'local']).default('local'),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_REGION: z.string().optional(),
+  AWS_S3_BUCKET: z.string().optional(),
+  AWS_S3_ENDPOINT: z.string().optional(),
+  FIREBASE_STORAGE_BUCKET: z.string().optional(),
+  // Background scheduler flag
+  ENABLE_SCHEDULER: z
+    .preprocess((val) => val === 'true' || val === '1', z.boolean())
+    .default(false),
   // Module 7 Emergency SOS configuration
   SOS_DEFAULT_NUMBER: z.string().default('112'),
   SOS_SMS_GATEWAY_ADAPTER: z.enum(['mock', 'generic']).default('mock'),
@@ -53,7 +70,7 @@ const envSchema = z.object({
   SOS_DEDUP_WINDOW_MINUTES: z.coerce.number().default(5),
   SOS_CLUSTER_THRESHOLD: z.coerce.number().default(5),
   SOS_CLUSTER_WINDOW_MINUTES: z.coerce.number().default(10),
-  // Module 2 Routing configuration (required for real routing)
+  // Module 2 Routing configuration
   ROUTING_PROVIDER: z.enum(['ors', 'osrm', 'mock']).default('ors'),
   ORS_API_KEY: z.string().optional(),
   OPENROUTESERVICE_API: z.string().optional(),
@@ -83,31 +100,78 @@ export const devAuthEnabled = env.NODE_ENV !== 'production' && env.ALLOW_DEV_AUT
 if (env.NODE_ENV === 'production') {
   const errors: string[] = [];
 
-  if (!env.UPLOAD_SECRET) {
-    errors.push('UPLOAD_SECRET must be configured in production (min 32 chars).');
+  if (env.ALLOW_DEV_AUTH) {
+    errors.push('ALLOW_DEV_AUTH must not be enabled in production.');
+  }
+
+  if (!env.DATABASE_URL || env.DATABASE_URL.includes('localhost') || env.DATABASE_URL.includes('postgres:postgres')) {
+    errors.push('DATABASE_URL must be configured with production database credentials.');
+  }
+
+  // Fall back to DATABASE_URL if MIGRATION_DATABASE_URL is not set separately
+  if (!env.MIGRATION_DATABASE_URL) {
+    env.MIGRATION_DATABASE_URL = env.DATABASE_URL;
   }
 
   if (INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
-    errors.push('JWT_SECRET is set to a known insecure default. Set a random 64-char secret.');
+    errors.push('JWT_SECRET is set to a known insecure default. Set a random 32+ character secret in Render Environment.');
   }
+
+  // Derive UPLOAD_SECRET and SOS_WEBHOOK_SECRET from JWT_SECRET if not explicitly provided
+  if (!env.UPLOAD_SECRET) {
+    if (!INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
+      env.UPLOAD_SECRET = env.JWT_SECRET;
+    } else {
+      errors.push('UPLOAD_SECRET or JWT_SECRET must be configured in production (min 32 chars).');
+    }
+  }
+
   if (INSECURE_SOS_DEFAULTS.includes(env.SOS_WEBHOOK_SECRET)) {
-    errors.push('SOS_WEBHOOK_SECRET is set to a known insecure default. Set a random 64-char secret.');
+    if (!INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
+      env.SOS_WEBHOOK_SECRET = env.JWT_SECRET;
+    } else {
+      errors.push('SOS_WEBHOOK_SECRET is set to a known insecure default.');
+    }
   }
+
+  if (!env.ADMIN_PHONES || env.ADMIN_PHONES.trim().length === 0) {
+    errors.push('ADMIN_PHONES must be configured in production with at least one authorized E.164 admin phone number.');
+  }
+
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON && !env.FIREBASE_SERVICE_ACCOUNT_PATH && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    errors.push('Firebase credentials must be provided in production via FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_PATH.');
+  }
+
+  if (env.STORAGE_ADAPTER === 'local') {
+    console.warn('[Storage Warning] STORAGE_ADAPTER is "local" on production host. Ephemeral container disk will reset uploads on redeploy.');
+  } else if (env.STORAGE_ADAPTER === 'cloudinary' && (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET)) {
+    errors.push('STORAGE_ADAPTER=cloudinary requires CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.');
+  } else if (env.STORAGE_ADAPTER === 's3' && (!env.AWS_S3_BUCKET || !env.AWS_REGION)) {
+    errors.push('STORAGE_ADAPTER=s3 requires AWS_S3_BUCKET and AWS_REGION.');
+  } else if (env.STORAGE_ADAPTER === 'firebase' && !env.FIREBASE_STORAGE_BUCKET) {
+    errors.push('STORAGE_ADAPTER=firebase requires FIREBASE_STORAGE_BUCKET.');
+  }
+
   if (env.SOS_SMS_GATEWAY_ADAPTER === 'mock') {
-    errors.push(
-      'SOS_SMS_GATEWAY_ADAPTER is "mock" in production. Emergency SMS will never be sent. Set SOS_SMS_GATEWAY_ADAPTER=generic and configure gateway credentials.'
-    );
+    console.warn('[SOS Warning] SOS_SMS_GATEWAY_ADAPTER is "mock". Outgoing SMS alerts will be simulated in server logs.');
   }
+
   if (env.ROUTING_PROVIDER === 'mock') {
     errors.push(
       'ROUTING_PROVIDER is "mock" in production. Users will receive fake straight-line routes. Set ROUTING_PROVIDER=ors and ORS_API_KEY.'
     );
   }
+
   if (env.ROUTING_PROVIDER === 'ors' && !env.ORS_API_KEY && !env.OPENROUTESERVICE_API) {
     errors.push(
       'ROUTING_PROVIDER=ors but neither ORS_API_KEY nor OPENROUTESERVICE_API is set. Routing will silently fall back to mock.'
     );
   }
+
+  if (env.ROUTING_PROVIDER === 'osrm' && !env.OSRM_BASE_URL) {
+    errors.push('ROUTING_PROVIDER=osrm requires OSRM_BASE_URL to be set.');
+  }
+
   if (env.SEED_DEMO) {
     errors.push('SEED_DEMO=true in production. This flag must only be used in development/test environments.');
   }

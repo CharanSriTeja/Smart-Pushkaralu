@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS seva_videos (
     description_te TEXT,
     description_hi TEXT,
     category VARCHAR(50) NOT NULL DEFAULT 'general',
-    ghat_id VARCHAR(64) REFERENCES ghats(id) ON DELETE SET NULL,
+    ghat_id UUID REFERENCES ghats(id) ON DELETE SET NULL,
     event_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     is_live BOOLEAN NOT NULL DEFAULT false,
     published BOOLEAN NOT NULL DEFAULT true,

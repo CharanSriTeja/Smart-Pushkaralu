@@ -48,12 +48,12 @@ usageRouter.get(
         currentMonthCost,
         quotaRemaining,
         quotaPercentUsed: Number(quotaPercentUsed.toFixed(2)),
-        providers: providerBreakdown.rows.map((r) => ({
+        providers: providerBreakdown.rows.map((r: any) => ({
           provider: r.provider,
           totalCalls: parseInt(r.count, 10),
           totalCost: parseFloat(r.total_cost),
         })),
-        dailyUsage: dailyBreakdown.rows.map((r) => ({
+        dailyUsage: dailyBreakdown.rows.map((r: any) => ({
           date: r.date,
           provider: r.provider,
           count: parseInt(r.count, 10),

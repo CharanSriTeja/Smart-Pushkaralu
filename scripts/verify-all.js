@@ -25,10 +25,10 @@ function logStep(stepNum, name) {
   console.log(`======================================================`);
 }
 
-function runCommand(cmd, cwd = rootDir) {
+function runCommand(cmd, cwd = rootDir, env = {}) {
   console.log(`> ${cmd} (in ${path.relative(rootDir, cwd) || '.'})`);
   try {
-    execSync(cmd, { cwd, stdio: 'inherit' });
+    execSync(cmd, { cwd, stdio: 'inherit', env: { ...process.env, ...env } });
     return true;
   } catch (err) {
     console.error(`Command failed: ${cmd}`);
@@ -93,7 +93,10 @@ try {
 
 // Step 3: Admin Build & Typecheck
 logStep(3, 'Admin Panel Typecheck & Production Build');
-const adminOk = runCommand('npm run build', path.join(rootDir, 'admin'));
+const adminOk = runCommand('npm run build', path.join(rootDir, 'admin'), {
+  VITE_API_URL: process.env.VITE_API_URL || 'https://api.smartpushkaralu.gov.in',
+  VITE_SOCKET_URL: process.env.VITE_SOCKET_URL || 'https://api.smartpushkaralu.gov.in',
+});
 if (!adminOk) {
   console.error('❌ Admin build failed.');
   process.exit(1);
@@ -102,7 +105,7 @@ passedSteps++;
 
 // Step 4: Mobile Typecheck
 logStep(4, 'Mobile Project TypeScript Validation');
-const mobileTscOk = runCommand('node_modules\\.bin\\tsc --noEmit', path.join(rootDir, 'mobile'));
+const mobileTscOk = runCommand('npx tsc --noEmit', path.join(rootDir, 'mobile'));
 if (!mobileTscOk) {
   console.error('❌ Mobile TypeScript compilation failed.');
   process.exit(1);
