@@ -52,14 +52,15 @@
         {
           "android": {
             "minSdkVersion": 24,
-            "usesCleartextTraffic": false
+            "usesCleartextTraffic": false,
+            "enableProguardInReleaseBuilds": false,
+            "extraProguardRules": "-keep class androidx.work.** { *; }\n-keep class androidx.work.impl.** { *; }\n-keep class * extends androidx.room.RoomDatabase\n-keepclassmembers class * extends androidx.room.RoomDatabase { *; }\n-dontwarn androidx.work.**\n-dontwarn androidx.room.**"
           }
         }
       ]
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
     },
     "extra": {
       "router": {
