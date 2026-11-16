@@ -1,6 +1,9 @@
 import { Ghat, GhatNotice, CrowdStatus, AuditLog, PublishStatus, CrowdLevel } from '../types';
 
-const rawApiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000';
+const rawApiUrl = (import.meta as any).env?.VITE_API_URL;
+if (!rawApiUrl) {
+  throw new Error('VITE_API_URL environment variable is required.');
+}
 const API_BASE_URL = rawApiUrl.endsWith('/v1') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/v1`;
 
 let activeToken = localStorage.getItem('pushkaralu_admin_token') || '';

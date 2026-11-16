@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth, isDevAuth } from '../context/AuthContext';
-import { MockRole } from '../types';
+import { useAuth } from '../context/AuthContext';
 import { tokens } from '../theme/tokens';
 
 export interface NavItem {
@@ -59,7 +58,7 @@ export interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCollapse }) => {
-  const { user, mockRole, setMockRole, hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
 
   return (
     <aside
@@ -249,47 +248,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCol
                   fontWeight: '600',
                 }}
               >
-                {user?.role || mockRole || 'Admin'}
+                {user?.role || 'Guest'}
               </span>
             </div>
           )}
         </div>
-
-        {/* Development Role Switcher */}
-        {!collapsed && isDevAuth && (
-          <div style={{ marginTop: '8px' }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '0.6875rem',
-                color: tokens.colors.textMuted,
-                marginBottom: '2px',
-              }}
-            >
-              Dev Switcher:
-            </label>
-            <select
-              value={mockRole}
-              onChange={(e) => setMockRole(e.target.value as MockRole)}
-              style={{
-                width: '100%',
-                padding: '4px 6px',
-                fontSize: '0.75rem',
-                borderRadius: `${tokens.radii.sm}px`,
-                border: `1px solid ${tokens.colors.border}`,
-                backgroundColor: tokens.colors.bg,
-                color: tokens.colors.textPrimary,
-                cursor: 'pointer',
-              }}
-            >
-              <option value="super_admin">Super Admin</option>
-              <option value="control_room_operator">Control Room Operator</option>
-              <option value="ghat_incharge">Ghat Incharge</option>
-              <option value="traffic_coordinator">Traffic Coordinator</option>
-              <option value="viewer">Viewer (Read-Only)</option>
-            </select>
-          </div>
-        )}
       </div>
     </aside>
   );
