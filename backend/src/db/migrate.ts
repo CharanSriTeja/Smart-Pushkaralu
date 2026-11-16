@@ -1,9 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dns from 'node:dns';
 import { Pool, PoolClient } from 'pg';
 import { env, getAdminPhoneList } from '../config/env.js';
 import { sanitizeConnectionString } from './index.js';
+
+// Prioritize IPv4 to avoid ENOTFOUND / timeout on Windows where IPv6 routes are unreachable
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {
+  // Ignore if unsupported
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
