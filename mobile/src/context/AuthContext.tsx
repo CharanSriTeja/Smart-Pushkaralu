@@ -48,17 +48,19 @@ export interface AuthContextType {
 }
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDSJTV9dNXgYCXxkTYxkKeRgqgMraLeEVI',
-  appId: '1:5534741753:android:96a7972c062f1eb8211e28',
-  projectId: 'gen-lang-client-0031906066',
-  storageBucket: 'gen-lang-client-0031906066.firebasestorage.app',
-  messagingSenderId: '5534741753',
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '',
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '',
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '',
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
 };
 
 export async function ensureFirebaseApp() {
   if (getApps().length === 0) {
     try {
-      await initializeApp(firebaseConfig);
+      if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+        await initializeApp(firebaseConfig as any);
+      }
     } catch (err: any) {
       console.warn('[Firebase] App initialization notice:', err?.message);
     }

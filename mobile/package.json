@@ -59,6 +59,8 @@
     "vitest": "^5.1.0"
   },
   "scripts": {
+    "preflight": "node scripts/preflight.js",
+    "eas-build-pre-install": "node scripts/preflight.js",
     "postinstall": "node ./scripts/fix-windows-paths.js",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
