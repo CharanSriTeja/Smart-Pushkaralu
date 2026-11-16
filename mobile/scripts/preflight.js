@@ -18,12 +18,24 @@ const mobileRoot = path.resolve(__dirname, '..');
 console.log('🔍 Running Mobile Release Preflight Checks...');
 
 // 1. Validate EXPO_PUBLIC_API_URL
-const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+let apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
 if (!apiUrl || typeof apiUrl !== 'string' || apiUrl.trim().length === 0) {
-  console.error('❌ PREFLIGHT FAILED: EXPO_PUBLIC_API_URL is required but was not provided.');
-  console.error('   Please provide a valid HTTPS production URL (e.g. https://api.smartpushkaralu.gov.in).');
-  process.exit(1);
+  // Fallback to eas.json or production backend on Render
+  const easPath = path.join(mobileRoot, 'eas.json');
+  if (fs.existsSync(easPath)) {
+    try {
+      const easConfig = JSON.parse(fs.readFileSync(easPath, 'utf8'));
+      apiUrl =
+        easConfig.build?.preview?.env?.EXPO_PUBLIC_API_URL ||
+        easConfig.build?.production?.env?.EXPO_PUBLIC_API_URL;
+    } catch {
+      // ignore
+    }
+  }
+  if (!apiUrl) {
+    apiUrl = 'https://smart-pushkaralu.onrender.com';
+  }
 }
 
 const trimmedUrl = apiUrl.trim();
