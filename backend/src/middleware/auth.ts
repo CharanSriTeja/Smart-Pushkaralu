@@ -35,13 +35,31 @@ export async function requireAuth(
   const token = authHeader.substring(7).trim();
 
   // Support local development and staging mock admin token
-  if (process.env.NODE_ENV !== 'production' && token === 'dev-admin-token') {
+  if (process.env.NODE_ENV !== 'production' && (token === 'dev-admin-token' || token.endsWith('.demo_signature'))) {
+    let name = 'District Collector (Super Admin)';
+    let phone = '+919999999999';
+    let userId = '00000000-0000-0000-0000-000000000001';
+    let isAdmin = true;
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) base64 += '=';
+        const payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+        if (payload.name) name = payload.name;
+        if (payload.phone) phone = payload.phone;
+        if (payload.userId) userId = payload.userId;
+        if (typeof payload.isAdmin === 'boolean') isAdmin = payload.isAdmin;
+      }
+    } catch {
+      // fallback to defaults above
+    }
     req.user = {
-      userId: 'admin-super-01',
+      userId,
       firebaseUid: 'dev-super-admin-uid',
-      phone: '+919999999999',
-      isAdmin: true,
-      name: 'District Collector (Super Admin)',
+      phone,
+      isAdmin,
+      name,
       language: 'en',
       status: 'active',
     };

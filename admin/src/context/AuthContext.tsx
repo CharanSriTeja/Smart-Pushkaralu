@@ -79,15 +79,20 @@ function decodeAdminJwt(jwt: string): AdminUser | null {
   try {
     const parts = jwt.split('.');
     if (parts.length === 3) {
-      const payload = JSON.parse(atob(parts[1]));
+      let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) {
+        base64 += '=';
+      }
+      const payload = JSON.parse(atob(base64));
       const isAdmin = Boolean(payload.isAdmin);
+      const role: MockRole = (payload.role as MockRole) || (isAdmin ? 'super_admin' : 'viewer');
       return {
         id: payload.userId || 'admin',
         phone: payload.phone || '',
         name: payload.name || (isAdmin ? 'Admin User' : 'Viewer'),
-        role: isAdmin ? 'super_admin' : 'viewer',
-        permissions: isAdmin ? ROLE_PERMISSIONS.super_admin : ['audit.read'],
-        isSuperAdmin: isAdmin,
+        role,
+        permissions: payload.permissions || ROLE_PERMISSIONS[role] || (isAdmin ? ROLE_PERMISSIONS.super_admin : ['audit.read']),
+        isSuperAdmin: isAdmin && role === 'super_admin',
         token: jwt,
       };
     }
