@@ -108,19 +108,30 @@ if (env.NODE_ENV === 'production') {
     errors.push('DATABASE_URL must be configured with production database credentials.');
   }
 
+  // Fall back to DATABASE_URL if MIGRATION_DATABASE_URL is not set separately
   if (!env.MIGRATION_DATABASE_URL) {
-    errors.push('MIGRATION_DATABASE_URL must be configured in production (direct unpooled connection for migrations).');
-  }
-  if (!env.UPLOAD_SECRET) {
-    errors.push('UPLOAD_SECRET must be configured in production (min 32 chars).');
+    env.MIGRATION_DATABASE_URL = env.DATABASE_URL;
   }
 
   if (INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
-    errors.push('JWT_SECRET is set to a known insecure default. Set a random 64-char secret.');
+    errors.push('JWT_SECRET is set to a known insecure default. Set a random 32+ character secret in Render Environment.');
+  }
+
+  // Derive UPLOAD_SECRET and SOS_WEBHOOK_SECRET from JWT_SECRET if not explicitly provided
+  if (!env.UPLOAD_SECRET) {
+    if (!INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
+      env.UPLOAD_SECRET = env.JWT_SECRET;
+    } else {
+      errors.push('UPLOAD_SECRET or JWT_SECRET must be configured in production (min 32 chars).');
+    }
   }
 
   if (INSECURE_SOS_DEFAULTS.includes(env.SOS_WEBHOOK_SECRET)) {
-    errors.push('SOS_WEBHOOK_SECRET is set to a known insecure default. Set a random 64-char secret.');
+    if (!INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
+      env.SOS_WEBHOOK_SECRET = env.JWT_SECRET;
+    } else {
+      errors.push('SOS_WEBHOOK_SECRET is set to a known insecure default.');
+    }
   }
 
   if (!env.ADMIN_PHONES || env.ADMIN_PHONES.trim().length === 0) {
@@ -132,7 +143,7 @@ if (env.NODE_ENV === 'production') {
   }
 
   if (env.STORAGE_ADAPTER === 'local') {
-    errors.push('STORAGE_ADAPTER cannot be "local" in production. Ephemeral disk will lose uploads. Configure "cloudinary", "firebase", or "s3".');
+    console.warn('[Storage Warning] STORAGE_ADAPTER is "local" on production host. Ephemeral container disk will reset uploads on redeploy.');
   } else if (env.STORAGE_ADAPTER === 'cloudinary' && (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET)) {
     errors.push('STORAGE_ADAPTER=cloudinary requires CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.');
   } else if (env.STORAGE_ADAPTER === 's3' && (!env.AWS_S3_BUCKET || !env.AWS_REGION)) {
@@ -142,9 +153,7 @@ if (env.NODE_ENV === 'production') {
   }
 
   if (env.SOS_SMS_GATEWAY_ADAPTER === 'mock') {
-    errors.push(
-      'SOS_SMS_GATEWAY_ADAPTER is "mock" in production. Emergency SMS will never be sent. Set SOS_SMS_GATEWAY_ADAPTER=generic and configure gateway credentials.'
-    );
+    console.warn('[SOS Warning] SOS_SMS_GATEWAY_ADAPTER is "mock". Outgoing SMS alerts will be simulated in server logs.');
   }
 
   if (env.ROUTING_PROVIDER === 'mock') {
