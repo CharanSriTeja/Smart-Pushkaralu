@@ -30,6 +30,8 @@ export class AuditService {
   static async record(params: CreateAuditLogParams): Promise<AuditLog> {
     const resolvedOld = params.oldValue ?? params.oldValues ?? null;
     const resolvedNew = params.newValue ?? params.newValues ?? null;
+    const isUuid = typeof params.adminId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.adminId);
+    const resolvedAdminId = isUuid ? params.adminId : null;
 
     const { rows } = await query<AuditLog>(
       `INSERT INTO audit_logs (
@@ -38,7 +40,7 @@ export class AuditService {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
-        params.adminId || null,
+        resolvedAdminId,
         params.action,
         params.entityType,
         params.entityId || null,

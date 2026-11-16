@@ -7,7 +7,11 @@
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "migrate": "tsx src/db/migrate.ts",
+    "migrate:prod": "tsx src/db/migrate.ts",
     "seed:core": "tsx src/db/seeds/core.ts",
+    "seed:core:prod": "tsx src/db/seeds/core.ts",
+    "job:news-expiry": "tsx scripts/run-news-expiry.ts",
+    "job:cache-prewarm": "tsx scripts/run-cache-prewarm.ts",
     "seed:dev": "tsx src/db/seeds/dev.ts",
     "purge:demo": "tsx src/db/seeds/purge-demo.ts",
     "seed:ghats": "tsx src/db/seeds/001_seed_ghats.ts",
@@ -20,8 +24,12 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@sentry/node": "^11.11.0",
+    "compression": "^1.8.2",
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
@@ -40,6 +48,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",

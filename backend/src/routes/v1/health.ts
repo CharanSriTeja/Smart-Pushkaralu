@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../../db/index.js';
+import { env } from '../../config/env.js';
 
 export const healthRouter = Router();
 
@@ -25,4 +26,14 @@ healthRouter.get('/health', async (_req: Request, res: Response): Promise<void> 
       timestamp: new Date().toISOString(),
     });
   }
+});
+
+healthRouter.get('/version', (_req: Request, res: Response): void => {
+  res.status(200).json({
+    service: 'smart-pushkaralu-backend',
+    version: '1.0.0',
+    environment: env.NODE_ENV,
+    commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'production',
+    buildTime: process.env.BUILD_TIME || '2026-11-16T00:00:00Z',
+  });
 });

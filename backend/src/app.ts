@@ -2,7 +2,8 @@ import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { getCorsOrigins } from './config/env.js';
+import compression from 'compression';
+import { getCorsOrigins, env } from './config/env.js';
 import { httpLogger } from './lib/logger.js';
 import { initSentry } from './lib/sentry.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -36,7 +37,13 @@ initSentry();
 
 export const app = express();
 
-// Security headers with cross-origin resource policy disabled for static mobile previews
+// Trust reverse proxy (Render / Cloudflare / Nginx) for accurate client IP in rate limiting
+app.set('trust proxy', 1);
+
+// HTTP response compression (gzip / deflate)
+app.use(compression());
+
+// Security headers with cross-origin resource policy disabled for static previews
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
@@ -48,15 +55,15 @@ const allowedOrigins = getCorsOrigins();
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow mobile apps, curl, Postman, CLI requests with no origin
+      // Allow native mobile apps, curl, server-to-server requests with no origin
       if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      // Allow any local development origin (localhost, 127.0.0.1, private IPs on any port)
-      if (
-        /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)
-      ) {
-        return callback(null, true);
+      // In development/test only, allow local development origins (localhost, 127.0.0.1, private IPs)
+      if (env.NODE_ENV !== 'production') {
+        if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+          return callback(null, true);
+        }
       }
       return callback(null, false);
     },
@@ -67,8 +74,10 @@ app.use(
 // General rate limiter
 app.use(generalLimiter);
 
-// Serve static uploads (with cross-origin access for mobile preview)
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Serve static uploads only in development or if local storage adapter is configured
+if (env.STORAGE_ADAPTER === 'local' || env.NODE_ENV !== 'production') {
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+}
 
 // Serve Module 7 standalone emergency SOS web page
 app.get(['/sos', '/sos/'], (_req, res) => {

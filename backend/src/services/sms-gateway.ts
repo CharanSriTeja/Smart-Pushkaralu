@@ -73,7 +73,10 @@ export class GenericSmsGatewayAdapter implements SmsGatewayAdapter {
       const bodyRaw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
       const expectedSignature = crypto.createHmac('sha256', secret).update(bodyRaw).digest('hex');
 
-      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+      const sigBuf = Buffer.from(signature);
+      const expectedBuf = Buffer.from(expectedSignature);
+
+      if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
         logger.warn('[SmsGateway] Webhook HMAC signature verification failed');
         return null;
       }

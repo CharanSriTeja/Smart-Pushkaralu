@@ -1,16 +1,41 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { pool, withTransaction } from './index.js';
-import { getAdminPhoneList } from '../config/env.js';
+import { Pool, PoolClient } from 'pg';
+import { env, getAdminPhoneList } from '../config/env.js';
+import { sanitizeConnectionString } from './index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Use MIGRATION_DATABASE_URL (direct unpooled) when available, fallback to DATABASE_URL in dev
+const migrationConnStr = sanitizeConnectionString(
+  env.MIGRATION_DATABASE_URL || env.DATABASE_URL
+);
+
+const isRemoteOrSsl =
+  migrationConnStr.includes('neon.tech') ||
+  migrationConnStr.includes('sslmode=') ||
+  env.NODE_ENV === 'production';
+
+export const migrationPool = new Pool({
+  connectionString: migrationConnStr,
+  ssl: isRemoteOrSsl ? { rejectUnauthorized: false } : undefined,
+  max: 2,
+  connectionTimeoutMillis: 30000,
+});
+
 export async function runMigrations() {
-  console.log('[Migrations] Connecting to database...');
-  await withTransaction(async (client) => {
-    // Ensure migrations table exists
+  console.log('[Migrations] Connecting to database using direct migration connection...');
+  const client: PoolClient = await migrationPool.connect();
+
+  try {
+    // Acquire session advisory lock to ensure sequential migration execution
+    await client.query('SELECT pg_advisory_lock(987654321)');
+
+    await client.query('BEGIN');
+
+    // Ensure migrations tracking table exists
     await client.query(`
       CREATE TABLE IF NOT EXISTS _migrations (
         id SERIAL PRIMARY KEY,
@@ -22,6 +47,7 @@ export async function runMigrations() {
     const migrationsDir = path.join(__dirname, 'migrations');
     if (!fs.existsSync(migrationsDir)) {
       console.log('[Migrations] No migrations directory found.');
+      await client.query('COMMIT');
       return;
     }
 
@@ -56,7 +82,6 @@ export async function runMigrations() {
       if (roleRows.length > 0) {
         const superAdminRoleId = roleRows[0].id;
         for (const phone of adminPhones) {
-          // Find or create user
           const { rows: userRows } = await client.query(
             'SELECT id FROM users WHERE phone = $1 LIMIT 1',
             [phone]
@@ -74,7 +99,6 @@ export async function runMigrations() {
             userId = userRows[0].id;
           }
 
-          // Link to admins table with role_id
           await client.query(
             `INSERT INTO admins (user_id, role, role_id)
              VALUES ($1, 'super_admin', $2)
@@ -85,19 +109,27 @@ export async function runMigrations() {
         }
       }
     }
-  });
-  console.log('[Migrations] All migrations completed.');
+
+    await client.query('COMMIT');
+    console.log('[Migrations] All migrations completed successfully.');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    await client.query('SELECT pg_advisory_unlock(987654321)').catch(() => {});
+    client.release();
+  }
 }
 
 if (process.argv[1] === __filename) {
   runMigrations()
     .then(async () => {
-      await pool.end();
+      await migrationPool.end();
       process.exit(0);
     })
     .catch(async (err) => {
       console.error('[Migrations] Failed:', err);
-      await pool.end();
+      await migrationPool.end();
       process.exit(1);
     });
 }

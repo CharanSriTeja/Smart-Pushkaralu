@@ -159,18 +159,22 @@ describe('Module 9: Official News and Facilities Tests', () => {
 
       // Audit log insertion
       if (lowerSql.includes('insert into audit_logs')) {
+        let oldVal = null;
+        let newVal = null;
+        try { oldVal = params[4] ? JSON.parse(params[4]) : null; } catch { oldVal = params[4]; }
+        try { newVal = params[5] ? JSON.parse(params[5]) : null; } catch { newVal = params[5]; }
         const log = {
           id: `audit-${mockAuditLogs.length + 1}`,
           admin_id: params[0],
-          admin_email: params[1],
-          action: params[2],
-          entity_type: params[3],
-          entity_id: params[4],
-          old_values: params[5] ? JSON.parse(params[5]) : null,
-          new_values: params[6] ? JSON.parse(params[6]) : null,
-          source_url: params[7],
-          reason: params[8],
-          ip_address: params[9],
+          action: params[1],
+          entity_type: params[2],
+          entity_id: params[3],
+          old_values: oldVal,
+          new_values: newVal,
+          old_value: oldVal,
+          new_value: newVal,
+          source_url: params[6],
+          reason: params[7],
           created_at: new Date().toISOString(),
         };
         mockAuditLogs.push(log);

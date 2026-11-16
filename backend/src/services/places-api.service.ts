@@ -168,8 +168,14 @@ export class PlacesApiService {
         const placeLng = p.location?.longitude || ghatLng;
         const estimates = calculateTravelEstimates(ghatLat, ghatLng, placeLat, placeLng);
 
+        const deterministicId = crypto
+          .createHash('md5')
+          .update(`${p.displayName?.text || ''}:${placeLat}:${placeLng}`)
+          .digest('hex')
+          .substring(0, 12);
+
         return {
-          id: p.id || `google_${Math.random().toString(36).substring(7)}`,
+          id: p.id || `google_${deterministicId}`,
           name: {
             en: p.displayName?.text || 'Third-Party Location',
           },

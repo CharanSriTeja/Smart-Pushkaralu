@@ -1,9 +1,9 @@
 import crypto from 'crypto';
-import path from 'path';
-import fs from 'fs';
 import sharp from 'sharp';
+import { env } from '../config/env.js';
+import { getStorageAdapter } from './storage.adapter.js';
 
-const UPLOAD_SECRET = process.env.UPLOAD_SECRET || process.env.JWT_SECRET || 'pushkaralu_upload_secret_key_2027';
+const UPLOAD_SECRET = env.UPLOAD_SECRET || env.JWT_SECRET;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB max
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -15,14 +15,6 @@ export interface SignedUploadTokenPayload {
 }
 
 export class UploadService {
-  private static uploadsDir = path.join(process.cwd(), 'uploads', 'issues');
-
-  private static ensureUploadsDir(): void {
-    if (!fs.existsSync(this.uploadsDir)) {
-      fs.mkdirSync(this.uploadsDir, { recursive: true });
-    }
-  }
-
   /**
    * Generates a signed URL token for client-side direct upload
    */
@@ -93,15 +85,13 @@ export class UploadService {
    * 1. Validates real image format & dimensions
    * 2. Checks size limit
    * 3. Strips EXIF metadata to protect reporter privacy
-   * 4. Persists sanitized image to storage
+   * 4. Persists sanitized image to active storage adapter (Cloudinary / Firebase / S3 / local)
    */
   static async processAndSaveImage(
     buffer: Buffer,
     preferredKey?: string,
     enforceMime?: string
   ): Promise<{ photoUrl: string; key: string; size: number; format: string }> {
-    this.ensureUploadsDir();
-
     if (buffer.length > MAX_FILE_SIZE) {
       throw new Error(`File size (${buffer.length} bytes) exceeds 5MB limit.`);
     }
@@ -124,22 +114,27 @@ export class UploadService {
     const format = metadata.format;
     const ext = format === 'jpeg' ? '.jpg' : `.${format}`;
     const key = preferredKey || `issue_${Date.now()}_${crypto.randomBytes(6).toString('hex')}${ext}`;
-    const targetPath = path.join(this.uploadsDir, key);
 
     // Strips EXIF by not calling .withMetadata(), and auto-rotates based on original orientation tag
     let sanitizedBuffer: Buffer;
+    let mimeType = 'image/jpeg';
     if (format === 'png') {
       sanitizedBuffer = await image.rotate().png({ compressionLevel: 8 }).toBuffer();
+      mimeType = 'image/png';
     } else if (format === 'webp') {
       sanitizedBuffer = await image.rotate().webp({ quality: 80 }).toBuffer();
+      mimeType = 'image/webp';
     } else {
       sanitizedBuffer = await image.rotate().jpeg({ quality: 80 }).toBuffer();
+      mimeType = 'image/jpeg';
     }
 
-    fs.writeFileSync(targetPath, sanitizedBuffer);
+    // Delegate persistence to configured storage adapter
+    const adapter = getStorageAdapter();
+    const result = await adapter.save(key, sanitizedBuffer, mimeType);
 
     return {
-      photoUrl: `/uploads/issues/${key}`,
+      photoUrl: result.url,
       key,
       size: sanitizedBuffer.length,
       format,
@@ -171,4 +166,3 @@ export class UploadService {
     }
   }
 }
-

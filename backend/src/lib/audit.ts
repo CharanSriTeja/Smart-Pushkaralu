@@ -32,6 +32,9 @@ export interface AuditLogRecord {
  */
 export async function writeAudit(entry: AuditLogEntry): Promise<AuditLogRecord | null> {
   try {
+    const isUuid = typeof entry.adminId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.adminId);
+    const resolvedAdminId = isUuid ? entry.adminId : null;
+
     const { rows } = await query<AuditLogRecord>(
       `INSERT INTO audit_logs (
         admin_id, action, entity_type, entity_id,
@@ -40,7 +43,7 @@ export async function writeAudit(entry: AuditLogEntry): Promise<AuditLogRecord |
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
       [
-        entry.adminId || null,
+        resolvedAdminId,
         entry.action,
         entry.entityType,
         entry.entityId || null,
