@@ -13,7 +13,7 @@ describe('Module 9: Official News and Facilities Tests', () => {
   let mockFacilities: any[] = [];
 
   const adminToken = signAccessToken({
-    userId: 'admin-uuid-1',
+    userId: '11111111-1111-1111-1111-111111111111',
     phone: '+919876543210',
     firebaseUid: 'admin-f-uid',
     isAdmin: true,
@@ -60,7 +60,7 @@ describe('Module 9: Official News and Facilities Tests', () => {
         published_at: '2026-09-01T10:00:00Z',
         expires_at: null,
         notify_sent: false,
-        created_by: 'admin-uuid-1',
+        created_by: '11111111-1111-1111-1111-111111111111',
         created_at: '2026-09-01T10:00:00Z',
         updated_at: '2026-09-01T10:00:00Z',
       },
@@ -79,7 +79,7 @@ describe('Module 9: Official News and Facilities Tests', () => {
         published_at: '2026-09-02T12:00:00Z',
         expires_at: null,
         notify_sent: true,
-        created_by: 'admin-uuid-1',
+        created_by: '11111111-1111-1111-1111-111111111111',
         created_at: '2026-09-02T12:00:00Z',
         updated_at: '2026-09-02T12:00:00Z',
       },
@@ -98,7 +98,7 @@ describe('Module 9: Official News and Facilities Tests', () => {
         published_at: '2026-08-01T00:00:00Z',
         expires_at: '2026-08-02T00:00:00Z', // Definitely in the past
         notify_sent: true,
-        created_by: 'admin-uuid-1',
+        created_by: '11111111-1111-1111-1111-111111111111',
         created_at: '2026-08-01T00:00:00Z',
         updated_at: '2026-08-01T00:00:00Z',
       },
@@ -117,7 +117,7 @@ describe('Module 9: Official News and Facilities Tests', () => {
         published_at: null,
         expires_at: null,
         notify_sent: false,
-        created_by: 'admin-uuid-1',
+        created_by: '11111111-1111-1111-1111-111111111111',
         created_at: '2026-09-03T00:00:00Z',
         updated_at: '2026-09-03T00:00:00Z',
       },
@@ -130,7 +130,7 @@ describe('Module 9: Official News and Facilities Tests', () => {
       // Admin verification
       if (lowerSql.includes('from admins where user_id')) {
         const userId = params[0];
-        if (userId === 'admin-uuid-1') {
+        if (userId === '11111111-1111-1111-1111-111111111111') {
           return {
             rows: [{ id: 'admin-rec-1', user_id: userId, role: 'super_admin', permissions: ['*'] }],
             rowCount: 1,
@@ -142,7 +142,7 @@ describe('Module 9: Official News and Facilities Tests', () => {
       // User lookup
       if (lowerSql.includes('from users where id = $1')) {
         const userId = params[0];
-        const isAdmin = userId === 'admin-uuid-1';
+        const isAdmin = userId === '11111111-1111-1111-1111-111111111111';
         return {
           rows: [
             {
@@ -547,7 +547,7 @@ describe('Module 9: Official News and Facilities Tests', () => {
       expect(log.action).toBe('news.create');
       expect(log.entity_type).toBe('news_post');
       expect(log.reason).toBe(payload.audit_reason);
-      expect(log.admin_id).toBe('admin-uuid-1');
+      expect(log.admin_id).toBe('11111111-1111-1111-1111-111111111111');
     });
 
     it('strictly forbids setting is_official = true without a verified government source URL', async () => {

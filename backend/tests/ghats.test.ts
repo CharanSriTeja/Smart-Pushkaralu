@@ -16,7 +16,7 @@ describe('Module 3: Ghat Information & Trust Engine Tests', () => {
   let mockFacilities: any[] = [];
 
   const adminToken = signAccessToken({
-    userId: 'admin-uuid-1',
+    userId: '11111111-1111-1111-1111-111111111111',
     phone: '+919876543210',
     firebaseUid: 'admin-f-uid',
     isAdmin: true,
@@ -115,7 +115,7 @@ describe('Module 3: Ghat Information & Trust Engine Tests', () => {
       // Check admin by user_id
       if (lowerSql.includes('from admins where user_id')) {
         const userId = params[0];
-        if (userId === 'admin-uuid-1') {
+        if (userId === '11111111-1111-1111-1111-111111111111') {
           return {
             rows: [{ id: 'admin-rec-1', user_id: userId, role: 'super_admin', permissions: ['*'] }],
             rowCount: 1,
@@ -127,7 +127,7 @@ describe('Module 3: Ghat Information & Trust Engine Tests', () => {
       // SELECT from users where id = $1
       if (lowerSql.includes('from users where id = $1')) {
         const userId = params[0];
-        const isAdmin = userId === 'admin-uuid-1';
+        const isAdmin = userId === '11111111-1111-1111-1111-111111111111';
         return {
           rows: [
             {
@@ -144,19 +144,24 @@ describe('Module 3: Ghat Information & Trust Engine Tests', () => {
 
       // INSERT INTO audit_logs
       if (lowerSql.includes('insert into audit_logs')) {
-        const [admin_id, admin_email, action, entity_type, entity_id, old_values, new_values, source_url, reason, ip_address] = params;
+        let oldVal = null;
+        let newVal = null;
+        try { oldVal = params[4] ? JSON.parse(params[4]) : null; } catch { oldVal = params[4]; }
+        try { newVal = params[5] ? JSON.parse(params[5]) : null; } catch { newVal = params[5]; }
         const newLog = {
           id: `audit-${mockAuditLogs.length + 1}`,
-          admin_id,
-          admin_email,
-          action,
-          entity_type,
-          entity_id,
-          old_values: old_values ? JSON.parse(old_values) : null,
-          new_values: new_values ? JSON.parse(new_values) : null,
-          source_url,
-          reason,
-          ip_address,
+          admin_id: params[0],
+          admin_email: 'admin',
+          action: params[1],
+          entity_type: params[2],
+          entity_id: params[3],
+          old_values: oldVal,
+          new_values: newVal,
+          old_value: oldVal,
+          new_value: newVal,
+          source_url: params[6] || null,
+          reason: params[7] || null,
+          ip_address: null,
           created_at: new Date().toISOString(),
         };
         mockAuditLogs.push(newLog);
@@ -670,7 +675,7 @@ describe('Module 3: Ghat Information & Trust Engine Tests', () => {
       // Verify audit log was created
       const audit = mockAuditLogs.find((l) => l.action === 'ghat.create');
       expect(audit).toBeDefined();
-      expect(audit?.admin_id).toBe('admin-uuid-1');
+      expect(audit?.admin_id).toBe('11111111-1111-1111-1111-111111111111');
       expect(audit?.reason).toContain('District Collectorate officially approved');
     });
 
