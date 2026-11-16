@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middleware/auth.js';
-import { checkPermission } from '../../middleware/rbac.js';
+import { requireAuth, can } from '../../middleware/auth.js';
 import {
   getGhatAccessPoints,
   getRouteOrigins,
@@ -39,10 +38,10 @@ routesRouter.post('/route/stops', recalculateWithStops);
 routesRouter.get('/route-closures', getActiveClosures);
 
 // --- ADMIN ROUTING ENDPOINTS ---
-// Guarded with requireAuth and checkPermission('routes.manage')
+// Guarded with requireAuth and can('routes.manage')
 const adminRoutes = Router();
 adminRoutes.use(requireAuth);
-adminRoutes.use(checkPermission('routes.manage'));
+adminRoutes.use(can('routes.manage'));
 
 // Origins
 adminRoutes.get('/origins', adminGetOrigins);
@@ -73,4 +72,3 @@ adminRoutes.put('/temples/:id', adminUpdateTemple);
 adminRoutes.get('/operations', adminGetOperations);
 
 routesRouter.use('/admin/routes', adminRoutes);
-

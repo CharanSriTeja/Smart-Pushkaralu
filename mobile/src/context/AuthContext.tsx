@@ -113,9 +113,17 @@ export const defaultAuthContext: AuthContextType = {
       moduleConfirmation = createWebConfirmation(phoneNumber);
       return;
     }
-    await ensureFirebaseApp();
-    const authInstance = getAuth();
-    moduleConfirmation = await signInWithPhoneNumber(authInstance, phoneNumber);
+    try {
+      await ensureFirebaseApp();
+      const authInstance = getAuth();
+      moduleConfirmation = await signInWithPhoneNumber(authInstance, phoneNumber);
+    } catch (err: any) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__ && (err?.message?.includes('native module') || err?.code === 'auth/unknown')) {
+        moduleConfirmation = createWebConfirmation(phoneNumber);
+        return;
+      }
+      throw err;
+    }
   },
   verifyOtp: async (code: string) => {
     let confirmation = moduleConfirmation;
@@ -129,7 +137,15 @@ export const defaultAuthContext: AuthContextType = {
       throw err;
     }
     const userCredential = await confirmation.confirm(code);
-    const idToken = await getIdToken(userCredential.user);
+    if (!userCredential || !userCredential.user) {
+      throw new Error('Failed to verify OTP with Firebase.');
+    }
+    const idToken = typeof userCredential.user.getIdToken === 'function'
+      ? await userCredential.user.getIdToken()
+      : await getIdToken(userCredential.user);
+    if (!idToken || typeof idToken !== 'string') {
+      throw new Error('Failed to retrieve Firebase ID token from authentication session.');
+    }
     const authData = await apiRequest<{
       accessToken: string;
       refreshToken: string;
@@ -299,10 +315,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Native Android / iOS
-    await ensureFirebaseApp();
-    const authInstance = getAuth();
-    const confirmResult = await signInWithPhoneNumber(authInstance, phoneNumber);
-    setConfirmation(confirmResult);
+    try {
+      await ensureFirebaseApp();
+      const authInstance = getAuth();
+      const confirmResult = await signInWithPhoneNumber(authInstance, phoneNumber);
+      setConfirmation(confirmResult);
+    } catch (err: any) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__ && (err?.message?.includes('native module') || err?.code === 'auth/unknown')) {
+        console.warn('[Firebase Auth] Native Firebase unavailable in dev, falling back to simulated OTP:', err.message);
+        const devConfirmation = createWebConfirmation(phoneNumber);
+        setConfirmation(devConfirmation);
+        return;
+      }
+      throw err;
+    }
   };
 
   const verifyOtp = async (code: string): Promise<{ isNewUser: boolean }> => {
@@ -326,7 +352,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('Failed to verify OTP with Firebase.');
     }
 
-    const idToken = await getIdToken(userCredential.user);
+    const idToken = typeof userCredential.user.getIdToken === 'function'
+      ? await userCredential.user.getIdToken()
+      : await getIdToken(userCredential.user);
+
+    if (!idToken || typeof idToken !== 'string') {
+      throw new Error('Failed to retrieve Firebase ID token from authentication session.');
+    }
 
     // Exchange Firebase ID token with our backend
     const authData = await apiRequest<{

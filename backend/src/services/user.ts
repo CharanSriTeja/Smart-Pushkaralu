@@ -117,24 +117,32 @@ export async function findOrCreateUser(data: {
     return { user: rows[0], isNewUser: false };
   }
 
-  // Create new user
   const consentAt = data.consentVersion ? now : null;
-  const { rows } = await query<UserRecord>(
-    `INSERT INTO users (firebase_uid, phone, name, language, consent_version, consent_at, last_login_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING *`,
-    [
-      data.firebaseUid,
-      data.phone,
-      data.name || null,
-      data.language || 'en',
-      data.consentVersion || null,
-      consentAt,
-      now,
-    ]
-  );
-
-  return { user: rows[0], isNewUser: true };
+  try {
+    const { rows } = await query<UserRecord>(
+      `INSERT INTO users (firebase_uid, phone, name, language, consent_version, consent_at, last_login_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [
+        data.firebaseUid,
+        data.phone,
+        data.name || null,
+        data.language || 'en',
+        data.consentVersion || null,
+        consentAt,
+        now,
+      ]
+    );
+    return { user: rows[0], isNewUser: true };
+  } catch (err: any) {
+    if (err?.code !== '23505') throw err;
+    const { rows } = await query<UserRecord>(
+      'SELECT * FROM users WHERE firebase_uid = $1 OR phone = $2 LIMIT 1',
+      [data.firebaseUid, data.phone]
+    );
+    if (rows.length === 0) throw err;
+    return { user: rows[0], isNewUser: false };
+  }
 }
 
 export async function updateUser(
@@ -221,4 +229,3 @@ export async function revokeAllUserRefreshTokens(userId: string): Promise<boolea
   );
   return (rowCount ?? 0) > 0;
 }
-

@@ -177,6 +177,21 @@ describe('Smart Pushkaralu Backend Auth Tests', () => {
       expect(res.status).toBe(401);
       expect(res.body.error.code).toBe('FIREBASE_AUTH_FAILED');
     });
+
+    it('authenticates with dev token test-id-token:<phone> when dev auth is enabled', async () => {
+      const res = await request(app)
+        .post('/v1/auth/firebase')
+        .send({
+          idToken: 'test-id-token:+919876543210',
+          name: 'Dev Tester',
+          language: 'en',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('accessToken');
+      expect(res.body).toHaveProperty('refreshToken');
+      expect(res.body.user.phone).toBe('+919876543210');
+    });
   });
 
   describe('2. Refresh Token Rotation', () => {

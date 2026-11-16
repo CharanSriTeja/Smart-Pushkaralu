@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, TokenPayload } from '../services/token.js';
 import { findUserById, isUserAdmin, userHasPermission } from '../services/user.js';
+import { devAuthEnabled } from '../config/env.js';
 
 export interface AuthenticatedUser extends TokenPayload {
   name: string | null;
@@ -131,7 +132,7 @@ export async function optionalAuth(
 
   const token = authHeader.substring(7).trim();
 
-  if (process.env.NODE_ENV !== 'production' && token === 'dev-admin-token') {
+  if (devAuthEnabled && token === 'dev-admin-token') {
     req.user = {
       userId: 'admin-super-01',
       firebaseUid: 'dev-super-admin-uid',
@@ -236,7 +237,6 @@ export function can(permission: string) {
     }
   };
 }
-
 
 
 

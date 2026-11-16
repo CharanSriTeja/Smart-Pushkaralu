@@ -171,23 +171,3 @@ CREATE TABLE IF NOT EXISTS crowd_status (
 );
 CREATE INDEX IF NOT EXISTS idx_crowd_status_ghat_id ON crowd_status(ghat_id);
 
-
--- 8. AUDIT LOGS TABLE
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  admin_id VARCHAR(128) NOT NULL,
-  admin_email VARCHAR(255) NOT NULL,
-  action VARCHAR(100) NOT NULL,
-  entity_type VARCHAR(100) NOT NULL,
-  entity_id VARCHAR(100) NOT NULL,
-  old_values JSONB NULL,
-  new_values JSONB NULL,
-  source_url TEXT NULL,
-  reason TEXT NOT NULL,
-  ip_address VARCHAR(45) NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_admin_id ON audit_logs(admin_id);
-

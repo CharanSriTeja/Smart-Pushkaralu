@@ -7,6 +7,7 @@ import {
   storeRefreshToken,
   findRefreshToken,
   revokeRefreshToken,
+  revokeAllUserRefreshTokens,
   isUserAdmin,
 } from '../../services/user.js';
 import {
@@ -16,6 +17,7 @@ import {
   getRefreshTokenExpiryDate,
 } from '../../services/token.js';
 import { authLimiter } from '../../middleware/rate-limiter.js';
+import { devAuthEnabled } from '../../config/env.js';
 
 export const authRouter = Router();
 
@@ -44,8 +46,17 @@ authRouter.post('/firebase', async (req, res, next) => {
     let firebaseUid: string;
     let phone: string | undefined;
 
-    // Support development tokens for Web browser test suites and local testing
-    if (process.env.NODE_ENV !== 'production' && data.idToken.startsWith('test-id-token:')) {
+    if (data.idToken.startsWith('test-id-token:')) {
+      if (!devAuthEnabled) {
+        res.status(401).json({
+          error: {
+            code: 'DEV_AUTH_DISABLED',
+            message:
+              'Development authentication tokens are not allowed. Set ALLOW_DEV_AUTH=true in backend/.env for non-production environments.',
+          },
+        });
+        return;
+      }
       phone = data.idToken.replace('test-id-token:', '');
       firebaseUid = 'dev-uid-' + phone.replace(/\D/g, '');
     } else {
@@ -158,8 +169,18 @@ authRouter.post('/refresh', async (req, res, next) => {
       return;
     }
 
-    // Revoke old refresh token (Token Rotation)
-    await revokeRefreshToken(tokenHash);
+    // Revoke old refresh token atomically; reuse invalidates the whole token family.
+    const revoked = await revokeRefreshToken(tokenHash);
+    if (!revoked) {
+      await revokeAllUserRefreshTokens(tokenRecord.user_id);
+      res.status(401).json({
+        error: {
+          code: 'REVOKED_REFRESH_TOKEN',
+          message: 'Token already used',
+        },
+      });
+      return;
+    }
 
     // Look up user
     const user = await findUserById(tokenRecord.user_id);

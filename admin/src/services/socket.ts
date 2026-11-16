@@ -28,6 +28,8 @@ export class PushkaraluSocketClient {
       localStorage.getItem('pushkaralu_admin_token') ||
       '';
 
+    if (!token) return;
+
     try {
       this.socket = io(`${this.url}/admin-sos`, {
         auth: { token },

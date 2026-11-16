@@ -111,7 +111,6 @@ if (env.NODE_ENV === 'production') {
   if (!env.MIGRATION_DATABASE_URL) {
     errors.push('MIGRATION_DATABASE_URL must be configured in production (direct unpooled connection for migrations).');
   }
-
   if (!env.UPLOAD_SECRET) {
     errors.push('UPLOAD_SECRET must be configured in production (min 32 chars).');
   }

@@ -64,7 +64,7 @@ auditRouter.get(
       const { rows } = await query<AuditLogRecord>(
         `SELECT a.*, u.phone as admin_phone, u.name as admin_name
          FROM audit_logs a
-         LEFT JOIN users u ON a.admin_id = u.id
+         LEFT JOIN users u ON u.id::text = a.admin_id
          ${whereSql}
          ORDER BY a.created_at DESC
          LIMIT $${index++} OFFSET $${index++}`,
@@ -89,4 +89,3 @@ auditRouter.get(
     }
   }
 );
-

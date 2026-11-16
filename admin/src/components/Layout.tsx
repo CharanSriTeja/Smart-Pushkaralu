@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import { useAuth } from '../context/AuthContext';
+import './Layout.css';
 
 export { NAV_ITEMS } from './Sidebar';
 

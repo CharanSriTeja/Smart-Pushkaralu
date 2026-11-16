@@ -105,6 +105,16 @@ export default function OtpScreen() {
       ) {
         setErrorMessage(t('otp.error_too_many_attempts'));
       } else if (
+        errCode === 'DEV_AUTH_DISABLED' ||
+        errMsg.includes('DEV_AUTH_DISABLED')
+      ) {
+        setErrorMessage('Development authentication is disabled on the backend. Please enable ALLOW_DEV_AUTH=true in backend/.env.');
+      } else if (
+        errCode === 'FIREBASE_AUTH_FAILED' ||
+        errMsg.includes('Decoding Firebase ID token failed')
+      ) {
+        setErrorMessage('Firebase verification failed. Please check your OTP and try again.');
+      } else if (
         errMsg.includes('Connection terminated') ||
         errMsg.includes('connection timeout') ||
         errMsg.includes('Network request failed')
