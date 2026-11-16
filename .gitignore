@@ -13,7 +13,8 @@ secrets/
 **/secrets/
 firebase-service-account*.json
 service-account*.json
-google-services.json
+# google-services.json is needed for mobile EAS/Android build (public client config)
+!mobile/google-services.json
 GoogleService-Info.plist
 *.pem
 *.key
