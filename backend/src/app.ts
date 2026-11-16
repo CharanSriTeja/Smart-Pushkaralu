@@ -3,7 +3,7 @@ import express, { Request } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import { getCorsOrigins, env } from './config/env.js';
+import { getCorsOrigins, isOriginAllowed, env } from './config/env.js';
 import { httpLogger } from './lib/logger.js';
 import { initSentry } from './lib/sentry.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -52,19 +52,11 @@ app.use(
 );
 
 // CORS allow-list with credentials
-const allowedOrigins = getCorsOrigins();
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow native mobile apps, curl, server-to-server requests with no origin
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         return callback(null, true);
-      }
-      // In development/test only, allow local development origins (localhost, 127.0.0.1, private IPs)
-      if (env.NODE_ENV !== 'production') {
-        if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
-          return callback(null, true);
-        }
       }
       return callback(null, false);
     },

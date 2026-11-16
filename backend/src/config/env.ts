@@ -30,7 +30,11 @@ const envSchema = z.object({
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
   UPLOAD_SECRET: z.string().min(32).optional(),
   ADMIN_PHONES: z.string().default(''),
-  CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:8081,http://localhost:3000'),
+  CORS_ORIGINS: z
+    .string()
+    .default(
+      'http://localhost:5173,http://localhost:8081,http://localhost:3000,https://smart-pushkaralu.vercel.app'
+    ),
   ICCC_ENABLED: z
     .preprocess((val) => {
       if (typeof val === 'string') return val.toLowerCase() === 'true' || val === '1';
@@ -198,4 +202,57 @@ export const getCorsOrigins = (): string[] => {
   return env.CORS_ORIGINS.split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+};
+
+export const isOriginAllowed = (origin?: string | null): boolean => {
+  // Allow non-browser requests (mobile native apps, curl, postman, server-to-server)
+  if (!origin) return true;
+
+  const allowedOrigins = getCorsOrigins();
+
+  // If wildcard is enabled, allow all origins
+  if (allowedOrigins.includes('*')) return true;
+
+  // Exact match
+  if (allowedOrigins.includes(origin)) return true;
+
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Support wildcard patterns from env (e.g. *.vercel.app or https://*.vercel.app)
+    for (const allowed of allowedOrigins) {
+      if (allowed.startsWith('*.')) {
+        const domainSuffix = allowed.slice(2).toLowerCase();
+        if (hostname === domainSuffix || hostname.endsWith(`.${domainSuffix}`)) {
+          return true;
+        }
+      }
+      if (allowed.startsWith('https://*.') || allowed.startsWith('http://*.')) {
+        const domainSuffix = allowed.split('://*.')[1].toLowerCase();
+        if (hostname === domainSuffix || hostname.endsWith(`.${domainSuffix}`)) {
+          return true;
+        }
+      }
+    }
+
+    // Always allow official and preview Vercel deployments for smart-pushkaralu
+    if (
+      hostname === 'smart-pushkaralu.vercel.app' ||
+      (hostname.endsWith('.vercel.app') && hostname.includes('smart-pushkaralu'))
+    ) {
+      return true;
+    }
+  } catch {
+    // If URL parsing fails, ignore and check regex fallback
+  }
+
+  // In development/test only, allow local loopback and local LAN IPs
+  if (env.NODE_ENV !== 'production') {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+      return true;
+    }
+  }
+
+  return false;
 };

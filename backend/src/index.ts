@@ -1,7 +1,7 @@
 import http from 'http';
 import { Server } from 'socket.io';
 import { app } from './app.js';
-import { env, getCorsOrigins } from './config/env.js';
+import { env, getCorsOrigins, isOriginAllowed } from './config/env.js';
 import { initFirebase } from './services/firebase.js';
 import { pool, verifyPostgis } from './db/index.js';
 import { NewsExpiryJob } from './jobs/newsExpiryJob.js';
@@ -36,22 +36,12 @@ const server = http.createServer(app);
 // ARCHITECTURE NOTE:
 // Socket.io is configured with the in-memory adapter for single-instance web service deployments.
 // If scaling horizontally to multiple instances, configure @socket.io/redis-adapter with a Redis URL.
-const allowedOrigins = getCorsOrigins();
 const io = new Server(server, {
   transports: ['websocket', 'polling'],
   cors: {
     origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOrigins.includes(origin) ||
-        allowedOrigins.includes('*')
-      ) {
+      if (isOriginAllowed(origin)) {
         return callback(null, true);
-      }
-      if (env.NODE_ENV !== 'production') {
-        if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
-          return callback(null, true);
-        }
       }
       return callback(new Error('Not allowed by CORS'));
     },
