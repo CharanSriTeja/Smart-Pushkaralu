@@ -2,8 +2,11 @@ import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import sharp from 'sharp';
+import { env } from '../config/env.js';
 
-const UPLOAD_SECRET = process.env.UPLOAD_SECRET || process.env.JWT_SECRET || 'pushkaralu_upload_secret_key_2027';
+const UPLOAD_SECRET =
+  env.UPLOAD_SECRET ||
+  (env.NODE_ENV !== 'production' ? 'dev-fallback-upload-secret-at-least-32-chars' : undefined);
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB max
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -51,6 +54,9 @@ export class UploadService {
     };
 
     const payloadStr = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    if (!UPLOAD_SECRET) {
+      throw new Error('UPLOAD_SECRET is not configured');
+    }
     const signature = crypto.createHmac('sha256', UPLOAD_SECRET).update(payloadStr).digest('base64url');
     const token = `${payloadStr}.${signature}`;
 
@@ -73,9 +79,17 @@ export class UploadService {
     }
 
     const [payloadStr, signature] = parts;
+    if (!UPLOAD_SECRET) {
+      throw new Error('UPLOAD_SECRET is not configured');
+    }
     const expectedSig = crypto.createHmac('sha256', UPLOAD_SECRET).update(payloadStr).digest('base64url');
 
-    if (signature !== expectedSig) {
+    const givenSig = Buffer.from(signature, 'base64url');
+    const expectedSigBuffer = Buffer.from(expectedSig, 'base64url');
+    if (
+      givenSig.length !== expectedSigBuffer.length ||
+      !crypto.timingSafeEqual(givenSig, expectedSigBuffer)
+    ) {
       throw new Error('Upload token signature mismatch.');
     }
 
@@ -171,4 +185,3 @@ export class UploadService {
     }
   }
 }
-

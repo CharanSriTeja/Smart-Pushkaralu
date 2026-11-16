@@ -6,6 +6,7 @@ dotenv.config();
 // Known insecure defaults – rejected in production
 const INSECURE_JWT_DEFAULTS = [
   'smart-pushkaralu-dev-secret-super-safe-key-32chars',
+  'smart-pushkaralu-super-secret-jwt-key-2027',
   'changeme',
   'secret',
   'dev-secret',
@@ -19,9 +20,13 @@ const INSECURE_SOS_DEFAULTS = [
 const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  ALLOW_DEV_AUTH: z
+    .preprocess((val) => val === 'true' || val === '1', z.boolean())
+    .default(false),
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/smart_pushkaralu'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long').default('smart-pushkaralu-dev-secret-super-safe-key-32chars'),
   FIREBASE_SERVICE_ACCOUNT_PATH: z.string().optional(),
+  UPLOAD_SECRET: z.string().min(32).optional(),
   ADMIN_PHONES: z.string().default(''),
   CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:8081,http://localhost:3000'),
   ICCC_ENABLED: z
@@ -70,12 +75,17 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+export const devAuthEnabled = env.NODE_ENV !== 'production' && env.ALLOW_DEV_AUTH;
 
 // ── Production safety checks ──────────────────────────────────────────────────
 // These fail loudly on startup so a misconfigured production deploy never serves
 // real users with insecure defaults or fake data.
 if (env.NODE_ENV === 'production') {
   const errors: string[] = [];
+
+  if (!env.UPLOAD_SECRET) {
+    errors.push('UPLOAD_SECRET must be configured in production (min 32 chars).');
+  }
 
   if (INSECURE_JWT_DEFAULTS.includes(env.JWT_SECRET)) {
     errors.push('JWT_SECRET is set to a known insecure default. Set a random 64-char secret.');
@@ -120,7 +130,7 @@ export const getAdminPhoneList = (): string[] => {
 };
 
 export const getCorsOrigins = (): string[] => {
-  if (!env.CORS_ORIGINS) return ['*'];
+  if (!env.CORS_ORIGINS) return [];
   return env.CORS_ORIGINS.split(',')
     .map((o) => o.trim())
     .filter(Boolean);

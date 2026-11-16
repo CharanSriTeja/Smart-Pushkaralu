@@ -1,7 +1,7 @@
 import { Server, Socket, Namespace } from 'socket.io';
 import { verifyAccessToken } from './token.js';
 import { findUserById, isUserAdmin } from './user.js';
-import { env } from '../config/env.js';
+import { env, devAuthEnabled } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 import { SosAlertRecord, ClusterEventPayload } from '../types/sos.js';
 
@@ -36,7 +36,7 @@ export function initSosSocket(io: Server): Namespace {
         ? authHeader.substring(7).trim()
         : authHeader.trim();
 
-      if (env.NODE_ENV !== 'production' && token === 'dev-admin-token') {
+      if (devAuthEnabled && token === 'dev-admin-token') {
         socket.data.user = {
           id: 'admin-super-01',
           phone: '+919999999999',
@@ -46,51 +46,15 @@ export function initSosSocket(io: Server): Namespace {
         return;
       }
 
-      let user: any = null;
-      let isAdmin = false;
-
-      try {
-        const payload = verifyAccessToken(token);
-        user = await findUserById(payload.userId);
-        if (user && user.status === 'active') {
-          isAdmin = await isUserAdmin(user.id, user.phone);
-        }
-      } catch (tokenErr: any) {
-        if (env.NODE_ENV !== 'production') {
-          socket.data.user = {
-            id: 'admin-super-01',
-            phone: '+919999999999',
-            name: 'District Collector (Super Admin)',
-          };
-          next();
-          return;
-        }
-        throw tokenErr;
-      }
+      const payload = verifyAccessToken(token);
+      const user = await findUserById(payload.userId);
 
       if (!user || user.status !== 'active') {
-        if (env.NODE_ENV !== 'production') {
-          socket.data.user = {
-            id: 'admin-super-01',
-            phone: '+919999999999',
-            name: 'District Collector (Super Admin)',
-          };
-          next();
-          return;
-        }
         return next(new Error('User inactive or not found'));
       }
 
+      const isAdmin = await isUserAdmin(user.id, user.phone);
       if (!isAdmin) {
-        if (env.NODE_ENV !== 'production') {
-          socket.data.user = {
-            id: 'admin-super-01',
-            phone: '+919999999999',
-            name: 'District Collector (Super Admin)',
-          };
-          next();
-          return;
-        }
         return next(new Error('Admin authorization required'));
       }
 
@@ -222,4 +186,3 @@ export function trackAlertForCluster(params: {
 export function resetClusterTracker(): void {
   clusterTracker.clear();
 }
-

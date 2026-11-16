@@ -21,13 +21,23 @@ const io = new Server(server, {
     origin: (origin, callback) => {
       if (
         !origin ||
-        env.NODE_ENV !== 'production' ||
-        allowedOrigins.includes('*') ||
         allowedOrigins.includes(origin) ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1')
+        (env.NODE_ENV !== 'production' && allowedOrigins.includes('*'))
       ) {
         return callback(null, true);
+      }
+      if (env.NODE_ENV !== 'production') {
+        try {
+          const parsedOrigin = new URL(origin);
+          if (
+            ['localhost', '127.0.0.1'].includes(parsedOrigin.hostname) &&
+            ['http:', 'https:'].includes(parsedOrigin.protocol)
+          ) {
+            return callback(null, true);
+          }
+        } catch {
+          // Reject malformed origins below.
+        }
       }
       return callback(new Error('Not allowed by CORS'));
     },

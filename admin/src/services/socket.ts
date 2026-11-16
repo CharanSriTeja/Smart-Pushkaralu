@@ -22,8 +22,9 @@ export class PushkaraluSocketClient {
 
     const token =
       localStorage.getItem('sp_admin_token') ||
-      localStorage.getItem('pushkaralu_admin_token') ||
-      'dev-admin-token';
+      localStorage.getItem('pushkaralu_admin_token');
+
+    if (!token) return;
 
     try {
       this.socket = io(`${this.url}/admin-sos`, {

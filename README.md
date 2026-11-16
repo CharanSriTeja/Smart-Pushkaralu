@@ -18,7 +18,7 @@ smart-pushkaralu/
 │   │   ├── middleware/    # Auth guards, requireAdmin, can('perm') RBAC, rate-limiting & error handler
 │   │   ├── routes/v1/     # /health, /auth, /settings, /admin/audit-logs, /admin/settings, /admin/usage, /devices, /integrations/iccc
 │   │   └── services/      # Firebase Admin SDK & JWT token management
-│   └── tests/             # 27 automated tests (Vitest + Supertest)
+│   └── tests/             # 162 automated tests (Vitest + Supertest)
 │
 ├── mobile/                # Expo 54+ (React Native 0.88) + TypeScript + Expo Router
 │   ├── src/
@@ -30,7 +30,7 @@ smart-pushkaralu/
 │   │   ├── services/      # Push notifications (expo-notifications), Sentry, and API token storage
 │   │   ├── storage/       # Offline SQLite / Memory cache with TTL & fetchWithCache
 │   │   └── theme/         # High-contrast color palette, 48dp minimum touch targets
-│   └── tests/             # 20 automated unit tests (Vitest)
+│   └── tests/             # 52 automated unit tests (Vitest)
 │
 └── admin/                 # Admin Command Web Portal (Vite + React 18 + TypeScript)
     ├── src/
@@ -92,7 +92,7 @@ cd smart-pushkaralu
    PORT=4000
    NODE_ENV=development
    DATABASE_URL=postgresql://user:password@host/database?sslmode=require
-   JWT_SECRET=smart-pushkaralu-super-secret-jwt-key-2027
+   JWT_SECRET=replace-with-a-random-32-character-secret
    ADMIN_PHONES=+919876543210,+919999999999
    CORS_ORIGINS=http://localhost:5173,http://localhost:8081,http://localhost:3000
    ICCC_ENABLED=false
@@ -111,7 +111,7 @@ cd smart-pushkaralu
    ```
    Live at `http://localhost:4000`. Test via browser: `http://localhost:4000/v1/health` (checks DB connection).
 
-6. **Run Backend Tests** (27 passing tests):
+6. **Run Backend Tests** (162 tests):
    ```bash
    npm test
    ```
@@ -143,7 +143,7 @@ cd smart-pushkaralu
    # EXPO_PUBLIC_API_URL=http://10.0.2.2:4000
    ```
 
-4. **Run Mobile Unit Tests** (20 passing tests):
+4. **Run Mobile Unit Tests** (52 tests):
    ```bash
    npm test
    ```
@@ -217,7 +217,7 @@ cd smart-pushkaralu
    VITE_MOCK_MODE=true
    ```
 
-4. **Run Admin Tests** (8 passing tests):
+4. **Run Admin Tests** (8 tests):
    ```bash
    npm test
    ```
@@ -238,8 +238,8 @@ cd smart-pushkaralu
 
 | Package | Test File | Test Count | Status |
 | :--- | :--- | :---: | :---: |
-| `backend/` | `tests/auth.test.ts` & `tests/platform.test.ts` | **27** | ✅ All Passed |
-| `mobile/` | `tests/mobile.test.ts` | **20** | ✅ All Passed |
+| `backend/` | `tests/` | **162** | See current test output |
+| `mobile/` | `tests/` | **52** | See current test output |
 | `admin/` | `tests/admin.test.tsx` | **8** | ✅ All Passed |
 | **Total** | | **55** | ✅ **100% Passing** |
 

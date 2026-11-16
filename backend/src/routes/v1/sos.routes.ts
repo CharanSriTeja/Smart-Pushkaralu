@@ -44,7 +44,7 @@ sosRouter.post(
           error: {
             code: 'VALIDATION_ERROR',
             message: 'Invalid SOS payload',
-            details: err.errors,
+            details: err.issues,
           },
         });
         return;
@@ -282,4 +282,3 @@ sosRouter.post(
     }
   }
 );
-

@@ -29,9 +29,8 @@ CREATE INDEX IF NOT EXISTS idx_seva_videos_ghat_id ON seva_videos (ghat_id);
 CREATE INDEX IF NOT EXISTS idx_seva_videos_is_live ON seva_videos (is_live);
 
 -- Seed permissions if permissions table exists
-INSERT INTO permissions (id, name, description, category)
+INSERT INTO permissions (id, name)
 VALUES
-    (gen_random_uuid(), 'seva.manage', 'Create, update, reorder and delete seva videos', 'seva'),
-    (gen_random_uuid(), 'seva.publish', 'Publish or unpublish seva videos', 'seva')
+    (gen_random_uuid(), 'seva.manage'),
+    (gen_random_uuid(), 'seva.publish')
 ON CONFLICT (name) DO NOTHING;
-

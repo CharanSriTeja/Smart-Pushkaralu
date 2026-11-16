@@ -19,10 +19,13 @@ export function getAdminToken() {
   );
 }
 
-const authHeaders = () => ({
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${getAdminToken()}`,
-});
+const authHeaders = () => {
+  const token = getAdminToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
 export const AdminApi = {
   async getGhats(params: Record<string, string> = {}): Promise<{ data: Ghat[]; total: number }> {
@@ -1105,6 +1108,3 @@ export const AdminApi = {
 
 export const adminApi = AdminApi;
 export default AdminApi;
-
-
-

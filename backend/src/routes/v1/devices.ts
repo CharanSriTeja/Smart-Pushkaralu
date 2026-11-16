@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { query } from '../../db/index.js';
 import { optionalAuth } from '../../middleware/auth.js';
 import { subscribeTokenToTopics, formatTopicName } from '../../lib/push.js';
+import { publicWriteLimiter } from '../../middleware/rate-limiter.js';
 
 export const devicesRouter = Router();
 
@@ -26,6 +27,7 @@ export interface DeviceTokenRecord {
  */
 devicesRouter.post(
   '/devices',
+  publicWriteLimiter,
   optionalAuth,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

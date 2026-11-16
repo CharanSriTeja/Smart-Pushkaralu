@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AdminApi } from '../services/adminApi';
+import './NearbyPlacesAdminPage.css';
 
 interface LocalizedText {
   en: string;
@@ -247,7 +248,7 @@ export const NearbyPlacesAdminPage: React.FC = () => {
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="nearby-places-page space-y-6">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
         <div>

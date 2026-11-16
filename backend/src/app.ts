@@ -1,5 +1,5 @@
 import path from 'path';
-import express from 'express';
+import express, { Request } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { getCorsOrigins } from './config/env.js';
@@ -9,7 +9,7 @@ import { errorHandler } from './middleware/error-handler.js';
 import {
   generalLimiter,
   publicWriteLimiter,
-  authLimiter,
+  publicGhatsLimiter,
 } from './middleware/rate-limiter.js';
 import { healthRouter } from './routes/v1/health.js';
 import { authRouter } from './routes/v1/auth.js';
@@ -35,6 +35,7 @@ import { adminSevaRouter } from './routes/v1/admin-seva.routes.js';
 initSentry();
 
 export const app = express();
+app.set('trust proxy', 1);
 
 // Security headers with cross-origin resource policy disabled for static mobile previews
 app.use(
@@ -76,23 +77,32 @@ app.get(['/sos', '/sos/'], (_req, res) => {
 });
 app.use('/sos', express.static(path.join(process.cwd(), 'public/sos')));
 
-// Body parsing limit supporting bulk administrative operations while protecting against flood
-app.use(express.json({ limit: '5mb' }));
+// Body parsing limit supporting bulk administrative operations while protecting against flood, with raw-body capture for webhook verification
+app.use(
+  express.json({
+    limit: '5mb',
+    verify: (req, _res, buf) => {
+      (req as Request & { rawBody?: Buffer }).rawBody = Buffer.from(buf);
+    },
+  })
+);
 
 // Structured Pino HTTP logging with request id and token/phone redaction
 app.use(httpLogger);
 
 // API v1 Routes
 app.use('/v1', healthRouter);
-app.use('/v1/auth', authLimiter, authRouter);
+app.use('/v1/auth', authRouter);
 app.use('/v1', userRouter);
 app.use('/v1', settingsRouter);
 app.use('/v1', usageRouter);
 app.use('/v1', icccRouter);
+app.use('/v1/ghats', publicGhatsLimiter);
 app.use('/v1', ghatsRouter);
 app.use('/v1', crowdReportRouter);
+app.use('/v1/news', publicGhatsLimiter);
 app.use('/v1', newsRouter);
-app.use('/v1', publicWriteLimiter, devicesRouter);
+app.use('/v1', devicesRouter);
 app.use('/v1', issuesRouter);
 app.use('/v1', routesRouter);
 app.use('/v1', sosRouter);
