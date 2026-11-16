@@ -70,7 +70,7 @@ export class CloudinaryStorageAdapter implements StorageAdapter {
     const signature = crypto.createHash('sha1').update(toSign).digest('hex');
 
     const formData = new FormData();
-    const blob = new Blob([buffer]);
+    const blob = new Blob([new Uint8Array(buffer)]);
     formData.append('file', blob, key);
     formData.append('api_key', this.apiKey);
     formData.append('timestamp', timestamp.toString());
@@ -167,7 +167,7 @@ export class S3StorageAdapter implements StorageAdapter {
       const res = await fetch(baseUrl, {
         method: 'PUT',
         headers,
-        body: buffer,
+        body: new Uint8Array(buffer),
       });
 
       if (!res.ok) {
