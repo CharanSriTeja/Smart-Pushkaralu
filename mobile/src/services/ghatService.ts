@@ -60,6 +60,21 @@ export class GhatService {
         if (filters.crowdLevel) {
           ghats = ghats.filter((g) => g.crowd_level === filters.crowdLevel);
         }
+          if (filters.facilities) {
+            ghats = ghats.filter((g) =>
+              g.facilities?.some((facility) =>
+                facility.facility_type === filters.facilities && facility.is_operational
+              )
+            );
+          }
+          if (filters.search) {
+            const needle = filters.search.toLowerCase();
+            ghats = ghats.filter((g) =>
+              [g.name?.en, g.name?.te, g.name?.hi, g.nearest_town?.en, g.district]
+                .filter(Boolean)
+                .some((value) => String(value).toLowerCase().includes(needle))
+            );
+          }
 
         return { ghats, isOffline: true };
       }

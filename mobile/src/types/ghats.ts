@@ -70,8 +70,8 @@ export interface Ghat {
   river: string;
   district: string;
   state: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   distance_meters?: number;
   distance_km?: number;
   nearest_town: LocalizedString;

@@ -111,6 +111,7 @@ export class GhatsRepository {
       values.push(coords.lng);
 
       // SQL Haversine formula calculation for exact distance in meters
+      conditions.push(`g.lat IS NOT NULL AND g.lng IS NOT NULL`);
       distanceSelectSql = `
         ROUND(
           6371000 * 2 * ASIN(
@@ -197,8 +198,8 @@ export class GhatsRepository {
 
       return {
         ...row,
-        lat: Number(row.lat),
-        lng: Number(row.lng),
+        lat: row.lat === null ? null : Number(row.lat),
+        lng: row.lng === null ? null : Number(row.lng),
         distance_meters: distanceMeters,
         distance_km: distanceKm,
         is_officially_approved: approval.isOfficiallyApproved,
@@ -243,8 +244,8 @@ export class GhatsRepository {
 
     return {
       ...ghat,
-      lat: Number(ghat.lat),
-      lng: Number(ghat.lng),
+      lat: ghat.lat === null ? null : Number(ghat.lat),
+      lng: ghat.lng === null ? null : Number(ghat.lng),
       sources: sourcesRes.rows,
       facilities: facilitiesRes.rows,
       aarti_timings: aartiRes.rows,
@@ -264,8 +265,8 @@ export class GhatsRepository {
     river: string;
     district: string;
     state: string;
-    lat: number;
-    lng: number;
+    lat: number | null;
+    lng: number | null;
     nearest_town: any;
     nearest_railway_station: any;
     nearest_bus_stand: any;

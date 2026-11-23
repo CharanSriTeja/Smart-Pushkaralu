@@ -177,7 +177,7 @@ export default function ReportIssueScreen() {
 
     if (locationType === 'ghat' && selectedGhatId) {
       const matchGhat = ghats.find((g) => g.id === selectedGhatId);
-      if (matchGhat) {
+      if (matchGhat && matchGhat.lat != null && matchGhat.lng != null) {
         reportLat = matchGhat.lat;
         reportLng = matchGhat.lng;
       }

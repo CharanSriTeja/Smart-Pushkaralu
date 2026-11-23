@@ -82,13 +82,15 @@ export const NearbyPlacesScreen: React.FC = () => {
             if (loc && loc.coords) {
               const uLat = loc.coords.latitude;
               const uLng = loc.coords.longitude;
-              const sorted = [...ghats].sort((a, b) => {
-                const distA = Math.hypot(a.lat - uLat, a.lng - uLng);
-                const distB = Math.hypot(b.lat - uLat, b.lng - uLng);
+              const locatedGhats = ghats.filter((g) => g.lat != null && g.lng != null);
+              const sorted = [...locatedGhats].sort((a, b) => {
+                const distA = Math.hypot(a.lat! - uLat, a.lng! - uLng);
+                const distB = Math.hypot(b.lat! - uLat, b.lng! - uLng);
                 return distA - distB;
               });
-              setSelectedGhatId(sorted[0].id);
-              setSelectedGhat(sorted[0]);
+              const first = sorted[0] || ghats[0];
+              setSelectedGhatId(first.id);
+              setSelectedGhat(first);
             } else {
               setSelectedGhatId(ghats[0].id);
               setSelectedGhat(ghats[0]);
@@ -191,7 +193,7 @@ export const NearbyPlacesScreen: React.FC = () => {
   const mapMarkers: MapMarkerItem[] = useMemo(() => {
     const items: MapMarkerItem[] = [];
 
-    if (selectedGhat) {
+    if (selectedGhat && selectedGhat.lat != null && selectedGhat.lng != null) {
       items.push({
         id: `ghat-${selectedGhat.id}`,
         lat: selectedGhat.lat,
@@ -231,7 +233,7 @@ export const NearbyPlacesScreen: React.FC = () => {
   }, [selectedGhat, places, language, t]);
 
   const mapCenter = useMemo(() => {
-    if (selectedGhat) {
+    if (selectedGhat && selectedGhat.lat != null && selectedGhat.lng != null) {
       return { lat: selectedGhat.lat, lng: selectedGhat.lng };
     }
     if (places.length > 0) {

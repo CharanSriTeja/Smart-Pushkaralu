@@ -99,6 +99,7 @@ export const GhatMapScreen: React.FC = () => {
   };
 
   const handleGetDirections = (ghat: Ghat) => {
+    if (ghat.lat == null || ghat.lng == null) return;
     const lat = Number(ghat.lat);
     const lng = Number(ghat.lng);
     const label = encodeURIComponent(getLocalizedText(ghat.name, language));
@@ -172,6 +173,7 @@ export const GhatMapScreen: React.FC = () => {
           {ghats.map((ghat) => {
             const name = getLocalizedText(ghat.name, language);
             const pinColor = getMarkerColor(ghat);
+            if (ghat.lat == null || ghat.lng == null) return null;
 
             return (
               <Marker

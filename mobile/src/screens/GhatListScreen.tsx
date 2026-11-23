@@ -21,7 +21,6 @@ import {
   Card,
   Button,
   SearchField,
-  Chip,
   BathingBadge,
   CrowdBadge,
   VerificationBadge,
@@ -29,6 +28,7 @@ import {
   EmptyState,
   ErrorState,
   OfflineBanner,
+  Select,
 } from '../components';
 
 export const GhatListScreen: React.FC = () => {
@@ -55,10 +55,9 @@ export const GhatListScreen: React.FC = () => {
     { id: 'East Godavari', label: 'East Godavari' },
     { id: 'West Godavari', label: 'West Godavari' },
     { id: 'Dr. B.R. Ambedkar Konaseema', label: 'Konaseema' },
-    { id: 'Bhadradri Kothagudem', label: 'Bhadradri' },
-    { id: 'Jagtial', label: 'Jagtial' },
-    { id: 'Nirmal', label: 'Nirmal' },
-    { id: 'Jayashankar Bhupalpally', label: 'Jayashankar' },
+    { id: 'Kakinada', label: 'Kakinada' },
+    { id: 'Eluru', label: 'Eluru' },
+    { id: 'Polavaram', label: 'Polavaram' },
   ];
 
   const bathingOptions: { id: BathingStatus | 'all'; label: string }[] = [
@@ -66,6 +65,7 @@ export const GhatListScreen: React.FC = () => {
     { id: 'allowed', label: 'Safe for Holy Bath' },
     { id: 'restricted', label: 'Restricted / Caution' },
     { id: 'closed', label: 'Strictly Closed' },
+    { id: 'unknown', label: 'Status Not Provided' },
   ];
 
   const crowdOptions: { id: CrowdLevel | 'all'; label: string }[] = [
@@ -73,13 +73,14 @@ export const GhatListScreen: React.FC = () => {
     { id: 'low', label: 'Low Crowd' },
     { id: 'medium', label: 'Moderate' },
     { id: 'high', label: 'High / Surge' },
+    { id: 'unknown', label: 'Status Not Provided' },
   ];
 
   const facilityOptions = [
     { id: 'all', label: 'All Facilities' },
-    { id: 'changing_rooms', label: 'Changing Rooms' },
+    { id: 'changing_room', label: 'Changing Rooms' },
     { id: 'drinking_water', label: 'Drinking Water' },
-    { id: 'medical_aid', label: 'Medical Post' },
+    { id: 'medical_camp', label: 'Medical Post' },
     { id: 'parking', label: 'Parking Space' },
   ];
 
@@ -241,41 +242,48 @@ export const GhatListScreen: React.FC = () => {
           />
         </View>
 
-        {/* Filter Chips Scroll (Districts, Bathing, Crowd) */}
+        {/* Filter navigation bar */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
+          contentContainerStyle={styles.filterNav}
         >
-          {/* Districts */}
-          {districts.map((d) => (
-            <Chip
-              key={d.id}
-              label={d.label}
-              selected={selectedDistrict === d.id}
-              onPress={() => setSelectedDistrict(d.id)}
+          <View style={styles.filterNavItem}>
+            <Select
+              options={districts.map((d) => ({ label: d.label, value: d.id }))}
+              value={selectedDistrict}
+              onSelect={(value) => setSelectedDistrict(value)}
+              placeholder="District"
+              containerStyle={styles.filterSelect}
             />
-          ))}
-
-          {/* Bathing Status filter */}
-          {bathingOptions.map((b) => (
-            <Chip
-              key={b.id}
-              label={b.label}
-              selected={selectedBathing === b.id}
-              onPress={() => setSelectedBathing(b.id)}
+          </View>
+          <View style={styles.filterNavItem}>
+            <Select
+              options={bathingOptions.map((b) => ({ label: b.label, value: b.id }))}
+              value={selectedBathing}
+              onSelect={(value) => setSelectedBathing(value)}
+              placeholder="Bathing"
+              containerStyle={styles.filterSelect}
             />
-          ))}
-
-          {/* Crowd filter */}
-          {crowdOptions.map((c) => (
-            <Chip
-              key={c.id}
-              label={c.label}
-              selected={selectedCrowd === c.id}
-              onPress={() => setSelectedCrowd(c.id)}
+          </View>
+          <View style={styles.filterNavItem}>
+            <Select
+              options={crowdOptions.map((c) => ({ label: c.label, value: c.id }))}
+              value={selectedCrowd}
+              onSelect={(value) => setSelectedCrowd(value)}
+              placeholder="Crowd"
+              containerStyle={styles.filterSelect}
             />
-          ))}
+          </View>
+          <View style={styles.filterNavItem}>
+            <Select
+              options={facilityOptions.map((f) => ({ label: f.label, value: f.id }))}
+              value={selectedFacility}
+              onSelect={(value) => setSelectedFacility(value)}
+              placeholder="Facilities"
+              containerStyle={styles.filterSelect}
+            />
+          </View>
         </ScrollView>
       </View>
 
@@ -379,10 +387,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginBottom: spacing.xs,
   },
-  filterScroll: {
+  filterNav: {
     paddingHorizontal: spacing.md,
     gap: spacing.xs,
     paddingVertical: spacing.xs,
+    alignItems: 'flex-start',
+  },
+  filterNavItem: {
+    width: 180,
+  },
+  filterSelect: {
+    marginBottom: 0,
   },
   loadingPadding: {
     padding: spacing.md,
