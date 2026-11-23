@@ -108,4 +108,16 @@
   .seva-admin-page {
     padding: 16px !important;
   }
+  .seva-admin-page table {
+    min-width: 720px;
+  }
+  .seva-admin-page [class~="md:grid-cols-2"] {
+    grid-template-columns: 1fr;
+  }
+  .seva-admin-page [class~="md:flex-row"] {
+    flex-direction: column;
+  }
+  .seva-admin-page [class~="ml-auto"] {
+    margin-left: 0;
+  }
 }

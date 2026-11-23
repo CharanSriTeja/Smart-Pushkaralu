@@ -151,34 +151,38 @@ export class PlacesRepository {
       FROM temples
       WHERE is_hidden = FALSE
         AND (
-          6371000 * 2 * ASIN(SQRT(
+          lat IS NULL OR lng IS NULL
+          OR 6371000 * 2 * ASIN(SQRT(
             POWER(SIN(RADIANS(lat - $1) / 2), 2) +
             COS(RADIANS($1)) * COS(RADIANS(lat)) *
             POWER(SIN(RADIANS(lng - $2) / 2), 2)
-          ))
-        ) <= $3
+          )) <= $3
+        )
       ORDER BY distance_meters ASC
     `;
 
     const { rows } = await query<any>(sql, [ghatLat, ghatLng, radiusMeters]);
 
     return rows.map((r) => {
-      const dist = Math.round(parseFloat(r.distance_meters));
-      const est = calculateTravelEstimates(ghatLat, ghatLng, parseFloat(r.lat), parseFloat(r.lng), dist);
+      const hasCoordinates = r.lat != null && r.lng != null;
+      const dist = hasCoordinates ? Math.round(parseFloat(r.distance_meters)) : undefined;
+      const est = hasCoordinates
+        ? calculateTravelEstimates(ghatLat, ghatLng, parseFloat(r.lat), parseFloat(r.lng), dist!)
+        : null;
 
       return {
         id: r.id,
         name: r.name,
         type: 'temple',
         source_type: 'curated',
-        lat: parseFloat(r.lat),
-        lng: parseFloat(r.lng),
-        distance_m: est.distance_m,
-        distance_km: est.distance_km,
-        driving_time_minutes: est.driving_time_minutes,
-        walking_time_minutes: est.walking_time_minutes,
-        estimated_time_text: est.estimated_time_text,
-        google_maps_url: est.google_maps_url,
+        lat: hasCoordinates ? parseFloat(r.lat) : null,
+        lng: hasCoordinates ? parseFloat(r.lng) : null,
+        distance_m: est?.distance_m,
+        distance_km: est?.distance_km,
+        driving_time_minutes: est?.driving_time_minutes,
+        walking_time_minutes: est?.walking_time_minutes,
+        estimated_time_text: est ? est.estimated_time_text : 'Distance not established',
+        google_maps_url: est?.google_maps_url,
         address: r.address || undefined,
         phone: r.phone || undefined,
         deity: r.deity || undefined,

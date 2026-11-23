@@ -167,14 +167,20 @@ export default function HomeScreen() {
       title: t('issues.report_title', 'Report Issue'),
       subtitle: t('issues.category_label', 'Sanitation & Safety'),
       icon: '📋',
-      onPress: () => router.push('/(app)/issues/report' as any),
+      onPress: () => {
+        if (Platform.OS === 'web') window.location.href = '/issues/report';
+        else router.push('/(app)/issues/report' as any);
+      },
     },
     {
       id: 'sos',
       title: t('sos.emergency_112', 'Emergency 112'),
       subtitle: t('sos.title', 'SOS Police & Rescue'),
       icon: '🚨',
-      onPress: () => router.push('/(app)/sos' as any),
+      onPress: () => {
+        if (Platform.OS === 'web') window.location.href = '/sos';
+        else router.push('/(app)/sos' as any);
+      },
       isEmergency: true,
     },
     {
@@ -182,14 +188,20 @@ export default function HomeScreen() {
       title: t('seva.title', 'Virtual Seva'),
       subtitle: t('home.seva_booking_sub', 'Volunteering & Annadanam'),
       icon: '🙏',
-      onPress: () => router.push('/(app)/seva' as any),
+      onPress: () => {
+        if (Platform.OS === 'web') window.location.href = '/seva';
+        else router.push('/(app)/seva' as any);
+      },
     },
     {
       id: 'transport',
       title: t('transport.title', 'Transport'),
       subtitle: t('transport.hubs_title', 'Buses & Shuttles'),
       icon: '🚌',
-      onPress: () => router.push('/(app)/transport' as any),
+      onPress: () => {
+        if (Platform.OS === 'web') window.location.href = '/transport';
+        else router.push('/(app)/transport' as any);
+      },
     },
   ];
 

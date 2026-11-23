@@ -67,6 +67,15 @@ body {
   background-color: var(--color-bg-warm);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
 }
 
 input, button, select, textarea {

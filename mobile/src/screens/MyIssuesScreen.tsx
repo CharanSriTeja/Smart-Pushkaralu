@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +16,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { IssueService } from '../services/issueService';
 import { IssueReport, IssueStatus } from '../types/issues';
 import { colors } from '../theme/tokens';
+import { safeGoBack } from '../utils/navigation';
 
 const CATEGORY_ICONS: Record<string, string> = {
   sanitation: '🧹',
@@ -141,7 +143,7 @@ export default function MyIssuesScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => safeGoBack(router)}>
           <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerTitleBox}>
@@ -154,7 +156,10 @@ export default function MyIssuesScreen() {
         </View>
         <TouchableOpacity
           style={styles.reportNewBtn}
-          onPress={() => router.push('/(app)/issues/report' as any)}
+          onPress={() => {
+            if (Platform.OS === 'web') window.location.href = '/issues/report';
+            else router.push('/(app)/issues/report' as any);
+          }}
         >
           <Text style={[styles.reportNewBtnText, { fontFamily: fontFamilyBold }]}>
             + Report
@@ -221,7 +226,10 @@ export default function MyIssuesScreen() {
           </Text>
           <TouchableOpacity
             style={styles.emptyBtn}
-            onPress={() => router.push('/(app)/issues/report' as any)}
+            onPress={() => {
+              if (Platform.OS === 'web') window.location.href = '/issues/report';
+              else router.push('/(app)/issues/report' as any);
+            }}
           >
             <Text style={[styles.emptyBtnText, { fontFamily: fontFamilyBold }]}>
               + {t('issues.title')}

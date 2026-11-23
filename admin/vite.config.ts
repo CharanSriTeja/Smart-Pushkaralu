@@ -8,13 +8,23 @@ export default defineConfig(({ command, mode }) => {
     const apiUrl = process.env.VITE_API_URL || env.VITE_API_URL;
     const socketUrl = process.env.VITE_SOCKET_URL || env.VITE_SOCKET_URL;
 
-    if (!apiUrl || typeof apiUrl !== 'string' || !apiUrl.startsWith('https://')) {
+    if (
+      !apiUrl ||
+      typeof apiUrl !== 'string' ||
+      (!apiUrl.startsWith('https://') &&
+        !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(apiUrl))
+    ) {
       throw new Error(
         `[Production Build Error] VITE_API_URL is required and must start with https://. Received: ${apiUrl || 'undefined'}`
       );
     }
 
-    if (!socketUrl || typeof socketUrl !== 'string' || !socketUrl.startsWith('https://')) {
+    if (
+      !socketUrl ||
+      typeof socketUrl !== 'string' ||
+      (!socketUrl.startsWith('https://') &&
+        !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(socketUrl))
+    ) {
       throw new Error(
         `[Production Build Error] VITE_SOCKET_URL is required and must start with https://. Received: ${socketUrl || 'undefined'}`
       );

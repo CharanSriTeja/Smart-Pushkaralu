@@ -449,6 +449,38 @@ export const SEED_TRANSPORT_HUBS = [
   }
 ];
 
+const TEMPLE_TOURISM_GUIDE = [
+  ['Dr. B. R. Ambedkar Konaseema','Sri Siddhi Vinayaka Swamy Temple','Ainavilli','Amalapuram: 11.6 km (official district tourism listing); exact ghat-to-temple distance depends on ghat','https://konaseema.ap.gov.in/tourism/tourist-places/'],
+  ['Dr. B. R. Ambedkar Konaseema','Sri Lakshmi Narasimha Swamy Temple','Antarvedi','Amalapuram: about 49 km (official district tourism listing); exact ghat-to-temple distance depends on ghat','https://konaseema.ap.gov.in/tourism/tourist-places/'],
+  ['Dr. B. R. Ambedkar Konaseema','Sri Bala Balaji Devasthanam','Appanapalli','Kakinada via Yanam: about 72 km (district listing); verify from ghat','https://konaseema.ap.gov.in/places-of-tourist-2/'],
+  ['Dr. B. R. Ambedkar Konaseema','Sri Veereswara Swamy Temple','Muramalla','Amalapuram: about 20 km (district listing); verify from ghat','https://konaseema.ap.gov.in/places-of-tourist-2/'],
+  ['Dr. B. R. Ambedkar Konaseema','Sri Uma Kouppulingeswara Swamy Temple','Palivela','Amalapuram: about 20.5 km (district listing); verify from ghat','https://konaseema.ap.gov.in/places-of-tourist-2/'],
+  ['Dr. B. R. Ambedkar Konaseema','Jaganmohini Kesava Swamy Temple','Ryali','Amalapuram: about 37.8 km (district listing); verify from ghat','https://konaseema.ap.gov.in/places-of-tourist-2/'],
+  ['Dr. B. R. Ambedkar Konaseema','Pallalamma Ammavari Temple','Vanapalli','Amalapuram: about 21 km (district listing); verify from ghat','https://konaseema.ap.gov.in/places-of-tourist-2/'],
+  ['Dr. B. R. Ambedkar Konaseema','Sri Someswara Swamy Temple','Kotipalli','Kotipalli Revu: temple is near the river ghat; visitor reports describe about a 5-minute walk; verify actual access','https://konaseema.ap.gov.in/places-of-tourist-2/'],
+  ['Dr. B. R. Ambedkar Konaseema','Sri Kundaleswara Swamy Temple','Kundaleswaram','Exact ghat-to-temple road distance not established','https://konaseema.ap.gov.in/places-of-tourist-2/'],
+  ['Dr. B. R. Ambedkar Konaseema','Sri Bhimeswara Swamy Temple','Draksharamam','Major Konaseema pilgrimage destination; exact distance from each assigned ghat must be calculated','https://konaseema.ap.gov.in/places-of-tourist-2/'],
+  ['Kakinada','Sri Chalukya Kumararama Bhimeswara Swamy Temple','Samalkot','Kakinada town: about 12 km (official district tourism listing); exact ghat-to-temple distance depends on ghat','https://kakinada.ap.gov.in/tourism/tourist-places/religious-tourism/'],
+  ['Kakinada','Sri Kukkuteswara Swamy & Puruhutika Devi Temple','Pithapuram','Exact distance from each assigned ghat must be calculated','https://kakinada.ap.gov.in/tourism/tourist-places/religious-tourism/'],
+  ['Kakinada','Sri Talupulamma Ammavari Temple','Talupulamma Lova / Lova','Exact distance from each assigned ghat must be calculated','https://kakinada.ap.gov.in/tourism/tourist-places/religious-tourism/'],
+  ['Kakinada','Sri Golingeswara Swamy Temple','Bikkavolu','Exact distance from each assigned ghat must be calculated','https://kakinada.ap.gov.in/tourism/tourist-places/religious-tourism/'],
+  ['East Godavari','Sri Uma Markandeyeswara Swamy Temple','Near Pushkar Ghat, Rajamahendravaram','Adjacent to Pushkar Ghat area; very short local transfer, exact gate-to-gate distance to be verified','https://eastgodavari.ap.gov.in/ghats/'],
+  ['East Godavari','ISKCON Sri Sri Radha Gopinath Dasavatara Temple','Near Gowthami Ghat, Rajamahendravaram','Located beside Gowthami Ghat area; very short local transfer, exact gate-to-gate distance to be verified','https://eastgodavari.ap.gov.in/ghats/'],
+  ['East Godavari','Swarnakarshana Kalabhairava Temple','Aryapuram, Rajamahendravaram','Godavari Bund Road; near riverfront ghats, exact ghat-specific distance to be verified','https://eastgodavari.ap.gov.in/ghats/'],
+  ['East Godavari','Sri Veerabhadra Swamy Temple','Pattiseema island','Associated with Pattiseema Ghat; access involves local boat/river-island arrangements; confirm service and safety locally','https://eastgodavari.ap.gov.in/ghats/'],
+  ['Eluru','Sri Veerabhadra Swamy / Sri Veereswara Swamy Temple','Pattiseema, Polavaram Mandal','At Devakuta Parvatha in the Godavari; access from the relevant ghat requires local boat/river crossing arrangements','https://eluru.ap.gov.in/tourist-place/sri-veerabhadra-swamy-temple/'],
+  ['Eluru','Dwaraka Tirumala Sri Venkateswara Swamy Temple','Dwaraka Tirumala','Popular regional pilgrimage destination; exact distance from each Eluru-district Pushkar ghat requires ghat coordinates','https://eluru.ap.gov.in/tourist-place/sri-veerabhadra-swamy-temple/'],
+  ['West Godavari','Sri Ksheera Ramalingeswara Swamy Temple (Ksheerarama)','Palakollu','Exact distance from each West Godavari Pushkar ghat requires ghat coordinates','https://westgodavari.ap.gov.in/tourist-places-2/'],
+  ['West Godavari','Sri Someswara Janardhana Swamy Temple (Somarama)','Bhimavaram','Exact distance from each West Godavari Pushkar ghat requires ghat coordinates','https://westgodavari.ap.gov.in/tourist-places-2/'],
+  ['West Godavari','Sri Mavullamma Ammavari Temple','Bhimavaram','Exact distance from each West Godavari Pushkar ghat requires ghat coordinates','https://westgodavari.ap.gov.in/tourist-places-2/'],
+  ['West Godavari','Sri Vasavi Kanyakaparameswari Temple','Bhimavaram','Exact distance from each West Godavari Pushkar ghat requires ghat coordinates','https://westgodavari.ap.gov.in/tourist-places-2/'],
+  ['West Godavari','Sri Juthiga Rameswara Swamy Temple','Juthiga / Natharameswaram area','Exact distance from each West Godavari Pushkar ghat requires ghat coordinates','https://westgodavari.ap.gov.in/tourist-places-2/'],
+  ['West Godavari','Sri Venkateswara Swamy Temple','Kallakuru','Exact distance from each West Godavari Pushkar ghat requires ghat coordinates','https://westgodavari.ap.gov.in/tourist-places-2/'],
+  ['West Godavari','Sri Bandi Mutyalamma Talli Temple','Mutyalapalli, Mogulturu','Exact distance from each West Godavari Pushkar ghat requires ghat coordinates','https://westgodavari.ap.gov.in/tourist-places-2/'],
+  ['Polavaram','Sri Veerabhadra Swamy / Sri Veereswara Swamy Temple','Pattiseema, Devakuta Parvatha','River-island temple; use only officially designated boat/jetty access; verify from the final ghat map','https://eluru.ap.gov.in/tourist-place/sri-veerabhadra-swamy-temple/'],
+  ['Polavaram','Papikondalu river-tour / temple-area visits','Godavari river corridor','Not a single temple destination; boat excursions require separate permissions, schedules and safety clearance','https://www.pushkaralu.com/en/places.html'],
+] as const;
+
 export async function seedNearbyPlaces() {
   console.log('[SeedNearbyPlaces] Seeding curated hotels, temples, transport hubs...');
   await withTransaction(async (client) => {
@@ -479,30 +511,34 @@ export async function seedNearbyPlaces() {
       ]);
     }
 
-    // 2. Temples
-    for (const t of SEED_TEMPLES) {
+    // 2. Temples from the preliminary pilgrimage and tourism guide
+    await client.query('DELETE FROM temples');
+    for (const [district, name, location, accessNote, sourceUrl] of TEMPLE_TOURISM_GUIDE) {
       await client.query(`
         INSERT INTO temples (
           name, description, address, phone, lat, lng,
           deity, darshan_timings, special_entry_info, photo_url, website_url,
           is_verified, is_hidden, source_url
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        ON CONFLICT DO NOTHING
       `, [
-        JSON.stringify(t.name),
-        JSON.stringify(t.description),
-        JSON.stringify(t.address),
-        t.phone,
-        t.lat,
-        t.lng,
-        JSON.stringify(t.deity),
-        JSON.stringify(t.darshan_timings),
-        JSON.stringify(t.special_entry_info),
-        t.photo_url,
-        t.website_url,
-        t.is_verified,
-        t.is_hidden,
-        t.source_url
+        JSON.stringify({ en: name, te: name, hi: name }),
+        JSON.stringify({
+          en: `${accessNote}. District: ${district}. Preliminary guide entry only; exact coordinates and official itinerary status require verification.`,
+          te: `${accessNote}. జిల్లా: ${district}. ఇది ప్రాథమిక మార్గదర్శి నమోదు మాత్రమే.`,
+          hi: `${accessNote}. जिला: ${district}. यह केवल प्रारंभिक मार्गदर्शक प्रविष्टि है.`,
+        }),
+        JSON.stringify({ en: location, te: location, hi: location }),
+        null,
+        null,
+        null,
+        JSON.stringify({ en: 'Temple / pilgrimage destination', te: 'దేవాలయం / తీర్థ యాత్రా గమ్యం', hi: 'मंदिर / तीर्थयात्रा स्थल' }),
+        JSON.stringify({ en: 'Opening hours not provided in source guide', te: 'మూల మార్గదర్శిలో దర్శన సమయాలు ఇవ్వబడలేదు', hi: 'स्रोत गाइड में दर्शन समय उपलब्ध नहीं है' }),
+        JSON.stringify({ en: accessNote, te: accessNote, hi: accessNote }),
+        null,
+        null,
+        true,
+        false,
+        sourceUrl,
       ]);
     }
 

@@ -155,6 +155,10 @@ export const NearbyPlacesScreen: React.FC = () => {
   };
 
   const handleExternalMaps = (place: NearbyPlace) => {
+    if (place.lat == null || place.lng == null) {
+      Alert.alert('Distance pending', 'Exact coordinates and road directions are not available in the preliminary guide.');
+      return;
+    }
     if (place.google_maps_url) {
       Linking.openURL(place.google_maps_url).catch(() => {});
     } else {
@@ -163,6 +167,10 @@ export const NearbyPlacesScreen: React.FC = () => {
   };
 
   const handleInAppDirections = (place: NearbyPlace) => {
+    if (place.lat == null || place.lng == null) {
+      Alert.alert('Distance pending', 'Exact coordinates and road directions are not available in the preliminary guide.');
+      return;
+    }
     const placeName = getLocalizedText(place.name, language);
     router.push({
       pathname: '/(app)/routes',
@@ -205,6 +213,7 @@ export const NearbyPlacesScreen: React.FC = () => {
     }
 
     places.forEach((p) => {
+      if (p.lat == null || p.lng == null) return;
       const pName = getLocalizedText(p.name, language);
       let color = colors.primary[500];
       let icon = '📍';
@@ -236,8 +245,9 @@ export const NearbyPlacesScreen: React.FC = () => {
     if (selectedGhat && selectedGhat.lat != null && selectedGhat.lng != null) {
       return { lat: selectedGhat.lat, lng: selectedGhat.lng };
     }
-    if (places.length > 0) {
-      return { lat: places[0].lat, lng: places[0].lng };
+    const locatedPlace = places.find((p) => p.lat != null && p.lng != null);
+    if (locatedPlace) {
+      return { lat: locatedPlace.lat!, lng: locatedPlace.lng! };
     }
     return { lat: 17.0005, lng: 81.7808 }; // Rajahmundry Default
   }, [selectedGhat, places]);
