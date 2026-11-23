@@ -7,6 +7,7 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +35,10 @@ export default function LandingScreen() {
   };
 
   const handleOpenSos = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.location.href = '/sos';
+      return;
+    }
     try {
       router.navigate('/(app)/sos' as any);
     } catch {

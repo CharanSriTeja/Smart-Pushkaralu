@@ -62,6 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggleCol
 
   return (
     <aside
+      className="admin-sidebar"
       style={{
         width: collapsed ? '68px' : '260px',
         backgroundColor: tokens.colors.bg,

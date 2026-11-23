@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { SevaService } from '../services/sevaService';
 import { SevaVideoItem, SevaCategory } from '../types/seva';
 import { ClickToLoadYouTubePlayer } from '../components/ClickToLoadYouTubePlayer';
+import { safeGoBack } from '../utils/navigation';
 
 const CATEGORIES: Array<{ id: SevaCategory; en: string; te: string; hi: string; icon: string }> = [
   { id: 'all', en: 'All Events', te: 'అన్ని విశేషాలు', hi: 'सभी कार्यक्रम', icon: '🌟' },
@@ -131,6 +132,14 @@ export const SevaScreen: React.FC = () => {
 
       {/* Screen Title & Header */}
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => safeGoBack(router)}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
         <View style={styles.headerTitleRow}>
           <Text style={styles.headerEmoji}>📺</Text>
           <View>
@@ -385,6 +394,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  backButtonText: {
+    color: '#0F52BA',
+    fontSize: 24,
+    fontWeight: '800',
   },
   headerTitleRow: {
     flexDirection: 'row',

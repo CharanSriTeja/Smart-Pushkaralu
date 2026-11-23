@@ -199,6 +199,9 @@ export class PlacesService {
     const filteredThirdParty: NearbyPlace[] = [];
     for (const tp of thirdPartyPlaces) {
       const isDuplicateOfCurated = curatedPlaces.some((cp) => {
+        if (tp.lat == null || tp.lng == null || cp.lat == null || cp.lng == null) {
+          return false;
+        }
         const dist = calculateHaversineDistanceMeters(tp.lat, tp.lng, cp.lat, cp.lng);
         return dist <= 60;
       });
@@ -248,7 +251,11 @@ export class PlacesService {
     }
 
     // 6. Sort all by distance ascending
-    finalPlaces.sort((a, b) => a.distance_m - b.distance_m);
+    finalPlaces.sort((a, b) => {
+      if (a.distance_m == null) return 1;
+      if (b.distance_m == null) return -1;
+      return a.distance_m - b.distance_m;
+    });
 
     return {
       places: finalPlaces,

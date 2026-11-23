@@ -22,6 +22,7 @@ import { Ghat } from '../types/ghats';
 import { IssueCategory, LocationType } from '../types/issues';
 import { getLocalizedText } from '../utils/localized';
 import { colors, radii, spacing, typography } from '../theme/tokens';
+import { safeGoBack } from '../utils/navigation';
 
 interface CategoryItem {
   id: IssueCategory;
@@ -177,7 +178,7 @@ export default function ReportIssueScreen() {
 
     if (locationType === 'ghat' && selectedGhatId) {
       const matchGhat = ghats.find((g) => g.id === selectedGhatId);
-      if (matchGhat) {
+      if (matchGhat && matchGhat.lat != null && matchGhat.lng != null) {
         reportLat = matchGhat.lat;
         reportLng = matchGhat.lng;
       }
@@ -279,7 +280,7 @@ export default function ReportIssueScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => safeGoBack(router)}>
           <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerTitleBox}>

@@ -82,13 +82,15 @@ export const NearbyPlacesScreen: React.FC = () => {
             if (loc && loc.coords) {
               const uLat = loc.coords.latitude;
               const uLng = loc.coords.longitude;
-              const sorted = [...ghats].sort((a, b) => {
-                const distA = Math.hypot(a.lat - uLat, a.lng - uLng);
-                const distB = Math.hypot(b.lat - uLat, b.lng - uLng);
+              const locatedGhats = ghats.filter((g) => g.lat != null && g.lng != null);
+              const sorted = [...locatedGhats].sort((a, b) => {
+                const distA = Math.hypot(a.lat! - uLat, a.lng! - uLng);
+                const distB = Math.hypot(b.lat! - uLat, b.lng! - uLng);
                 return distA - distB;
               });
-              setSelectedGhatId(sorted[0].id);
-              setSelectedGhat(sorted[0]);
+              const first = sorted[0] || ghats[0];
+              setSelectedGhatId(first.id);
+              setSelectedGhat(first);
             } else {
               setSelectedGhatId(ghats[0].id);
               setSelectedGhat(ghats[0]);
@@ -153,6 +155,10 @@ export const NearbyPlacesScreen: React.FC = () => {
   };
 
   const handleExternalMaps = (place: NearbyPlace) => {
+    if (place.lat == null || place.lng == null) {
+      Alert.alert('Distance pending', 'Exact coordinates and road directions are not available in the preliminary guide.');
+      return;
+    }
     if (place.google_maps_url) {
       Linking.openURL(place.google_maps_url).catch(() => {});
     } else {
@@ -161,6 +167,10 @@ export const NearbyPlacesScreen: React.FC = () => {
   };
 
   const handleInAppDirections = (place: NearbyPlace) => {
+    if (place.lat == null || place.lng == null) {
+      Alert.alert('Distance pending', 'Exact coordinates and road directions are not available in the preliminary guide.');
+      return;
+    }
     const placeName = getLocalizedText(place.name, language);
     router.push({
       pathname: '/(app)/routes',
@@ -191,7 +201,7 @@ export const NearbyPlacesScreen: React.FC = () => {
   const mapMarkers: MapMarkerItem[] = useMemo(() => {
     const items: MapMarkerItem[] = [];
 
-    if (selectedGhat) {
+    if (selectedGhat && selectedGhat.lat != null && selectedGhat.lng != null) {
       items.push({
         id: `ghat-${selectedGhat.id}`,
         lat: selectedGhat.lat,
@@ -203,6 +213,7 @@ export const NearbyPlacesScreen: React.FC = () => {
     }
 
     places.forEach((p) => {
+      if (p.lat == null || p.lng == null) return;
       const pName = getLocalizedText(p.name, language);
       let color = colors.primary[500];
       let icon = '📍';
@@ -231,11 +242,12 @@ export const NearbyPlacesScreen: React.FC = () => {
   }, [selectedGhat, places, language, t]);
 
   const mapCenter = useMemo(() => {
-    if (selectedGhat) {
+    if (selectedGhat && selectedGhat.lat != null && selectedGhat.lng != null) {
       return { lat: selectedGhat.lat, lng: selectedGhat.lng };
     }
-    if (places.length > 0) {
-      return { lat: places[0].lat, lng: places[0].lng };
+    const locatedPlace = places.find((p) => p.lat != null && p.lng != null);
+    if (locatedPlace) {
+      return { lat: locatedPlace.lat!, lng: locatedPlace.lng! };
     }
     return { lat: 17.0005, lng: 81.7808 }; // Rajahmundry Default
   }, [selectedGhat, places]);

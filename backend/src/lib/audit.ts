@@ -33,7 +33,15 @@ export interface AuditLogRecord {
 export async function writeAudit(entry: AuditLogEntry): Promise<AuditLogRecord> {
   try {
     const isUuid = typeof entry.adminId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.adminId);
-    const resolvedAdminId = isUuid ? entry.adminId : null;
+    let resolvedAdminId: string | null = null;
+
+    if (isUuid) {
+      const { rows } = await query<{ id: string }>(
+        'SELECT id FROM users WHERE id = $1 LIMIT 1',
+        [entry.adminId]
+      );
+      resolvedAdminId = rows[0]?.id || null;
+    }
 
     const { rows } = await query<AuditLogRecord>(
       `INSERT INTO audit_logs (

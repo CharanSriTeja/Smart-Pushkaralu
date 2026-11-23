@@ -20,7 +20,9 @@ import {
 // expo-sms is not available on web — conditionally load it
 let SMS: any = null;
 try {
-  SMS = require('expo-sms');
+  if (Platform.OS !== 'web') {
+    SMS = require('expo-sms');
+  }
 } catch {
   // Web: SMS not available; we fall back to sms: URL scheme
 }
@@ -29,6 +31,7 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { theme } from '../../theme';
 import { useLanguage } from '../../context/LanguageContext';
+import { safeGoBack } from '../../utils/navigation';
 import {
   SosService,
   SosType,
@@ -393,7 +396,7 @@ export default function SOSScreen() {
       <View style={styles.topBar}>
         <Button
           title={`← ${t('common.back')}`}
-          onPress={() => router.back()}
+          onPress={() => safeGoBack(router)}
           variant="ghost"
           size="small"
           style={styles.backBtn}

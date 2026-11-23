@@ -21,6 +21,7 @@ export const AppShell: React.FC<{ children?: React.ReactNode }> = ({ children })
 
   return (
     <div
+      className="admin-shell"
       style={{
         display: 'flex',
         minHeight: '100vh',
@@ -32,9 +33,10 @@ export const AppShell: React.FC<{ children?: React.ReactNode }> = ({ children })
       <Sidebar collapsed={isCollapsed} onToggleCollapse={() => setIsCollapsed(!isCollapsed)} />
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div className="admin-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {/* Top Header Navbar */}
         <header
+          className="admin-header"
           style={{
             height: '60px',
             backgroundColor: tokens.colors.bg,
@@ -142,6 +144,7 @@ export const AppShell: React.FC<{ children?: React.ReactNode }> = ({ children })
 
         {/* Content Body */}
         <main
+          className="admin-content"
           style={{
             flex: 1,
             padding: '1.5rem 2rem',

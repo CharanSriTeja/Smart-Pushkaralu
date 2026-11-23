@@ -20,12 +20,12 @@ export interface NearbyPlace {
   name: LocalizedText;
   type: PlaceCategory;
   source_type: 'curated' | 'third_party';
-  lat: number;
-  lng: number;
-  distance_m: number;
-  distance_km: number;
-  driving_time_minutes: number;
-  walking_time_minutes: number;
+  lat: number | null;
+  lng: number | null;
+  distance_m?: number;
+  distance_km?: number;
+  driving_time_minutes?: number;
+  walking_time_minutes?: number;
   estimated_time_text: string;
   google_maps_url: string;
   address?: LocalizedText;

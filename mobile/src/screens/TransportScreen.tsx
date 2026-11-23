@@ -24,6 +24,7 @@ import {
 import { TransportService } from '../services/transportService';
 import { getLocalizedText } from '../utils/localized';
 import { theme } from '../theme';
+import { safeGoBack } from '../utils/navigation';
 
 type TransportTab = 'bus' | 'rail' | 'shuttle';
 
@@ -121,7 +122,7 @@ export const TransportScreen: React.FC = () => {
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => safeGoBack(router)}
           style={styles.backButton}
           accessibilityRole="button"
           accessibilityLabel="Go back"

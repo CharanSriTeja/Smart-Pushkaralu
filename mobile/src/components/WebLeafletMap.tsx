@@ -114,7 +114,6 @@ export const WebLeafletMap: React.FC<WebLeafletMapProps> = ({
     const polylineData = (polylineCoords || [])
       .map((c: any) => [Number(c.latitude ?? c.lat), Number(c.longitude ?? c.lng)])
       .filter(([lat, lng]) => !isNaN(lat) && !isNaN(lng) && lat !== 0);
-
     const ghatsJson = JSON.stringify(ghatMarkersData).replace(/<\/script/gi, '<\\/script');
     const customMarkersJson = JSON.stringify(customMarkersData).replace(/<\/script/gi, '<\\/script');
     const polylineJson = JSON.stringify(polylineData).replace(/<\/script/gi, '<\\/script');

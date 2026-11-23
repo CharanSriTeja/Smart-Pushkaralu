@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { adminApi } from '../services/adminApi';
 import { AdminSevaVideo, SevaCategory } from '../types';
 import './SevaAdminPage.css';
+import { Toast } from '../components/Toast';
 
 export const SevaAdminPage: React.FC = () => {
   const [videos, setVideos] = useState<AdminSevaVideo[]>([]);
@@ -12,6 +13,7 @@ export const SevaAdminPage: React.FC = () => {
   const [editingVideo, setEditingVideo] = useState<AdminSevaVideo | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // Form State
   const [formUrl, setFormUrl] = useState('');
@@ -121,9 +123,11 @@ export const SevaAdminPage: React.FC = () => {
       if (editingVideo) {
         await adminApi.updateSevaVideo(editingVideo.id, payload);
         setSuccessMessage('Video updated successfully.');
+        setShowSuccessToast(true);
       } else {
         await adminApi.createSevaVideo(payload);
         setSuccessMessage('New Seva video added successfully.');
+        setShowSuccessToast(true);
       }
 
       setIsModalOpen(false);
@@ -627,6 +631,12 @@ export const SevaAdminPage: React.FC = () => {
           </div>
         </div>
       )}
+      <Toast
+        isOpen={showSuccessToast}
+        message={successMessage || ''}
+        type="success"
+        onClose={() => setShowSuccessToast(false)}
+      />
     </div>
   );
 };

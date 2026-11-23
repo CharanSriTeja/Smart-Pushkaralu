@@ -15,6 +15,10 @@ export const SOSFloatingButton: React.FC = () => {
   }
 
   const handlePress = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.location.href = '/sos';
+      return;
+    }
     try {
       router.navigate('/(app)/sos' as any);
     } catch {

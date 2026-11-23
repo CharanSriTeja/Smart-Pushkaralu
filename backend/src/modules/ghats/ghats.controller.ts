@@ -16,8 +16,8 @@ const createGhatSchema = z.object({
   river: z.string().default('Godavari'),
   district: z.string().min(1, 'District is required'),
   state: z.string().min(1, 'State is required'),
-  lat: z.number().min(-90).max(90),
-  lng: z.number().min(-180).max(180),
+  lat: z.number().min(-90).max(90).nullable().optional(),
+  lng: z.number().min(-180).max(180).nullable().optional(),
   nearest_town: localizedStringSchema,
   nearest_railway_station: localizedStringSchema,
   nearest_bus_stand: localizedStringSchema,
@@ -40,8 +40,8 @@ const updateGhatSchema = z.object({
   river: z.string().optional(),
   district: z.string().optional(),
   state: z.string().optional(),
-  lat: z.number().min(-90).max(90).optional(),
-  lng: z.number().min(-180).max(180).optional(),
+  lat: z.number().min(-90).max(90).nullable().optional(),
+  lng: z.number().min(-180).max(180).nullable().optional(),
   nearest_town: localizedStringSchema.optional(),
   nearest_railway_station: localizedStringSchema.optional(),
   nearest_bus_stand: localizedStringSchema.optional(),
@@ -181,7 +181,11 @@ export class GhatsController {
       }
 
       const { reason, ...ghatData } = body;
-      const newGhat = await GhatsRepository.createGhat(ghatData);
+      const newGhat = await GhatsRepository.createGhat({
+        ...ghatData,
+        lat: ghatData.lat ?? null,
+        lng: ghatData.lng ?? null,
+      });
 
       // Record audit log
       await AuditService.record({
